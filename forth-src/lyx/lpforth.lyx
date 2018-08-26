@@ -1,0 +1,308 @@
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass literate-article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Literate Forth Programming with LyX
+\end_layout
+
+\begin_layout Author
+Krishna Myneni
+\end_layout
+
+\begin_layout Date
+17 February 2011
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+In this document, we will explore the possibility of doing literate Forth
+ programming in LyX.
+ Our goal will be to write a program, in the literate programming model,
+ to find the 
+\shape italic
+greatest common divisor
+\shape default
+ between two numbers.
+ 
+\end_layout
+
+\begin_layout Section
+Example: GCD
+\end_layout
+
+\begin_layout Standard
+We will define a word 
+\family sans
+\series bold
+gcd
+\family default
+\series default
+ to take two arguments and return the value of the greatest common divisor.
+ The word is intended to work as follows:
+\end_layout
+
+\begin_layout Scrap
+<<gcd-example>>=
+\begin_inset Newline newline
+\end_inset
+
+1050 value a
+\begin_inset Newline newline
+\end_inset
+
+ 432 value b
+\begin_inset Newline newline
+\end_inset
+
+a b gcd
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+A suitable definition of 
+\family sans
+\series bold
+gcd
+\family default
+\series default
+ is,
+\end_layout
+
+\begin_layout Scrap
+<<gcd>>=
+\begin_inset Newline newline
+\end_inset
+
+: gcd ( a b -- c)  ?dup if swap over mod recurse then ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Now, we may combine our definition of 
+\family sans
+\series bold
+gcd
+\family default
+\series default
+, along with the example of its use in a Forth program as follows,
+\end_layout
+
+\begin_layout Scrap
+<<gcd.fs>>=
+\begin_inset Newline newline
+\end_inset
+
+<<gcd>>
+\begin_inset Newline newline
+\end_inset
+
+<<gcd-example>>
+\begin_inset Newline newline
+\end_inset
+
+cr .( The greatest common divisor of ) a .
+ 
+\begin_inset Newline newline
+\end_inset
+
+   .( and ) b .
+ .( is ) .
+ cr
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The working Forth source file, gcd.fs, may be extracted from this document
+ using the 
+\family sans
+notangle
+\family default
+ source extractor, which is a part of the 
+\family sans
+noweb
+\family default
+ framework for literate programming.
+\end_layout
+
+\begin_layout Section
+Problems with Forth Source
+\end_layout
+
+\begin_layout Standard
+One concern is that the chunk terminator, which is the 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+ symbol, is also the fetch operator in Forth.
+ The 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+ symbol used in Forth code will cause a problem for the 
+\family sans
+notangle
+\family default
+ source extractor if it is used on a line by itself, as shown below.
+\end_layout
+
+\begin_layout Scrap
+<<notangle-test.fs>>=
+\begin_inset Newline newline
+\end_inset
+
+variable v
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+<<gcd>>
+\begin_inset Newline newline
+\end_inset
+
+<<gcd-example>> v !
+\begin_inset Newline newline
+\end_inset
+
+cr ." The value of v is " v @ .
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ However, the following will be a problem
+\begin_inset Newline newline
+\end_inset
+
+v 
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ The next line is valid Forth code, not the end of a chunk
+\begin_inset Newline newline
+\end_inset
+
+@
+\begin_inset Newline newline
+\end_inset
+
+.
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Therefore, in order to do literate programming using the 
+\family sans
+noweb
+\family default
+ framework, we must avoid using the 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+ operator on a line by itself within the Forth source.
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+LyX works with noweb to provide a useful interface for literate programming
+ in Forth.
+ One caveat is to not use 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+ on a line by itself within the Forth source chunks.
+\end_layout
+
+\end_body
+\end_document

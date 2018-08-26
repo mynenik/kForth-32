@@ -1,0 +1,1648 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass literate-article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Including Literate Programs in Forth
+\end_layout
+
+\begin_layout Author
+Copyright © 2011, Krishna Myneni
+\end_layout
+
+\begin_layout Date
+17 December 2011
+\end_layout
+
+\begin_layout Scrap
+<<origin file>>=
+\begin_inset Newline newline
+\end_inset
+
+literate-included.lyx
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+<<version>>=
+\begin_inset Newline newline
+\end_inset
+
+1.1
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+<<copyright>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Copyright (c) 2010--2011, Krishna Myneni
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ The software given here may be used for any purpose,
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+   provided the copyright notice, above, is preserved.
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Literate programming is an approach to organizing and writing programs,
+ large or small
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lp"
+
+\end_inset
+
+.
+ This approach was devised and first implemented by Donald E.
+ Knuth.
+ One of the most useful features of literate programming is that it allows
+ the author to strongly couple the description of a computational procedure
+ with the code most closely associated with carrying out the procedure.
+ Two immediate benefits of writing or maintaining a computer program in
+ this way are: 1) the code for the given task may be examined by a human
+ reader, for formal correctness, without having to search within a larger
+ procedure to identify the appropriate code, and 2) the close coupling of
+ code with its description clues the programmer to choose appropriate names
+ for data and procedures.
+ The focus of literate programming on describing and writing small fragments
+ of code, called 
+\shape italic
+code chunks
+\shape default
+, mirrors the approach of developing programs in Forth, in which a set of
+ short words are defined to accomplish specific tasks
+\begin_inset CommandInset citation
+LatexCommand cite
+key "knaggs95"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Literate programs are more work to write, because the software design, documenta
+tion, and programming activities are integrated.
+ This forces the author(s) to document more clearly, logically, and completely,
+ the set of tasks to be accomplished by a program.
+ Another apparent drawback is that a more complex chain of tools is needed
+ to develop and write programs, and, at the end, the actual computer program
+ must be separated from the integrated document and assembled in the correct
+ sequence for compilation or interpretation.
+ However, in this author's experience, the one-time burden of tools installation
+ and configuration, plus the added work necessary to do literate programming
+ is more than made up by the resulting improvement in the quality of code,
+ reduction in number of bugs, and reduction in time for comprehending, analyzing
+, and maintaining the code at a later date.
+\end_layout
+
+\begin_layout Standard
+In this literate Forth program, we provide code for allowing convenient
+ import of literate Forth programs into a Forth system.
+ That is, we enable the Forth system to treat documents containing literate
+ programs as source files in themselves.
+ Procedures will be given for generating Forth source files from the native
+ plain text formats of two literate programming tools: LyX
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lyxhome"
+
+\end_inset
+
+ and Noweb
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "nowebhome"
+
+\end_inset
+
+.
+ The progam, 
+\family typewriter
+literate-included.fs
+\family default
+, given in
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:literate-included.fs"
+
+\end_inset
+
+, provides two words for transparently including both LyX format and Noweb
+ format files from the Forth environment:
+\end_layout
+
+\begin_layout LyX-Code
+nw-included  ( caddr1 u1 caddr2 u2 -- ...
+ )  
+\backslash
+ include a noweb file
+\end_layout
+
+\begin_layout LyX-Code
+lyx-included ( caddr1 u1 caddr2 u2 -- ...
+ )  
+\backslash
+ include a lyx file
+\end_layout
+
+\begin_layout Section
+Literate Programming Tools
+\end_layout
+
+\begin_layout Subsection
+Noweb
+\end_layout
+
+\begin_layout Standard
+Noweb is a collection of related literate programming tools developed by
+ Norman Ramsey
+\begin_inset CommandInset citation
+LatexCommand cite
+key "nowebhome"
+
+\end_inset
+
+.
+ We will use the 
+\family typewriter
+notangle
+\family default
+ tool for extracting Forth code from a literate Noweb document.
+ A Noweb file is simply a text file containing named code chunks and documentati
+on chunks.
+ The code chunks may appear in any order necessitated by the logical description
+ and documentation of the code, and they will be assembled using their name
+ references to produce the final program.
+ In a Noweb file, typically having an extension, 
+\family typewriter
+.nw
+\family default
+, a code chunk starts with the name declaration, and is followed by the
+ code,
+\end_layout
+
+\begin_layout LyX-Code
+<<name of chunk>>=
+\end_layout
+
+\begin_layout LyX-Code
+actual code...
+\end_layout
+
+\begin_layout Standard
+while the start of a documentation chunk is indicated with the 
+\family typewriter
+@
+\family default
+ symbol on a line by itself,
+\end_layout
+
+\begin_layout Quotation
+
+\family typewriter
+@
+\end_layout
+
+\begin_layout Quotation
+
+\family typewriter
+In order to switch to a new task, the system must save the stack pointer
+ ...
+\end_layout
+
+\begin_layout Standard
+Inside the Noweb file, the actual source output file may be denoted by giving
+ the file name as the name of the chunk, followed by code and/or named code
+ chunks to be inserted at the given location in the output file, e.g.
+\end_layout
+
+\begin_layout LyX-Code
+<<tasker.fs>>=
+\end_layout
+
+\begin_layout LyX-Code
+<<task creation>>
+\end_layout
+
+\begin_layout LyX-Code
+<<task switching>>
+\end_layout
+
+\begin_layout LyX-Code
+<<...>>
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+notangle
+\family default
+ program is used to extract the 
+\family typewriter
+tasker.fs
+\family default
+ file from the .nw file in which it is contained.
+ Assuming the noweb file is called 
+\family typewriter
+multi-tasking.nw
+\family default
+, we extract the 
+\family typewriter
+tasker.fs
+\family default
+ file as follows,
+\end_layout
+
+\begin_layout LyX-Code
+$ notangle -Rtasker.fs multi-tasking.nw > tasker.fs
+\end_layout
+
+\begin_layout Standard
+The above command will produce the Forth source file, 
+\family typewriter
+tasker.fs
+\family default
+, which may then be included from a Forth environment in the usual way.
+ More than one Forth source file may be provided within a single noweb file.
+ Furthermore, source files for different languages/compilers may be provided
+ in a single file.
+\end_layout
+
+\begin_layout Scrap
+<<nw to fs>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Execute a shell command to extract a Forth source file from a Noweb file
+\begin_inset Newline newline
+\end_inset
+
+( anw u1  afs u2 ) 2>r
+\begin_inset Newline newline
+\end_inset
+
+s" notangle -R%f2.fs  %f1.nw  >  %f2.fs"
+\begin_inset Newline newline
+\end_inset
+
+s" %f2" 2r@  replace  s" %f1" 2rot replace  s" %f2" 2r@  replace
+\begin_inset Newline newline
+\end_inset
+
+shell 2r> rot ( afs u2 n )
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+LyX
+\end_layout
+
+\begin_layout Standard
+LyX is a document processing environment for use in editing and generating
+ LaTeX documents
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lyxhome"
+
+\end_inset
+
+.
+ LyX can be used to embed Noweb code chunks within a document, and thereby
+ allow generation of a Noweb file, via the LaTeX style sheet, 
+\family typewriter
+noweb.sty
+\family default
+.
+ Thus, a LyX document can provide the intelligent, 
+\shape italic
+content-based
+\shape default
+ typesetting capabilities of LaTeX, while allowing piecewise construction
+ of a program throughout the document.
+ Such a literate source file may also be created using a plain text editor
+ and LaTeX with Noweb alone
+\begin_inset CommandInset citation
+LatexCommand cite
+key "noweblatex"
+
+\end_inset
+
+.
+ However, the LyX environment provides several advantages for writing documents
+ containing literate programs.
+ These include a graphical view and interface for editing the document --
+ should your document contain mathematical notation, math symbols, equations,
+ images, or other graphical content, they will be visible within the editor,
+ without generating the typeset output.
+ In addition, LyX provides version control, via 
+\family typewriter
+rcs
+\begin_inset space ~
+\end_inset
+
+
+\family default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "rcshome"
+
+\end_inset
+
+, and change tracking features which can be useful for managing software
+ development.
+\end_layout
+
+\begin_layout Standard
+A LyX file is also a plain text file, and LyX can export its native format
+ to a noweb file.
+ In addition to exporting to noweb from the GUI, the same can be done via
+ the command line:
+\end_layout
+
+\begin_layout LyX-Code
+$ lyx -e literate multi-tasking.lyx
+\end_layout
+
+\begin_layout Scrap
+<<lyx to nw>>=
+\begin_inset Newline newline
+\end_inset
+
+( afname u )
+\begin_inset Newline newline
+\end_inset
+
+s" lyx -e literate " 2swap strcat s" .lyx" strcat shell ( n )
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Now, we can see from our previous discussion of Noweb files how to extract
+ a Forth source file (or any other source file) from a 
+\family typewriter
+.lyx
+\family default
+ format file, using two commands from the shell.
+ The Forth code for extracting a Forth source file from either a noweb file
+ (
+\family typewriter
+.nw
+\family default
+) or a LyX file (
+\family typewriter
+.lyx
+\family default
+) is given in section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Forth-Code"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+Forth Code
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Forth-Code"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+String Utilities
+\end_layout
+
+\begin_layout Standard
+For execution of shell commands, it is necessary to build up command strings
+ by concatenating commands and filenames.
+ We use the lightweight Forth-94 compatible dynamic strings library, 
+\family typewriter
+strings.fs
+\family default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "kforthstrings"
+
+\end_inset
+
+, which provides the LMI-compatible dynamic string words, 
+\family typewriter
+STRPCK
+\family default
+ and 
+\family typewriter
+STRCAT
+\family default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lmiurforth"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Scrap
+<<include strings library>>=
+\begin_inset Newline newline
+\end_inset
+
+[undefined] strcat [IF]  s" strings.fs" included  [THEN]
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Also useful is the word, 
+\family typewriter
+REPLACE
+\family default
+, to replace an existing pattern within a string by the replacement pattern,
+ and return the new string.
+ In the following definition of 
+\family typewriter
+REPLACE
+\family default
+, only the first occurrence of the pattern string will be replaced in the
+ search string -- successive calls with the same pattern and replacement
+ pattern may be used to replace multiple occurrences.
+\end_layout
+
+\begin_layout Scrap
+<<string replace>>=
+\begin_inset Newline newline
+\end_inset
+
+[undefined] 4dup   [IF] : 4dup  2over 2over ; [THEN]
+\begin_inset Newline newline
+\end_inset
+
+[undefined] 4drop  [IF] : 4drop 2drop 2drop ; [THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Search the string, $str, for the pattern, $pat.
+ If found,
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ replace $pat with $rep, and return the new string, $new.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: replace ( $str $pat $rep -- $new )
+\begin_inset Newline newline
+\end_inset
+
+    2>r        ( $str $pat ) ( r: $rep )
+\begin_inset Newline newline
+\end_inset
+
+    4dup search
+\begin_inset Newline newline
+\end_inset
+
+    if                 ( $str $pat $sub )   ( r: $rep )
+\begin_inset Newline newline
+\end_inset
+
+      2rot 2over       ( $pat $sub $str $sub ) ( r: $rep )
+\begin_inset Newline newline
+\end_inset
+
+      drop nip over -  ( $pat $sub $left ) ( r: $rep )
+\begin_inset Newline newline
+\end_inset
+
+      2r> strcat       ( $pat $sub $left+$rep )
+\begin_inset Newline newline
+\end_inset
+
+      2>r 2swap nip /string ( $right ) ( r: $left+$rep )
+\begin_inset Newline newline
+\end_inset
+
+      2r> 2swap strcat ( $left+$rep+$right )
+\begin_inset Newline newline
+\end_inset
+
+    else               ( $str $pat $sub )  ( r: $rep )
+\begin_inset Newline newline
+\end_inset
+
+      4drop 2r> 2drop  ( $str )
+\begin_inset Newline newline
+\end_inset
+
+    then ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Scrap
+<<string utilities>>=
+\begin_inset Newline newline
+\end_inset
+
+<<include strings library>>
+\begin_inset Newline newline
+\end_inset
+
+<<string replace>>
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Subsection
+Shell Command
+\end_layout
+
+\begin_layout Standard
+Since there is no standardized way to pass commands to the shell in Forth-94,
+ various Forth systems typically provide the word, 
+\family typewriter
+SYSTEM
+\family default
+.
+ However, the semantics of 
+\family typewriter
+SYSTEM
+\family default
+ are not identical among Forth sytems which provide this word.
+ In addition to executing a shell command, the exit code is also needed
+ to recognize when errors have occured.
+ We therefore define the word 
+\family typewriter
+SHELL,
+\family default
+ having consistent semantics across several Forth systems.
+ 
+\family typewriter
+SHELL
+\family default
+ passes a command string to the host environment for execution, and returns
+ the exit code.
+ We will assume an exit code of zero indicates no error, and any non-zero
+ value indicates abnormal execution of the command.
+\end_layout
+
+\begin_layout Scrap
+<<gforth shell>>=
+\begin_inset Newline newline
+\end_inset
+
+: shell ( caddr u -- retcode )  system $? ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Scrap
+<<shell command>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ auto selection for those systems which identify themselves
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[DEFINED] gforth   [IF] <<gforth shell>>     [THEN]
+\begin_inset Newline newline
+\end_inset
+
+[DEFINED] bigforth [IF]
+\begin_inset Newline newline
+\end_inset
+
+  also dos  : shell  strpck system ;  previous [THEN]
+\begin_inset Newline newline
+\end_inset
+
+[DEFINED] vfxforth [IF]
+\begin_inset Newline newline
+\end_inset
+
+  Extern: sys-command int system ( char * ); ( cmd -- r )
+\begin_inset Newline newline
+\end_inset
+
+  : shell  strpck 1+ sys-command ; [THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ manual selection for other systems
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] shell [IF]
+\begin_inset Newline newline
+\end_inset
+
+  0 [IF] <<gforth shell>>                [THEN]  
+\backslash
+ gforth (older version)
+\begin_inset Newline newline
+\end_inset
+
+  1 [IF] : shell  strpck  system ;       [THEN]  
+\backslash
+ kforth
+\begin_inset Newline newline
+\end_inset
+
+  0 [IF] : shell  system  RETURNCODE @ ; [THEN]  
+\backslash
+ iForth
+\begin_inset Newline newline
+\end_inset
+
+  0 [IF] : shell  system ;               [THEN]  
+\backslash
+ pfe
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+For manual system selection, the default is set to kforth.
+\end_layout
+
+\begin_layout Subsection
+Including a Noweb File
+\end_layout
+
+\begin_layout Standard
+The procedure of extracting a Forth source file from a Noweb file, and subsequen
+tly including the Forth source file is provided by the word, 
+\family typewriter
+nw-included
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+<<noweb included>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Extract the Forth source (.fs) from a Noweb (.nw) file.
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Return the full .fs filename.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: untangle ( anw u1 afs u2 -- afs2 u3 )
+\begin_inset Newline newline
+\end_inset
+
+    strpck count 2>r  strpck count 2r> 
+\begin_inset Newline newline
+\end_inset
+
+	<<nw to fs>> abort" Unable to extract Forth source file!"
+\begin_inset Newline newline
+\end_inset
+
+    s" .fs" strcat ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ INCLUDED for a Noweb file
+\begin_inset Newline newline
+\end_inset
+
+: nw-included ( anw u1 asrc u2 -- ...
+ )  untangle included ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The arguments to 
+\family typewriter
+nw-included
+\family default
+ are two strings, the Noweb filename and the Forth source file name.
+ We assume that the files have the extensions, 
+\family typewriter
+.nw
+\family default
+ and 
+\family typewriter
+.fs
+\family default
+, respectively, and therefore the filename arguments to 
+\family typewriter
+nw-included
+\family default
+ do not include the extensions.
+ File extensions are appended automatically.
+ As an example, to extract and include the Forth file, 
+\family typewriter
+tasker.fs
+\family default
+ , from the Noweb file, 
+\family typewriter
+multi-tasking.nw
+\family default
+,
+\end_layout
+
+\begin_layout LyX-Code
+s
+\begin_inset Quotes erd
+\end_inset
+
+ multi-tasking
+\begin_inset Quotes erd
+\end_inset
+
+ s
+\begin_inset Quotes erd
+\end_inset
+
+ tasker
+\begin_inset Quotes erd
+\end_inset
+
+ nw-included
+\end_layout
+
+\begin_layout Subsection
+Including a LyX File
+\end_layout
+
+\begin_layout Standard
+The work of extracting the Forth source from a Noweb file is performed by
+ the word given in the previous section.
+ Therefore, we only need to convert a LyX file to a Noweb file, and execute
+ 
+\family typewriter
+nw-included
+\family default
+ to provide the word, 
+\family typewriter
+lyx-included
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+<<lyx included>>=
+\begin_inset Newline newline
+\end_inset
+
+: lyx>nw ( alyx u1 -- anw u1 retcode )
+\begin_inset Newline newline
+\end_inset
+
+	strpck count
+\begin_inset Newline newline
+\end_inset
+
+	2dup s" .nw" strcat DELETE-FILE drop
+\begin_inset Newline newline
+\end_inset
+
+	2dup <<lyx to nw>> ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ INCLUDED for a LyX (.lyx) file.
+\begin_inset Newline newline
+\end_inset
+
+: lyx-included ( alyx u1 asrc u2 -- )
+\begin_inset Newline newline
+\end_inset
+
+    strpck count 2>r
+\begin_inset Newline newline
+\end_inset
+
+    lyx>nw  abort" Unable to convert a lyx file to a noweb file!"
+\begin_inset Newline newline
+\end_inset
+
+    2r> nw-included
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Similar to 
+\family typewriter
+nw-included
+\family default
+, the arguments to 
+\family typewriter
+lyx-included
+\family default
+ are the two strings containing the LyX filename and the Forth source filename,
+ respectively and without extensions.
+ Therefore, if we wish to extract and include the Forth file, 
+\family typewriter
+tasker.fs
+\family default
+, from the LyX file, 
+\family typewriter
+multi-tasking.lyx
+\family default
+,
+\end_layout
+
+\begin_layout LyX-Code
+s
+\begin_inset Quotes erd
+\end_inset
+
+ multi-tasking
+\begin_inset Quotes erd
+\end_inset
+
+ s
+\begin_inset Quotes erd
+\end_inset
+
+ tasker
+\begin_inset Quotes erd
+\end_inset
+
+ lyx-included
+\end_layout
+
+\begin_layout Subsection
+literate-included.fs
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:literate-included.fs"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The program, 
+\family typewriter
+literate-included.fs
+\family default
+, is assembled below.
+\end_layout
+
+\begin_layout Scrap
+<<literate-included.fs>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ This file is generated using LyX and Noweb -- Do Not Edit!
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Please make modifications to the original file, <<origin file>>
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Version <<version>>
+\begin_inset Newline newline
+\end_inset
+
+<<copyright>>
+\begin_inset Newline newline
+\end_inset
+
+<<string utilities>>
+\begin_inset Newline newline
+\end_inset
+
+<<shell command>>
+\begin_inset Newline newline
+\end_inset
+
+<<noweb included>>
+\begin_inset Newline newline
+\end_inset
+
+<<lyx included>>
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+System Requirements
+\end_layout
+
+\begin_layout Subsection
+Forth System
+\end_layout
+
+\begin_layout Standard
+Our Forth code for including literate programs directly from the Forth environme
+nt assumes a standard Forth-94 system with two augmentations:
+\end_layout
+
+\begin_layout Enumerate
+the Forth system provides a word, typically called 
+\family typewriter
+SYSTEM
+\family default
+ , for executing system commands via the shell, and a method to obtain the
+ exit code of the executing process.
+\end_layout
+
+\begin_layout Enumerate
+strings may be defined with 
+\family typewriter
+S
+\begin_inset Quotes erd
+\end_inset
+
+
+\family default
+ in the system's interpreter.
+\end_layout
+
+\begin_layout Standard
+The only assumption made about the persistence of 
+\family typewriter
+S
+\begin_inset Quotes erd
+\end_inset
+
+
+\family default
+ strings defined within the interpreter is that two such strings may be
+ sequentially defined, without overwriting the same memory.
+ If the intended Forth system cannot support these extended features of
+ 
+\family typewriter
+S
+\begin_inset Quotes erd
+\end_inset
+
+
+\family default
+ strings, it should not prove too difficult to modify the code given here
+ to make it work within the limitations of the Forth system's string capabilitie
+s.
+\end_layout
+
+\begin_layout Subsection
+Noweb Version
+\end_layout
+
+\begin_layout Standard
+The program 
+\family typewriter
+literate-included.fs
+\family default
+, and its predecessor, 
+\family typewriter
+lyx-included.fs
+\family default
+, has been used with Noweb versions 2.11a-2 and 2.11b.
+\end_layout
+
+\begin_layout Subsection
+LyX Version
+\end_layout
+
+\begin_layout Standard
+We have developed literate programs using Noweb under LyX versions 1.5 and
+ 2.0.
+ LyX does not come pre-configured to work with Noweb, and some manual installati
+on is necessary for the two systems to work together.
+ Please see the Appendix for instructions on configuring LyX to work with
+ Noweb.
+\end_layout
+
+\begin_layout Section
+Revision History
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+2011-02-16 km; Created 
+\family typewriter
+lyx-included.fs
+\family default
+ based on an example given by Bernd Paysan on 
+\family typewriter
+comp.lang.forth
+\family default
+, February 16, 2011.
+ See message id, 
+\family typewriter
+<ijipt8$28n$1@news.m-online.net>
+\family default
+.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+2011-02-17 km; Make use of 
+\family typewriter
+strings.fs
+\family default
+ for string handling; remove existing 
+\family typewriter
+.nw
+\family default
+ file; require two arguments to 
+\family typewriter
+lyx-include
+\family default
+: the lyx filename and the Forth source filename.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+2011-02-18 km; ported to kForth; replace use of 
+\family typewriter
+OPEN-PIPE
+\family default
+ with generic 
+\family typewriter
+SHELL
+\family default
+ command; used 
+\family typewriter
+INCLUDED
+\family default
+ instead of 
+\family typewriter
+INCLUDE-FILE
+\family default
+; no requirement for persistence of 
+\family typewriter
+S"
+\family default
+ strings.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+2011-12-15 km; Created literate version of program 
+\family typewriter
+lyx-included.fs
+\family default
+; renamed to 
+\family typewriter
+literate-included.fs
+\family default
+; removed use of string variables; added References; updated LyX configuration
+ procedure.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+2011-12-17 km; Further factored definitions of 
+\family typewriter
+nw-include
+\family default
+ and 
+\family typewriter
+lyx-included
+\family default
+; added string 
+\family typewriter
+REPLACE
+\family default
+ word; used 
+\family typewriter
+DELETE-FILE
+\family default
+ instead of shell command for portability; added definitions of 
+\family typewriter
+SHELL
+\family default
+ for bigForth and VFX Forth (untested); added ref.
+ to Peter Knaggs' paper; now at ver 1.1.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+2012-01-03 km; Reconfigured for kForth as default; added missing 
+\begin_inset Quotes eld
+\end_inset
+
+;
+\begin_inset Quotes erd
+\end_inset
+
+ in kForth 
+\family typewriter
+shell
+\family default
+ command.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "lp"
+
+\end_inset
+
+Wikipedia article on 
+\shape italic
+literate programming
+\shape default
+: 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://en.wikipedia.org/wiki/Literate_programming"
+target "http://en.wikipedia.org/wiki/Literate_programming"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "knaggs95"
+
+\end_inset
+
+P.
+ J.
+ Knaggs, Literate Programming in Forth, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.4869"
+target "http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.4869"
+
+\end_inset
+
+ (1995).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "lyxhome"
+
+\end_inset
+
+
+\shape italic
+LyX -- The Document Processor
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://www.lyx.org"
+target "http://www.lyx.org"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "nowebhome"
+
+\end_inset
+
+N.
+ Ramsey, 
+\shape italic
+Noweb -- A Simple Extensible Tool for Literate Programming
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://www.cs.tufts.edu/~nr/noweb/"
+target "http://www.cs.tufts.edu/~nr/noweb/"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "noweblatex"
+
+\end_inset
+
+N.
+ Ramsey, 
+\shape italic
+A One-Page Guide to Using noweb with LaTeX
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://www.cs.tufts.edu/~nr/noweb/onepage.ps"
+target "http://www.cs.tufts.edu/~nr/noweb/onepage.ps"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "rcshome"
+
+\end_inset
+
+
+\shape italic
+Official RCS Homepage
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://www.cs.purdue.edu/homes/trinkle/RCS/"
+target "http://www.cs.purdue.edu/homes/trinkle/RCS/"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "kforthstrings"
+
+\end_inset
+
+K.
+ Myneni, 
+\shape italic
+Gforth Version of kForth String Utility Words
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "ftp://ccreweb.org/software/gforth/strings.fs"
+target "ftp://ccreweb.org/software/gforth/strings.fs"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "lmiurforth"
+
+\end_inset
+
+These and other dynamic string words were provided in Laboratory Microsystems,
+ Inc.'s 32-bit UR/Forth for MS-DOS.
+ Compatible definitions are given in 
+\family typewriter
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "kforthstrings"
+
+\end_inset
+
+
+\family default
+.
+\end_layout
+
+\begin_layout Section*
+Appendix: Configuring LyX to Work with Noweb
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Appendix:-Configuring-LyX"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We assume that LyX and LaTeX are already installed on the user's system.
+ The following procedure to configure LyX to work with Noweb was pieced
+ together from various sources on the web.
+\end_layout
+
+\begin_layout Enumerate
+Install the Noweb package.
+ If it is not pre-packaged for your OS or distribution, it may be built
+ from source, found on the Noweb home page
+\begin_inset CommandInset citation
+LatexCommand cite
+key "nowebhome"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+The LaTeX style sheet, 
+\family typewriter
+noweb.sty
+\family default
+ , should be placed in the appropriate directory for use by LyX and LaTeX.
+ On a Linux system, this directory is typically, 
+\family typewriter
+/usr/local/share/texmf/latex/
+\family default
+ .
+ The style sheet is included in the Noweb package, and may be automatically
+ installed in the correct directory.
+\end_layout
+
+\begin_layout Enumerate
+Run 
+\family typewriter
+texhash
+\family default
+ as superuser, so that LaTeX knows about the 
+\family typewriter
+noweb.sty
+\family default
+ stylesheet.
+\end_layout
+
+\begin_layout Enumerate
+Start LyX.
+ Using the menus, perform 
+\shape italic
+Tools > Reconfigure
+\shape default
+.
+\end_layout
+
+\begin_layout Enumerate
+Exit and restart LyX.
+\end_layout
+
+\begin_layout Enumerate
+If you wish to use version control under LyX, install the 
+\family typewriter
+rcs
+\family default
+ package
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "rcshome"
+
+\end_inset
+
+ on your system.
+ Version control functions for a document (registration, check out, etc.)
+ may be performed from the menu 
+\shape italic
+File > Version Control
+\shape default
+.
+\end_layout
+
+\begin_layout Standard
+You are now ready to do literate programming in Forth, or in any other language,
+ using LyX and Noweb!
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\end_body
+\end_document

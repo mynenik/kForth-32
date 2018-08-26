@@ -1,0 +1,2641 @@
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass literate-article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Semiconductor Laser Rate Equation Solver
+\end_layout
+
+\begin_layout Author
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+copyright
+\end_layout
+
+\end_inset
+
+ 2011 Krishna Myneni
+\end_layout
+
+\begin_layout Date
+24 February 2011
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+The purpose of this Forth program is to solve the coupled nonlinear rate
+ equations describing the complex electric field and the carrier density
+ in a simple model of the semiconductor laser.
+ The model is sufficient to account for many of the observed dynamics in
+ a 
+\shape italic
+single mode
+\shape default
+ semiconductor laser in response to a dynamic drive current, such as 
+\shape italic
+relaxation oscillations 
+\shape default
+and
+\shape italic
+ frequency chirping
+\shape default
+
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agrawal"
+
+\end_inset
+
+.
+ With the addition of terms to represent optical feedback or external optical
+ injection from another laser, the model may be extended to treat more complex
+ dynamics such as 
+\shape italic
+optical feedback induced chaos,
+\shape default
+ and optical 
+\shape italic
+injection locking
+\shape default
+ and chaos in coupled lasers.
+ The model treated in this program does not include these external coupling
+ terms, nor does it include more mundane, but important phenomena such as
+ 
+\shape italic
+spontaneous emission noise
+\shape default
+ and 
+\shape italic
+gain saturation
+\shape default
+.
+ Also ignored are phenomena arising explicity from the finite length of
+ the laser (cavity modes) and the waveguide structure.
+ Examples of such phenomena are steady state current tuning of the cavity
+ mode frequency, thermal dissipation and expansion of the laser cavity,
+ and multimode behavior.
+ 
+\end_layout
+
+\begin_layout Standard
+The basic quantities to be solved are the complex electric field amplitude,
+ 
+\begin_inset Formula $\tilde{E}(t)$
+\end_inset
+
+, and carrier density, 
+\begin_inset Formula $N(t)$
+\end_inset
+
+, inside the semiconductor laser structure, for a given time-dependent injection
+ current, 
+\begin_inset Formula $I(t)$
+\end_inset
+
+.
+ The field amplitude 
+\begin_inset Formula $\tilde{E}(t)$
+\end_inset
+
+ is defined by writing the optical electric field of the laser as
+\begin_inset Formula \[
+\varepsilon(t)=E(t)\cos\left(\omega_{0}t+\phi(t)\right)=\frac{E(t)}{2}\left(e^{i(\omega_{0}t+\phi(t))}+\mbox{{c.c.}}\right)\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\omega_{0}$
+\end_inset
+
+ is the optical frequency, 
+\begin_inset Formula $E(t)$
+\end_inset
+
+ is the 
+\shape italic
+real
+\shape default
+ time-dependent field amplitude, and 
+\begin_inset Formula $\phi(t)$
+\end_inset
+
+ is the time-dependent phase.
+ The complex field amplitude is,
+\begin_inset Formula \[
+\tilde{E}(t)\equiv E(t)\cdot e^{i\phi(t)}\]
+
+\end_inset
+
+For the simple model of the single mode laser used here, the rate equations
+ may be expressed in terms of the complex field amplitude, without reference
+ to the optical frequency.
+ 
+\end_layout
+
+\begin_layout Standard
+The Forth program is based on a similar program written in C
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Pethel2000"
+
+\end_inset
+
+, but provides greater flexibility in allowing the user to tailor 
+\begin_inset Formula $I(t)$
+\end_inset
+
+, and the parameters characterizing the laser, from within the Forth environment.
+\end_layout
+
+\begin_layout Subsection
+Requirements
+\end_layout
+
+\begin_layout Standard
+The code should run under any Forth-94 compatible system providing floating
+ point support.
+ Forth systems may use either a separated floating point stack, or an integrated
+ data/fp stack.
+ Modules from the 
+\shape slanted
+Forth Scientific Library
+\shape default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "fsl"
+
+\end_inset
+
+ are required, and assumed to be in the path, 
+\family sans
+fsl/
+\family default
+ , relative to the current path.
+ Required modules include the standard FSL auxiliary files for support of
+ arrays and dynamic memory, 
+\family sans
+fsl-util.x
+\family default
+ and 
+\family sans
+dynmem.x
+\family default
+, the complex arithmetic module, 
+\family sans
+complex.x
+\family default
+, and the ordinary differential equation solver, 
+\family sans
+runge4.x
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+<<ext>>=
+\begin_inset Newline newline
+\end_inset
+
+4th
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+<<include files>>=
+\begin_inset Newline newline
+\end_inset
+
+include fsl/fsl-util.<<ext>>
+\begin_inset Newline newline
+\end_inset
+
+include fsl/dynmem.<<ext>>
+\begin_inset Newline newline
+\end_inset
+
+include fsl/complex.<<ext>>
+\begin_inset Newline newline
+\end_inset
+
+include fsl/runge4.<<ext>>
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Laser Parameters
+\end_layout
+
+\begin_layout Standard
+The laser structure itself is characterized by the parameters shown in Table
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tbl:laserparams"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="7" columns="3">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Symbol
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Parameter
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Representative Value
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $I_{\mbox{{th}}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Threshold current
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+20 mA
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $N_{\mbox{{th}}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Carrier density at threshold for lasing
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.5
+\begin_inset Formula $\times10^{18}$
+\end_inset
+
+cm
+\begin_inset Formula $^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau_{p}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Photon lifetime
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4.5 ps
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau_{s}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Carrier lifetime
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+700 ps
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\alpha$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Linewidth enhancement factor
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G_{N}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Differential gain at threshold
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2.6
+\begin_inset Formula $\times10^{-6}$
+\end_inset
+
+cm
+\begin_inset Formula $^{3}$
+\end_inset
+
+/s
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Parameters characterizing a semiconductor laser, and typical values of these
+ parameters.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "tbl:laserparams"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+<<laser parameters>>=
+\begin_inset Newline newline
+\end_inset
+
+fvariable I_th     20e     I_th  f!
+\begin_inset Newline newline
+\end_inset
+
+fvariable N_th     1.5e18  N_th  f!
+\begin_inset Newline newline
+\end_inset
+
+fvariable t_p      4.5e-12 t_p   f!
+\begin_inset Newline newline
+\end_inset
+
+fvariable t_s      700e-12 t_s   f!
+\begin_inset Newline newline
+\end_inset
+
+fvariable alpha    5.0e    alpha f!
+\begin_inset Newline newline
+\end_inset
+
+fvariable G_N      2.6e-6  G_N   f!
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Two parameters defined from the characteristic parameters, above, will also
+ prove to be convenient in expressing the dynamical equations for the laser.
+ These are the ratio of the carrier to photon lifetime in the laser,
+\begin_inset Formula \[
+T\equiv\frac{\tau_{s}}{\tau_{p}}\]
+
+\end_inset
+
+ and the pumping factor,
+\begin_inset Formula \[
+P_{0}\equiv\frac{\tau_{p}G_{N}N_{\mbox{{th}}}}{2}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+<<derived parameters>>=
+\begin_inset Newline newline
+\end_inset
+
+fvariable T_ratio      
+\backslash
+ t_s/t_p
+\begin_inset Newline newline
+\end_inset
+
+fvariable PumpFactor   
+\backslash
+ t_p*G_N*N_th/2
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: init-params ( -- )   
+\backslash
+ Initialize the derived parameters
+\begin_inset Newline newline
+\end_inset
+
+    t_s F@ t_p F@ F/ T_ratio F! 
+\begin_inset Newline newline
+\end_inset
+
+    t_p F@ G_N F@ F* N_th F@ F* 2e F/ PumpFactor F!
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Rate Equations
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Rate-Equations"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The rate equations describe the time rate of change of the complex electric
+ field amplitude, 
+\begin_inset Formula $\tilde{E}(t)$
+\end_inset
+
+, and the carrier density, 
+\begin_inset Formula $N(t)$
+\end_inset
+
+.
+ In the 
+\shape italic
+linear gain approximation
+\shape default
+, these equations may be written as,
+\begin_inset Formula \begin{eqnarray}
+\frac{d\tilde{E}}{dt} & = & \frac{1}{2}(1+i\alpha)G_{N}\left(N-N_{\mbox{{th}}}\right)\tilde{E}\nonumber \\
+\frac{dN}{dt} & = & \frac{I}{eV_{a}}-\frac{N}{\tau_{s}}-\left[\frac{1}{\tau_{p}}+G_{N}\left(N-N_{\mbox{{th}}}\right)\right]\left|\tilde{E}\right|^{2}\label{eq:rateeqns-raw}\end{eqnarray}
+
+\end_inset
+
+ where 
+\begin_inset Formula $e$
+\end_inset
+
+ is the electronic charge, and 
+\begin_inset Formula $V_{a}$
+\end_inset
+
+ is the active volume of the laser.
+ All other quantities have been defined earlier.
+ A terse derivation of the above equations is given by 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "myneni2008"
+
+\end_inset
+
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+We need a reference with accompanying exposition.
+\end_layout
+
+\end_inset
+
+.
+ The above equations are not expressed in SI units.
+ In particular, they have been derived with units of 
+\begin_inset Formula $\tilde{\left|E\right|}$
+\end_inset
+
+ in 
+\begin_inset Formula $\sqrt{n_{\mbox{{ph}}}}/\mbox{{cm}}^{3}$
+\end_inset
+
+, where 
+\begin_inset Formula $n_{\mbox{{ph}}}$
+\end_inset
+
+ is the number of photons in the laser cavity.
+ We will not bother to transform eqns.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns-raw"
+
+\end_inset
+
+ to SI units, since further scaling will be used to transform the dynamical
+ variables to dimensionless quantities.
+\end_layout
+
+\begin_layout Standard
+
+\shape italic
+Exercise:
+\shape default
+ Find the 
+\shape italic
+steady state solutions
+\shape default
+ of equations
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns-raw"
+
+\end_inset
+
+, i.e., solutions of,
+\begin_inset Formula \begin{eqnarray}
+\frac{1}{2}(1+i\alpha)G_{N}\left(N^{\mbox{{ss}}}-N_{\mbox{{th}}}\right)\tilde{E}^{\mbox{{ss}}} & = & 0\nonumber \\
+\frac{I^{\mbox{{ss}}}}{eV_{a}}-\frac{N^{\mbox{{ss}}}}{\tau_{s}}-\left[\frac{1}{\tau_{p}}+G_{N}\left(N^{\mbox{{ss}}}-N_{\mbox{{th}}}\right)\right]\left|\tilde{E}^{\mbox{{ss}}}\right|^{2} & = & 0\label{eq:steadystate}\end{eqnarray}
+
+\end_inset
+
+For an arbitrary steady-state current, 
+\begin_inset Formula $I^{\mbox{{ss}}}$
+\end_inset
+
+, what must be the value of the steady-state carrier density, 
+\begin_inset Formula $N^{\mbox{{ss}}}$
+\end_inset
+
+? Consider both cases, 
+\begin_inset Formula $I^{\mbox{{ss}}}<I_{\mbox{{th}}}$
+\end_inset
+
+ and 
+\begin_inset Formula $I^{\mbox{{ss}}}>I_{\mbox{{th}}}$
+\end_inset
+
+, noting that in the former case, 
+\begin_inset Formula $\tilde{E}{}^{\mbox{{ss}}}=0$
+\end_inset
+
+, since threshold current is defined to be the current at which lasing starts.
+\end_layout
+
+\begin_layout Subsection
+Normalized Form of the Rate Equations
+\end_layout
+
+\begin_layout Standard
+For numerical solutions of the rate equations, it is convenient to scale
+ the dynamical variables, 
+\begin_inset Formula $\tilde{E}$
+\end_inset
+
+ and 
+\begin_inset Formula $N$
+\end_inset
+
+, and the time, 
+\begin_inset Formula $t$
+\end_inset
+
+, to dimensionless form.
+ The dimensionless time, 
+\begin_inset Formula $s$
+\end_inset
+
+, is defined by, 
+\begin_inset Formula \[
+s\equiv\frac{t}{\tau_{p}}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+<<s to ns>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Convert dimensionless time s to nanoseconds
+\begin_inset Newline newline
+\end_inset
+
+: >ns ( F: s -- t )  t_p f@ f* 1e-9 f/ ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The variables 
+\begin_inset Formula $\tilde{E}(t)$
+\end_inset
+
+ and 
+\begin_inset Formula $N(t)$
+\end_inset
+
+ are scaled to the dimensionless quantities, 
+\begin_inset Formula $\tilde{Y}(s)$
+\end_inset
+
+, the normalized complex field amplitude, and 
+\begin_inset Formula $Z(s)$
+\end_inset
+
+, the normalized carrier density above threshold:
+\begin_inset Formula \begin{equation}
+\tilde{Y}\equiv\sqrt{\frac{\tau_{s}G_{N}}{2}}\tilde{E}\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula \begin{equation}
+Z\equiv\frac{\tau_{p}G_{N}}{2}\left(N-N_{\mbox{{th}}}\right)\end{equation}
+
+\end_inset
+
+The coupled rate equations, expressed in normalized form, are
+\begin_inset CommandInset citation
+LatexCommand cite
+key "sukow1997"
+
+\end_inset
+
+,
+\begin_inset Formula \begin{eqnarray}
+\frac{d\tilde{Y}}{ds} & = & (1+i\alpha)Z(s)\tilde{Y}(s)\nonumber \\
+\frac{dZ}{ds} & = & \frac{1}{T}\left(P(s)-Z(s)-(1+2Z(s))\left|\tilde{Y}(s)\right|^{2}\right)\label{eq:rateeqns}\end{eqnarray}
+
+\end_inset
+
+
+\shape italic
+Exercise:
+\shape default
+ Derive the normalized form of the rate equations, eqns.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns"
+
+\end_inset
+
+, from the rate equations for 
+\begin_inset Formula $\tilde{E}(t)$
+\end_inset
+
+ and 
+\begin_inset Formula $N(t)$
+\end_inset
+
+ (eqns.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns-raw"
+
+\end_inset
+
+).
+ 
+\shape italic
+Hint:
+\shape default
+ Use the results from the previous exercise to eliminate the product, 
+\begin_inset Formula $eV_{a}$
+\end_inset
+
+, from the equations.
+\end_layout
+
+\begin_layout Standard
+The two normalized rate equations, expressed in code, are
+\end_layout
+
+\begin_layout Scrap
+<<dY over ds>>=
+\begin_inset Newline newline
+\end_inset
+
+( F: Yre Yim Z -- dY/ds )  z*f 1e alpha f@ z* 
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+<<dZ over ds>>=
+\begin_inset Newline newline
+\end_inset
+
+( F: s Z Yre Yim -- dZ/ds ) 
+\begin_inset Newline newline
+\end_inset
+
+|z|^2 fover 2e f* 1e f+ f* 
+\backslash
+ F: s Z r
+\begin_inset Newline newline
+\end_inset
+
+f+ fswap P(s) fswap f-
+\begin_inset Newline newline
+\end_inset
+
+T_ratio f@ f/
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+Normalized Pump Rate
+\end_layout
+
+\begin_layout Standard
+In the normalized rate equations
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns"
+
+\end_inset
+
+, the normalized pump rate, 
+\begin_inset Formula $P(s)$
+\end_inset
+
+, is given by,
+\begin_inset Formula \begin{equation}
+P=P_{0}\left(\frac{I(s)}{I_{\mbox{\mbox{{th}}}}}-1\right)\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $I$
+\end_inset
+
+ is the injection current as a function of time, to be defined by the user,
+\end_layout
+
+\begin_layout Scrap
+<<I(t)>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ For t in ns, return the injection current
+\begin_inset Newline newline
+\end_inset
+
+Defer I(t)
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+<<P(s)>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Compute the pump rate at time s
+\begin_inset Newline newline
+\end_inset
+
+: P(s) ( F: s -- P ) >ns I(t) I_th f@ f/ 1e f- PumpFactor f@ f* ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+The State Vector
+\end_layout
+
+\begin_layout Standard
+The normalized rate equations given in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns"
+
+\end_inset
+
+ describe the rate of change of a set of three 
+\shape italic
+real
+\shape default
+ time-dependent physical quantities, 
+\begin_inset Formula $Re\{\tilde{Y}\}$
+\end_inset
+
+, 
+\begin_inset Formula $Im\{\tilde{Y}\}$
+\end_inset
+
+, 
+\begin_inset Formula $Z$
+\end_inset
+
+.
+ It is convenient to define a 
+\shape italic
+state vector
+\shape default
+ to track these three real quantities:
+\end_layout
+
+\begin_layout Scrap
+<<state vector>>=
+\begin_inset Newline newline
+\end_inset
+
+3 constant SVSIZE
+\begin_inset Newline newline
+\end_inset
+
+SVSIZE float array sv{
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+It is easier to interpret the complex field amplitude, 
+\begin_inset Formula $\tilde{Y}$
+\end_inset
+
+, in terms of laser 
+\shape italic
+intensity, 
+\begin_inset Formula $W$
+\end_inset
+
+,
+\shape default
+ and laser
+\shape italic
+ phase
+\shape default
+, 
+\begin_inset Formula $\phi$
+\end_inset
+
+, so a transformation of the state vector to intensity and phase will be
+ useful,
+\begin_inset Formula \[
+W\propto\left|\tilde{Y}\right|^{2}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\phi=\arg(\tilde{Y})\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+<<sv to i phi>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Compute intensity and phase from the state vector
+\begin_inset Newline newline
+\end_inset
+
+: intensity ( 'v -- ) ( F: -- I )   0 } z@ |z|^2 ;
+\begin_inset Newline newline
+\end_inset
+
+: phase ( 'v -- ) ( F: -- phase )   0 } z@ arg ; 
+\backslash
+ phase in radians
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The transformed components of the state vector, 
+\begin_inset Formula $\left\{ W,\phi,Z\right\} $
+\end_inset
+
+ may be computed and printed, using,
+\end_layout
+
+\begin_layout Scrap
+<<print sv>>=
+\begin_inset Newline newline
+\end_inset
+
+: print-sv ( 'v -- )
+\begin_inset Newline newline
+\end_inset
+
+    dup intensity   fs.
+ 2 spaces
+\begin_inset Newline newline
+\end_inset
+
+    dup phase pi f/ fs.
+ 2 spaces   
+\backslash
+ normalized phase, 1.0 = pi
+\begin_inset Newline newline
+\end_inset
+
+    2 } f@          fs.
+ cr         
+\backslash
+ normalized carrier density
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Note that the printed phase is 
+\begin_inset Formula $\phi'=\phi/\pi$
+\end_inset
+
+, i.e.
+ normalized to 
+\begin_inset Formula $\pi$
+\end_inset
+
+ radians.
+ 
+\end_layout
+
+\begin_layout Subsection
+Frequency Chirp of the Laser
+\end_layout
+
+\begin_layout Standard
+The time derivative of 
+\begin_inset Formula $\phi(t)$
+\end_inset
+
+ gives the instantaneous frequency change (chirp) of the laser, 
+\begin_inset Formula $\Delta\omega(t)$
+\end_inset
+
+, with respect to the steady state frequency, 
+\begin_inset Formula \begin{equation}
+\Delta\omega=\omega(N)-\omega(N_{\mbox{{th}}})\end{equation}
+
+\end_inset
+
+The program does not calculate the frequency chirp of the laser; however,
+ it may be calculated from the output phase.
+ No attempt is made by the present calculation to unwrap the phase, i.e.
+ at 
+\begin_inset Formula $\phi=\pm\pi$
+\end_inset
+
+, the phase undergoes a discontinuity since the 
+\begin_inset Formula $\arg()$
+\end_inset
+
+ function is restricted to this range (or to the range, 0\SpecialChar \nobreakdash-
+
+\begin_inset Formula $2\pi$
+\end_inset
+
+, depending on the setting of 
+\family typewriter
+PRINCIPAL-ARG
+\family default
+ in 
+\family typewriter
+complex.x
+\family default
+).
+ A calculation of 
+\begin_inset Formula $\Delta\omega$
+\end_inset
+
+ requires the output phase be unwrapped prior to computing the derivative.
+\end_layout
+
+\begin_layout Subsection
+Derivative of the State Vector
+\end_layout
+
+\begin_layout Standard
+The set of rate equations are given by the time derivative of the state
+ vector, 
+\begin_inset Formula \[
+\left\{ \frac{d\mbox{\Re{\tilde{Y}}}}{ds},\frac{d\Im{\tilde{Y}}}{ds},\frac{dZ}{ds}\right\} \]
+
+\end_inset
+
+These derivatives are computed and stored in an array, at each step in time,
+ for use by the ODE solver, 
+\end_layout
+
+\begin_layout Scrap
+<<rate equations>>=
+\begin_inset Newline newline
+\end_inset
+
+<<P(s)>>
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ 'u is the state vector array, and 'dudt is the array
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ of computed derivatives
+\begin_inset Newline newline
+\end_inset
+
+: derivs-sl ( 'u 'du/ds -- ) ( F: s -- ) 
+\begin_inset Newline newline
+\end_inset
+
+       
+\backslash
+ or ( s 'u 'du/ds -- ) 
+\begin_inset Newline newline
+\end_inset
+
+    >r >r
+\begin_inset Newline newline
+\end_inset
+
+    r@ 0 } z@  r@ 2 } f@ <<dY over ds>>  2r@ drop 0 } z!
+\begin_inset Newline newline
+\end_inset
+
+    r@ 2 } f@  r@ 0 } z@ <<dZ over ds>>  2r> drop 2 } f!
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Injection Current Profile
+\end_layout
+
+\begin_layout Standard
+The time dependent injection current profile, 
+\begin_inset Formula $I(t)$
+\end_inset
+
+, may be defined by the user.
+ A few cases which are illustrative of different phenomena exhibited by
+ the semiconductor laser may be observed from numerical solutions of the
+ rate equations.
+\end_layout
+
+\begin_layout Subsection
+Constant Current: Below Threshold
+\end_layout
+
+\begin_layout Standard
+The simplest case is to set the injection current to some constant value,
+ 
+\begin_inset Formula $I_{\mbox{{dc}}}$
+\end_inset
+
+, below the laser threshold current, 
+\begin_inset Formula $I_{\mbox{{dc}}}<I_{\mbox{{th}}}$
+\end_inset
+
+.
+ The user may verify, either from analysis of the rate equations, or by
+ numerical solution, that for this case, the variables decay from their
+ initial values to the long time limit values, revealed in the exercise
+ from section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Rate-Equations"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Scrap
+<<below threshold>>=
+\begin_inset Newline newline
+\end_inset
+
+: BelowThreshold ( F: t -- I ) fdrop I_th f@ 0.9e f* ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+Constant Current: Above Threshold
+\end_layout
+
+\begin_layout Standard
+The next more interesting case is to choose 
+\begin_inset Formula $I_{\mbox{{dc}}}>I_{\mbox{{th}}}$
+\end_inset
+
+, and from the solution of eqns.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:steadystate"
+
+\end_inset
+
+, the values of 
+\begin_inset Formula $\tilde{Y}^{\mbox{{ss}}}$
+\end_inset
+
+and 
+\begin_inset Formula $Z^{\mbox{{ss}}}$
+\end_inset
+
+are known.
+ However, as the laser current is initially switched from 
+\begin_inset Formula $I=0$
+\end_inset
+
+ to 
+\begin_inset Formula $I_{\mbox{{dc}}}$
+\end_inset
+
+, both 
+\begin_inset Formula $\tilde{Y}(s)$
+\end_inset
+
+ and 
+\begin_inset Formula $Z(s)$
+\end_inset
+
+ display a transient phenomenon known as relaxation oscillations, which
+ eventually damp out to reach the steady state values.
+\end_layout
+
+\begin_layout Scrap
+<<above threshold>>=
+\begin_inset Newline newline
+\end_inset
+
+: AboveThreshold ( F: t -- I ) fdrop I_th f@ 1.2e f* ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+Gaussian Current Pulse
+\end_layout
+
+\begin_layout Standard
+Finally we consider the case of a constant current superimposed with a rapidly
+ varying current.
+ Consider a Gaussian current pulse, of width 
+\begin_inset Formula $\Gamma$
+\end_inset
+
+ (full width at half maximum), and peak current, 
+\begin_inset Formula $I_{\mbox{{p}}}$
+\end_inset
+
+, superimposed on the d.c.
+ current, 
+\begin_inset Formula $I_{\mbox{{dc}}}$
+\end_inset
+
+.
+ The injection current profile is given by,
+\begin_inset Formula \[
+I(t)=I_{\mbox{{dc}}}+I_{\mbox{{p}}}\cdot\exp\left(-4\ln(2)\frac{\left(t-t_{\mbox{{offs}}}\right)^{2}}{\Gamma^{2}}\right)\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+<<Gaussian Pulse Parameters>>=
+\begin_inset Newline newline
+\end_inset
+
+fvariable fwhm         
+\backslash
+ full width at half-max for current pulse
+\begin_inset Newline newline
+\end_inset
+
+fvariable I_p          
+\backslash
+ peak pulse current (above d.c.
+ level)
+\begin_inset Newline newline
+\end_inset
+
+fvariable I_dc         
+\backslash
+ d.c.
+ current level
+\begin_inset Newline newline
+\end_inset
+
+fvariable t_offs       
+\backslash
+ offset time for current peak
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Scrap
+<<Gaussian Pulse>>=
+\begin_inset Newline newline
+\end_inset
+
+-4e 2e fln f* fconstant -4ln2
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: GaussianPulse ( F: t -- I )
+\begin_inset Newline newline
+\end_inset
+
+    t_offs f@ f- fwhm f@ f/
+\begin_inset Newline newline
+\end_inset
+
+    fdup f* -4ln2 f* fexp
+\begin_inset Newline newline
+\end_inset
+
+    I_p f@ f* I_dc f@ f+ 
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Default settings for the pulse parameters are,
+\end_layout
+
+\begin_layout Scrap
+<<Gaussian Pulse Default Values>>=
+\begin_inset Newline newline
+\end_inset
+
+1e  fwhm f!       
+\backslash
+ 1 ns
+\begin_inset Newline newline
+\end_inset
+
+20e I_p  f!       
+\backslash
+ 20 mA
+\begin_inset Newline newline
+\end_inset
+
+I_th f@ 10e f+ I_dc f!  
+\backslash
+ 10 mA above threshold current
+\begin_inset Newline newline
+\end_inset
+
+3e  t_offs f!     
+\backslash
+ pulse peak occurs at 3 ns
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The default injection current profile will be set to the dc current plus
+ the Gaussian pulse, using the default pulse parameters,
+\end_layout
+
+\begin_layout Scrap
+<<injection current profile>>=
+\begin_inset Newline newline
+\end_inset
+
+<<s to ns>>
+\begin_inset Newline newline
+\end_inset
+
+<<I(t)>>
+\begin_inset Newline newline
+\end_inset
+
+<<Gaussian Pulse Parameters>>
+\begin_inset Newline newline
+\end_inset
+
+<<Gaussian Pulse>>
+\begin_inset Newline newline
+\end_inset
+
+<<Gaussian Pulse Default Values>>
+\begin_inset Newline newline
+\end_inset
+
+' GaussianPulse is I(t)
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Alternate profiles
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+<<below threshold>>
+\begin_inset Newline newline
+\end_inset
+
+<<above threshold>>
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ ' BelowThreshold is I(t)
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ ' AboveThreshold is I(t)
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Rate Equation Solver
+\end_layout
+
+\begin_layout Standard
+The rate equation solver for 
+\begin_inset Formula $\tilde{Y}(s)$
+\end_inset
+
+, 
+\begin_inset Formula $Z(s)$
+\end_inset
+
+, may now be written.
+ The output of the solver is the time, injection current, and the transformed
+ components of the state vector, computed at discrete time steps.
+ The rate equations, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns"
+
+\end_inset
+
+, are integrated using the fourth order Runge-Kutta method
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Press1994"
+
+\end_inset
+
+.
+ While an adaptive step size is much more efficient for integration, a fixed
+ step size is used here in anticipation of extending these calculations
+ to other problems in which the state vector needs to be computed at exact,
+ finely-spaced time intervals
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+One such problem is the Lang-Kobayashi model of a semiconductor laser with
+ optical feedback.
+\end_layout
+
+\end_inset
+
+.
+ Since the shortest time scale for the dynamical problem is set by 
+\begin_inset Formula $\tau_{p}$
+\end_inset
+
+ (see table
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tbl:laserparams"
+
+\end_inset
+
+), a time step of 
+\begin_inset Formula $\tau_{p}/10$
+\end_inset
+
+ is quite sufficient to accurately track the time dependence of 
+\begin_inset Formula $\tilde{Y}$
+\end_inset
+
+ and 
+\begin_inset Formula $Z$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Scrap
+<<time step>>=
+\begin_inset Newline newline
+\end_inset
+
+fvariable ds   
+\backslash
+ dimensionless time step
+\begin_inset Newline newline
+\end_inset
+
+0.1e ds f!     
+\backslash
+ actual time step (s) = t_p*ds
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Integration of the rate equations over a single time step,
+\begin_inset Formula \[
+\tilde{Y}(s),Z(s)\rightarrow\tilde{Y}(s+\Delta s),Z(s+\Delta s)\]
+
+\end_inset
+
+ is performed by the following code, which updates the values of 
+\begin_inset Formula $\tilde{Y}$
+\end_inset
+
+ and 
+\begin_inset Formula $Z$
+\end_inset
+
+ in the state vector.
+\end_layout
+
+\begin_layout Scrap
+<<integrate one time step>>=
+\begin_inset Newline newline
+\end_inset
+
+( F: s -- s+ds )
+\begin_inset Newline newline
+\end_inset
+
+  ds f@ sv{ 1 runge_kutta4_integrate()
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The state vector is always initialized at the beginning of the solver to
+ its 
+\begin_inset Formula $t=s=0$
+\end_inset
+
+ value: 
+\begin_inset Formula $\left|\tilde{Y}(0)\right|^{2}=2$
+\end_inset
+
+, 
+\begin_inset Formula $\phi(0)=0$
+\end_inset
+
+, 
+\begin_inset Formula $N(0)=N_{\mbox{{th}}}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Scrap
+<<initialize state vector>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ initial values of Re{Y}, Im{Y}, Z
+\begin_inset Newline newline
+\end_inset
+
+2e fsqrt 0e 0e  3 sv{ }fput
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Note that if 
+\begin_inset Formula $\tilde{Y}(0)=0$
+\end_inset
+
+, 
+\begin_inset Formula $\tilde{Y}(s)=0$
+\end_inset
+
+ for all 
+\begin_inset Formula $s$
+\end_inset
+
+ (see eqns.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:rateeqns"
+
+\end_inset
+
+), so a non-zero value of 
+\begin_inset Formula $\tilde{Y}(0)$
+\end_inset
+
+ is needed to start the dynamics.
+ Consider the source of the non-zero field in a real laser at the onset
+ of lasing.
+ 
+\end_layout
+
+\begin_layout Standard
+Once the initial values are set, the rate equation solver will compute and
+ output the laser intensity (arbitrary units), laser phase (units of 
+\begin_inset Formula $\pi$
+\end_inset
+
+), and normalized carrier density (dimensionless) for 20,000 normalized
+ time steps.
+ The total elapsed time is 
+\begin_inset Formula $t_{f}=20,000\tau_{p}\Delta s$
+\end_inset
+
+.
+ For example, using 
+\begin_inset Formula $\tau_{p}=4.5$
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+ps and 
+\begin_inset Formula $\Delta s=0.1$
+\end_inset
+
+, the final time will be 
+\begin_inset Formula $t_{f}=9$
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+ns.
+\end_layout
+
+\begin_layout Scrap
+<<solver>>=
+\begin_inset Newline newline
+\end_inset
+
+<<sv to i phi>>
+\begin_inset Newline newline
+\end_inset
+
+<<print sv>>
+\begin_inset Newline newline
+\end_inset
+
+<<time step>>
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: sl ( -- )
+\begin_inset Newline newline
+\end_inset
+
+    init-params                  
+\backslash
+ compute all derived parameters
+\begin_inset Newline newline
+\end_inset
+
+    <<initialize state vector>>
+\begin_inset Newline newline
+\end_inset
+
+    use( derivs-sl 3 )runge_kutta4_init
+\begin_inset Newline newline
+\end_inset
+
+    0e                           
+\backslash
+ F: -- s0
+\begin_inset Newline newline
+\end_inset
+
+    20000 0 DO                   
+\backslash
+ compute 20000 normalized time steps
+\begin_inset Newline newline
+\end_inset
+
+      fdup >ns fdup f.
+ 2 spaces  
+\backslash
+ output real-time in ns
+\begin_inset Newline newline
+\end_inset
+
+  	I(t) f.
+ 2 spaces	       
+\backslash
+ compute and output injection current
+\begin_inset Newline newline
+\end_inset
+
+      <<integrate one time step>>
+\begin_inset Newline newline
+\end_inset
+
+	  I 1 mod 0= IF  sv{ print-sv  THEN
+\begin_inset Newline newline
+\end_inset
+
+   LOOP
+\begin_inset Newline newline
+\end_inset
+
+   fdrop  runge_kutta4_done
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+User Interface
+\end_layout
+
+\begin_layout Standard
+All relevant parameters may be displayed by the word,
+\family sans
+ params.
+
+\family default
+ .
+ Individual laser parameters may be changed by storing new values in the
+ respective variables.
+ Derived parameters will be re-computed automatically at the start of the
+ calculation.
+ The main calculation may be executed by simply typing, 
+\family typewriter
+sl
+\family default
+ , at the Forth prompt.
+ The calculation will output the state of the laser at the discrete time
+ steps to the console.
+ The output columns are described in table
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tbl:sl-columns"
+
+\end_inset
+
+.
+ Some Forth systems provide a command to allow output to be redirected to
+ a file.
+ In the absence of a redirection command, the 
+\family typewriter
+script
+\family default
+ command in Linux may be used to record console output to a log file.
+\end_layout
+
+\begin_layout Scrap
+<<display parameters>>=
+\begin_inset Newline newline
+\end_inset
+
+: separator ( -- ) ." ==================================================="
+ ;
+\begin_inset Newline newline
+\end_inset
+
+: tab 9 emit ;
+\begin_inset Newline newline
+\end_inset
+
+: params.
+ ( -- )
+\begin_inset Newline newline
+\end_inset
+
+    cr
+\begin_inset Newline newline
+\end_inset
+
+    separator cr
+\begin_inset Newline newline
+\end_inset
+
+    ." Symbol" tab ." Parameter                     " tab ." Value"  cr
+\begin_inset Newline newline
+\end_inset
+
+    separator cr cr
+\begin_inset Newline newline
+\end_inset
+
+    ."  t_p  " tab ." Photon lifetime  (s):         " tab  t_p   f@ fs.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    ."  t_s  " tab ." Carrier lifetime (s):         " tab  t_s   f@ fs.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    ."  G_N  " tab ." Differential gain (cm^3/s):   " tab  G_N   f@ fs.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    ."  N_th " tab ." Thr.
+ carrier density (cm^-3): " tab  N_th  f@ fs.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    ."  I_th " tab ." Thr.
+ current (mA):            " tab  I_th  f@ f.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    ."  alpha" tab ." Linewidth enhancement factor: " tab  alpha f@ f.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    separator cr
+\begin_inset Newline newline
+\end_inset
+
+    ." Derived Dimensionless Parameters " cr
+\begin_inset Newline newline
+\end_inset
+
+    separator cr cr
+\begin_inset Newline newline
+\end_inset
+
+    ." t_s/t_p ratio: " tab T_ratio    f@ f.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    ." Pump factor: "   tab PumpFactor f@ f.
+ cr
+\begin_inset Newline newline
+\end_inset
+
+    separator cr
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="6" columns="2">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+No.
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Physical Quantity
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Time (ns)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Injection Current (mA)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Output Intensity (arb)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Phase (units of 
+\begin_inset Formula $\pi$
+\end_inset
+
+ radians)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Normalized Carrier Density Above Threshold
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Columns Output by 
+\family typewriter
+sl
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "tbl:sl-columns"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Main Program
+\end_layout
+
+\begin_layout Standard
+The main program is assembled.
+\end_layout
+
+\begin_layout Scrap
+<<sll.fs>>=
+\begin_inset Newline newline
+\end_inset
+
+<<include files>>
+\begin_inset Newline newline
+\end_inset
+
+<<laser parameters>>
+\begin_inset Newline newline
+\end_inset
+
+<<derived parameters>>
+\begin_inset Newline newline
+\end_inset
+
+<<display parameters>>
+\begin_inset Newline newline
+\end_inset
+
+<<injection current profile>>
+\begin_inset Newline newline
+\end_inset
+
+<<state vector>>
+\begin_inset Newline newline
+\end_inset
+
+<<rate equations>>
+\begin_inset Newline newline
+\end_inset
+
+<<solver>>
+\begin_inset Newline newline
+\end_inset
+
+init-params
+\begin_inset Newline newline
+\end_inset
+
+params.
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Version History
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2011-02-24
+\series default
+ 
+\shape italic
+KM
+\shape default
+, fixed typos and punctuation; reordered some text.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2011-02-22
+\series default
+ 
+\shape italic
+KM
+\shape default
+ rewritten in the literate programming style using LyX; corrected a mistake
+ in the value of 
+\begin_inset Formula $4\ln(2)$
+\end_inset
+
+, which was hard-coded as
+\family typewriter
+ 2.77066e; 
+\family default
+added constant current injection profiles.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2007-10-19
+\series default
+ 
+\shape italic
+KM
+\shape default
+ modified to use complex library, and FSL ODE solver.
+ This version is about 20% slower than the original, but the code simplifies
+ greatly.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2002-10-27
+\series default
+ 
+\shape italic
+KM
+\shape default
+ changed all instances of dfloat to float for ANS Forth portability.
+ Removed explicit fp number size dependence.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2002-10-24
+\series default
+ 
+\shape italic
+KM
+\shape default
+ fixed problem with the main loop; previously was not computing Vdot on
+ every loop iteration.
+ Also changed current pulse pos to 3
+\begin_inset space ~
+\end_inset
+
+ns.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2002-10-21
+\series default
+ 
+\shape italic
+KM
+\shape default
+ fixed time scale problem in 
+\family typewriter
+sl
+\family default
+ after problem was pointed out by Marcel Hendrix.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+2000-01-26
+\series default
+ 
+\shape italic
+KM
+\shape default
+ first version, based on 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Pethel2000"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "agrawal"
+
+\end_inset
+
+G.
+ P.
+ Agrawal and N.
+ K.
+ Dutta, 
+\shape italic
+Semiconductor Lasers
+\shape default
+, New York: Van Nostrand Reinhold (1993).
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "Pethel2000"
+
+\end_inset
+
+S.
+ D.
+ Pethel, 
+\shape italic
+C program for numerical solution of the semiconductor laser rate equations
+\shape default
+, unpublished (2000).
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "fsl"
+
+\end_inset
+
+Forth Scientific Library home page at 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+http://www.taygeta.com/fsl/sciforth.html
+\end_layout
+
+\end_inset
+
+ ; compatible modules are also provided at 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+ftp://ccreweb.org/software/fsl/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "myneni2008"
+
+\end_inset
+
+K.
+ Myneni, 
+\shape italic
+Phenomenological rate equations for a semiconductor laser
+\shape default
+, 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://ccreweb.org/documents/physics/amo/sl/rateqns.html
+\end_layout
+
+\end_inset
+
+ (2008).
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "sukow1997"
+
+\end_inset
+
+D.
+ W.
+ Sukow, 
+\shape italic
+Experimental Control of Instabilities and Chaos in Fast Dynamical Systems
+\shape default
+, PhD Thesis, Duke University (1997).
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "Press1994"
+
+\end_inset
+
+W.
+ H.
+ Press, S.
+ A.
+ Teukolsky, W.
+ T.
+ Vetterling, and B.
+ P.
+ Flannery, 
+\shape italic
+Numerical Recipes in C, 2nd ed.
+\shape default
+, Cambridge University Press (1994).
+\end_layout
+
+\end_body
+\end_document

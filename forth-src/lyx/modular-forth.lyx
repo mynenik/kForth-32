@@ -1,0 +1,4578 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass literate-article
+\options utf8x
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding utf8x
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes true
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\author -1892826167 "Krishna Myneni,,," 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+A Forth Modules System with Name Reuse
+\end_layout
+
+\begin_layout Author
+Krishna Myneni and David N.
+ Williams
+\end_layout
+
+\begin_layout Date
+15 February 2012
+\end_layout
+
+\begin_layout Scrap
+
+<<origin file>>=
+\begin_inset Newline newline
+\end_inset
+
+modular-forth.lyx
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+
+<<version>>=
+\begin_inset Newline newline
+\end_inset
+
+0.5.2
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+
+<<license>>=
+\begin_inset Newline newline
+\end_inset
+
+LGPL
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+
+<<copyright>>=
+\begin_inset Newline newline
+\end_inset
+
+Copyright (c) 2011--2012 Krishna Myneni and David N.
+ Williams
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+We provide a library to facilitate modular programming
+\begin_inset CommandInset citation
+LatexCommand cite
+key "wikipedia1"
+
+\end_inset
+
+ in Forth.
+ The primary rationale for the modules library is to,
+\end_layout
+
+\begin_layout Enumerate
+Provide a framework for writing reusable code
+\end_layout
+
+\begin_layout Enumerate
+Allow freedom to choose names appropriate to the task 
+\end_layout
+
+\begin_layout Enumerate
+Clearly define, and enforce (although not rigidly), an API
+\end_layout
+
+\begin_layout Enumerate
+Enable writing code with inter-module dependencies
+\end_layout
+
+\begin_layout Standard
+These features of the modules library are provided by 
+\shape italic
+named modules
+\shape default
+.
+ Modules use two separate name spaces (wordlists), one for their 
+\shape italic
+public
+\shape default
+ definitions and another for their 
+\shape italic
+private
+\shape default
+ definitions.
+ The public words of a module constitute its 
+\shape italic
+application programming interface
+\shape default
+, or API, while the private words are meant for internal use within the
+ module, and typically are not visible outside of the module.
+ In addition to named modules, another module type, 
+\shape italic
+unnamed modules,
+\shape default
+ is provided as a simple modules facility for Forth systems which cannot
+ support a large number of separate wordlists.
+ Unnamed modules place their public words in the current compilation wordlist,
+ and their private words into a single private wordlist.
+ Our library uses design features from several sources 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "williams2011,mcfarling2011,carter2008,bridges2006"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We will examine each of the features provided by the library.
+ First we note that features 1), 3), and 4) provide a systematic method
+ of organizing code for drop-in use within applications, similar to the
+ organization of modular code in traditional structured programming languages
+ used for modular programming, such as C.
+ Furthermore, feature 2) of our modules system provides capabilities commonly
+ associated with object-oriented programming (OOP), including
+\end_layout
+
+\begin_layout Enumerate
+full name reuse for public API words by different modules, without name
+ clash problems
+\end_layout
+
+\begin_layout Enumerate
+ability to write modules for an abstract API specification
+\end_layout
+
+\begin_layout Enumerate
+multiple instantiation of modules (similar to objects in OOP)
+\end_layout
+
+\begin_layout Standard
+Our library provides a practical working solution to the name clash problem,
+ encountered in large (or small) source development projects, using either
+ centrally managed or distributed development models.
+\end_layout
+
+\begin_layout Standard
+Although, by itself, our library does not provide a convenient object-oriented
+ framework for Forth, it provides a bridge between traditional modular programmi
+ng and full object-oriented methods.
+ We also demonstrate how our modules system may be used to provide name
+ space isolation
+\begin_inset CommandInset citation
+LatexCommand cite
+key "myneni2011"
+
+\end_inset
+
+ to a simple object-oriented Forth (OOF) implementation
+\begin_inset CommandInset citation
+LatexCommand cite
+key "paysan2008"
+
+\end_inset
+
+, which does not permit name reuse on its own.
+\end_layout
+
+\begin_layout Subsection
+The Case for Name Reuse
+\end_layout
+
+\begin_layout Standard
+Bjarne Stroustrup, the inventor of the C++ language, commented that while
+ the C language 
+\shape italic
+enables
+\shape default
+ the paradigm of modular programming, it does not 
+\shape italic
+support
+\shape default
+ modular programming
+\begin_inset CommandInset citation
+LatexCommand cite
+key "stroustrup1991"
+
+\end_inset
+
+.
+ Here, the term 
+\shape italic
+support
+\shape default
+ means to go beyond just the theoretical possibility of such programming,
+ but also to make such programming convenient.
+ Similary, standard Forth and other Forth modular programming libraries
+ may enable the reuse of API word names, but they do not support such reuse.
+ What are the programming problems which will be alleviated by providing
+ support for both modular programming and for reuse of word names in the
+ APIs of modules? To answer this question, we consider two examples of well-know
+n Forth libraries which are collections of source modules, the 
+\shape italic
+Forth Scientific Library
+\shape default
+ (FSL)
+\begin_inset CommandInset citation
+LatexCommand cite
+key "fsl-2011"
+
+\end_inset
+
+ and the 
+\shape italic
+Forth Foundation Library
+\shape default
+ (FFL)
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ffl-2010"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Forth Scientific Library
+\end_layout
+
+\begin_layout Standard
+The FSL is comprised of over 60 individual modules, featuring numeric algorithms
+ for scientific and engineering use.
+ It has been developed over more than a decade by various authors, working
+ independently for the most part.
+ The FSL provides a simple modules system in its auxiliary file
+\begin_inset CommandInset citation
+LatexCommand cite
+key "carter2008"
+
+\end_inset
+
+, similar to the unnamed modules provision of our library.
+ All private words of a module are compiled into a single wordlist.
+ A notably inconvenient omission in the FSL modules facility is the ability
+ to declare the beginning of a module.
+ FSL modules which use the provided modules facility terminate the module
+ with the word, 
+\family typewriter
+Reset-Search-Order
+\family default
+, which resets the search order to the Forth wordlist.
+ This brute-force approach leads to problems for any application attempting
+ to load FSL modules with other vocabularies or wordlists added previously
+ to the search order.
+ A cardinal rule emerges from this lesson learned from the FSL:
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+Loading of a module into the Forth environment should preserve the existing
+ search order
+\shape default
+.
+\end_layout
+
+\begin_layout Standard
+All public words of an FSL module are compiled into the current compilation
+ wordlist.
+ Therefore, it is possible for public word names of one module to mask the
+ public words of another module.
+ An author of a new module could either devote extensive effort to studying
+ the existing library contents and then attempt to avoid name clashes, or,
+ more likely, leave it to the user of the library to resolve any such conflicts.
+ Either way, the manual management of names is particularly problematic
+ when the authors are independent, and the development is distributed.
+\end_layout
+
+\begin_layout Standard
+Support for name reuse allows independent development of reusable code,
+ without concern for name clashes.
+ Consider the case where two module developers, Alice and Bob, are working
+ independently on their respective modules, A and B.
+ Neither developer is constrained in their choices for API word names, by
+ the choices made by the other, nor do the two need to be directed by any
+ central authority to use a particular naming convention.
+ Alice and Bob use the names most appropriate for their particular module's
+ API.
+ A third developer, Deepa, may write her module, D, which depends on both
+ A and B, and refer to the names in A, B, and D, without ambiguity even
+ if there are overlapping names.
+ Furthermore, Deepa can even write her module in such a manner that if either
+ Alice or Bob revises her/his module to provide additional API names, the
+ code in D will not break due to name clashes.
+\end_layout
+
+\begin_layout Standard
+Next, we consider the benefits of name reuse for module libraries developed
+ through a centralized development model, which typically do not have the
+ problem of name clashes since strict naming conventions are often defined
+ and enforced.
+ An example of this is the Forth Foundation Library, discussed below.
+\end_layout
+
+\begin_layout Subsubsection
+Forth Foundation Library
+\end_layout
+
+\begin_layout Standard
+The FFL is another example of a library comprised of many individual modules.
+ In this case, the library was written by a single author.
+ In the FFL, no modules system is used, and there are no public or private
+ wordlists.
+ All definitions are compiled into the current compilation wordlist.
+ Word names are prefixed to indicate the operand type, e.g.
+ words for working with 
+\shape italic
+singly-linked lists
+\shape default
+ are prefaced by 
+\begin_inset Quotes eld
+\end_inset
+
+snl-
+\begin_inset Quotes erd
+\end_inset
+
+, e.g.
+ 
+\family typewriter
+snl-new, snl-init,
+\family default
+ etc., while words for accessing or manipulating generic 
+\shape italic
+binary trees
+\shape default
+ are prefixed with 
+\begin_inset Quotes eld
+\end_inset
+
+bnt-
+\begin_inset Quotes erd
+\end_inset
+
+, e.g.
+ 
+\family typewriter
+bnt-new
+\family default
+, 
+\family typewriter
+bnt-init
+\family default
+, and so on.
+\end_layout
+
+\begin_layout Standard
+Consider the following word definition from the FFL module, 
+\family typewriter
+snl.fs
+\family default
+.
+\end_layout
+
+\begin_layout LyX-Code
+: snl-remove-first   ( snl -- snn | nil )
+\end_layout
+
+\begin_layout LyX-Code
+  dup snl-first@
+\end_layout
+
+\begin_layout LyX-Code
+  dup nil<> IF               
+\backslash
+ If first <> nil Then     
+\end_layout
+
+\begin_layout LyX-Code
+    2dup snn-next@
+\end_layout
+
+\begin_layout LyX-Code
+    dup nil= IF              
+\backslash
+   If first.next = nil Then
+\end_layout
+
+\begin_layout LyX-Code
+      over snl>last nil!     
+\backslash
+     last.nil     
+\end_layout
+
+\begin_layout LyX-Code
+    THEN
+\end_layout
+
+\begin_layout LyX-Code
+    swap snl>first !         
+\backslash
+   first = first.next     
+\end_layout
+
+\begin_layout LyX-Code
+    swap snl>length 1-!      
+\backslash
+   length--   
+\end_layout
+
+\begin_layout LyX-Code
+  ELSE
+\end_layout
+
+\begin_layout LyX-Code
+    nip   
+\end_layout
+
+\begin_layout LyX-Code
+  THEN ;
+\end_layout
+
+\begin_layout Standard
+The above word removes the first node of a singly-linked list.
+ Using our modules system, this word would be a member of the named module,
+ 
+\family typewriter
+ffl-snl
+\family default
+, and written as,
+\end_layout
+
+\begin_layout LyX-Code
+: remove-first   ( snl -- snn | nil )
+\end_layout
+
+\begin_layout LyX-Code
+  dup first@
+\end_layout
+
+\begin_layout LyX-Code
+  dup nil<> IF               
+\backslash
+ If first <> nil Then
+\end_layout
+
+\begin_layout LyX-Code
+    2dup next@
+\end_layout
+
+\begin_layout LyX-Code
+    dup nil= IF              
+\backslash
+   If first.next = nil Then
+\end_layout
+
+\begin_layout LyX-Code
+      over >last nil!        
+\backslash
+     last.nil     
+\end_layout
+
+\begin_layout LyX-Code
+    THEN
+\end_layout
+
+\begin_layout LyX-Code
+    swap >first !            
+\backslash
+   first = first.next
+\end_layout
+
+\begin_layout LyX-Code
+    swap >length 1-!         
+\backslash
+   length--   
+\end_layout
+
+\begin_layout LyX-Code
+  ELSE     
+\end_layout
+
+\begin_layout LyX-Code
+    nip
+\end_layout
+
+\begin_layout LyX-Code
+  THEN ;
+\end_layout
+
+\begin_layout Standard
+All name prefixes, 
+\family typewriter
+snl-
+\family default
+ in the above example, may be eliminated, leading to greater readability
+ of the code, 
+\shape italic
+and
+\shape default
+ without concern for name clashes! Furthermore, the non-prefixed words such
+ as
+\family typewriter
+ NEW
+\family default
+, 
+\family typewriter
+INIT
+\family default
+, 
+\family typewriter
+INSERT
+\family default
+, 
+\family typewriter
+DELETE
+\family default
+, 
+\family typewriter
+GET
+\family default
+, 
+\family typewriter
+CLEAR
+\family default
+, 
+\family typewriter
+LENGTH@
+\family default
+, and 
+\family typewriter
+EMPTY?
+\family default
+, are common API words for both binary trees and singly-linked lists in
+ the FFL.
+ Thus, a 
+\shape italic
+generic interface
+\shape default
+ may be provided for a set of modules requiring similar application interfaces.
+\end_layout
+
+\begin_layout Standard
+In summary,
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+Support for name reuse allows independent development of reusable code,
+ and permits writing more comprehensible code using generic interfaces.
+\end_layout
+
+\begin_layout Subsection
+Search Order Utilities
+\end_layout
+
+\begin_layout Standard
+We begin the development of our modules library by noting that public and
+ private words of a module are grouped into different wordlists, and the
+ switching among these wordlists in the search order requires convenient
+ utilities: pushing and popping wordlists to/from the search order, obtaining
+ and setting the search order depth, and saving and restoring the search
+ order state.
+ Additionally, saving and restoring the compilation wordlist is a necessary
+ utility, and is included as part of the utilities.
+\end_layout
+
+\begin_layout Scrap
+
+<<search order utilities>>=
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] drops [IF]
+\begin_inset Newline newline
+\end_inset
+
+  : drops ( +n -- ) 0 ?DO drop LOOP ;
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] order-drops [IF]
+\begin_inset Newline newline
+\end_inset
+
+  : order-drops  ( +n -- ) ( o: wid_n ...
+ wid_1 -- )
+\begin_inset Newline newline
+\end_inset
+
+      0 ?DO previous LOOP ;
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] order-depth [IF]
+\begin_inset Newline newline
+\end_inset
+
+  : order-depth  ( -- n )  get-order dup >r drops r> ;
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] >order [IF]
+\begin_inset Newline newline
+\end_inset
+
+  : >order  ( wid -- order: wid )
+\begin_inset Newline newline
+\end_inset
+
+      >r get-order r> swap 1+ set-order ;
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] order> [IF]
+\begin_inset Newline newline
+\end_inset
+
+  : order>  ( o: wid -- ) ( -- wid )
+\begin_inset Newline newline
+\end_inset
+
+      get-order swap >r 1- set-order r> ;
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+[UNDEFINED] order@ [IF]  
+\backslash
+ not used here
+\begin_inset Newline newline
+\end_inset
+
+  : order@  ( o: wid -- ) ( -- wid )
+\begin_inset Newline newline
+\end_inset
+
+      get-order over >r drops r> ;
+\begin_inset Newline newline
+\end_inset
+
+[THEN]
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Scrap
+
+<<search order state utils>>=
+\begin_inset Newline newline
+\end_inset
+
+VARIABLE initial-defs
+\begin_inset Newline newline
+\end_inset
+
+VARIABLE initial-order-depth
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: save-SO-state ( -- )
+\begin_inset Newline newline
+\end_inset
+
+	get-current  initial-defs !
+\begin_inset Newline newline
+\end_inset
+
+	order-depth  initial-order-depth !
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: restore-SO-state ( -- )
+\begin_inset Newline newline
+\end_inset
+
+	initial-defs @ set-current
+\begin_inset Newline newline
+\end_inset
+
+	order-depth initial-order-depth @ - order-drops
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section
+Modules
+\end_layout
+
+\begin_layout Standard
+The modules library provides the following elements for writing and working
+ with Forth modules:
+\end_layout
+
+\begin_layout Subsection
+Types and Layout
+\end_layout
+
+\begin_layout Standard
+The layout of a module is specified by the following words,
+\end_layout
+
+\begin_layout LyX-Code
+MODULE:  BEGIN-MODULE  PUBLIC:  PRIVATE:  END-MODULE
+\end_layout
+
+\begin_layout Standard
+The word 
+\family typewriter
+MODULE:
+\family default
+ declares the name of a module, and is usually the first statement in a
+ Forth module source file.
+ The 
+\family typewriter
+MODULE:
+\family default
+ declaration is not used when an unnamed module is desired.
+
+\family typewriter
+ BEGIN-MODULE
+\family default
+ is where the module begins, and 
+\family typewriter
+END-MODULE
+\family default
+ is where it ends.
+ The code area between the two is the 
+\shape italic
+body
+\shape default
+ of the module.
+ Within the body, the words 
+\family typewriter
+PUBLIC:
+\family default
+ and 
+\family typewriter
+PRIVATE:
+\family default
+ control the visibility of the module code to the module's user, the application
+ programmer.
+\end_layout
+
+\begin_layout Subsubsection
+Unnamed Modules
+\end_layout
+
+\begin_layout Standard
+The simplest type of module is an unnamed module.
+ For this type of module, no module name is declared, i.e.
+ the word 
+\family typewriter
+MODULE:
+\family default
+ is absent.
+\end_layout
+
+\begin_layout LyX-Code
+BEGIN-MODULE
+\end_layout
+
+\begin_layout LyX-Code
+
+\backslash
+ ...
+\end_layout
+
+\begin_layout LyX-Code
+Public:
+\end_layout
+
+\begin_layout LyX-Code
+
+\backslash
+ ...
+\end_layout
+
+\begin_layout LyX-Code
+END-MODULE
+\end_layout
+
+\begin_layout Standard
+The module's public words (API) are compiled into the current compilation
+ wordlist, while the module's private words (internals) are placed into
+ a separate 
+\family typewriter
+Private-Words
+\family default
+ wordlist.
+ Both the current compilation and 
+\family typewriter
+Private-Words
+\family default
+ wordlists are pushed onto the search order by 
+\family typewriter
+BEGIN-MODULE
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+
+<<unnamed private words>>=
+\begin_inset Newline newline
+\end_inset
+
+wordlist  CONSTANT  Private-Words
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Since 
+\shape italic
+all
+\shape default
+ unnamed modules place their private words into 
+\family typewriter
+Private-Words
+\family default
+, it is possible for private words from one module to redefine the names
+ of private words from a previously loaded module.
+ Name redefinitions pose no problem for proper execution of the API words.
+ Indeed, it is common Forth practice to reuse names of words which are required
+ only locally, e.g.
+ temporary variables.
+ However, redefinitions of words hide earlier definitions from inspection
+ or calling by the user, and this may cause difficulty in debugging hidden
+ words from within the Forth environment.
+ 
+\end_layout
+
+\begin_layout Standard
+In practice, an issue of greater concern with unnamed modules is that the
+ API words are placed in the current compilation wordlist.
+ Thus,
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+Name reuse for API words in different modules is not guaranteed to be possible
+ with unnamed modules.
+\end_layout
+
+\begin_layout Standard
+The latter problem leads to poor programming practices such as name prefixing,
+ and the consequent drawbacks for applications programming.
+ In general, unnamed modules are only recommended for use when the target
+ Forth systems are severely constrained in the number of wordlists they
+ can provide to the user.
+ Named modules should be used where no such practical restrictions exist.
+\end_layout
+
+\begin_layout Subsubsection
+Named Modules
+\end_layout
+
+\begin_layout Standard
+Named modules simply have the module name declaration prior to 
+\family typewriter
+BEGIN-MODULE
+\family default
+, e.g.
+\end_layout
+
+\begin_layout LyX-Code
+MODULE: Foo
+\end_layout
+
+\begin_layout LyX-Code
+BEGIN-MODULE
+\end_layout
+
+\begin_layout LyX-Code
+
+\backslash
+ ...
+\end_layout
+
+\begin_layout LyX-Code
+Public:
+\end_layout
+
+\begin_layout LyX-Code
+
+\backslash
+ ...
+\end_layout
+
+\begin_layout LyX-Code
+END-MODULE
+\end_layout
+
+\begin_layout Standard
+Since each named module has its own distinct pair of wordlists for its API
+ words and internal words, it is possible to
+\end_layout
+
+\begin_layout Enumerate
+reuse API word names
+\end_layout
+
+\begin_layout Enumerate
+inspect and call module-specific private words from the Forth environment.
+ 
+\end_layout
+
+\begin_layout Standard
+The first possibility allows application programming with generic interfaces,
+ thereby decoupling the interface to the module from its specific implementation.
+ Several OOP-like features arise from this possibility, and these features
+ will be discussed elsewhere.
+ The second possibility is accomplished by retrieving the private wordlist
+ id of the module and placing it on top of the search order, e.g.
+\end_layout
+
+\begin_layout LyX-Code
+' Foo >private >order
+\end_layout
+
+\begin_layout Standard
+where the definition of 
+\family typewriter
+>PRIVATE
+\family default
+ is given in section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Public-and-Private"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Named Module Declaration
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Named-Module-Declaration"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Named modules are declared with,
+\end_layout
+
+\begin_layout LyX-Code
+MODULE: <module_name>
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+MODULE:
+\family default
+ also saves the search order depth and current compilation wordlist, for
+ automatic restoration at the end of the module.
+\end_layout
+
+\begin_layout Scrap
+
+<<module declaration>>=
+\begin_inset Newline newline
+\end_inset
+
+VARIABLE named-module   0 named-module !
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: make-module ( "name" -- )
+\begin_inset Newline newline
+\end_inset
+
+	CREATE  here 0 , 0 , 0 , named-module !
+\begin_inset Newline newline
+\end_inset
+
+	DOES>  ( o: wid' -- wid )  @ >r get-order nip r> swap set-order ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: MODULE:  ( "name" -- )
+\begin_inset Newline newline
+\end_inset
+
+	save-SO-state
+\begin_inset Newline newline
+\end_inset
+
+	MODULES-WORDLIST set-current
+\begin_inset Newline newline
+\end_inset
+
+	make-module
+\begin_inset Newline newline
+\end_inset
+
+    
+\begin_inset Newline newline
+\end_inset
+
+	initial-defs @ set-current
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+   
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The word 
+\family typewriter
+MODULE:
+\family default
+ creates the module name as a word in the reserved wordlist, 
+\family typewriter
+MODULES-WORDLIST
+\family default
+, and reserves space to store the public and private wordlist ids.
+ Space is also reserved to store the address of a list of dependent modules,
+ for future implementation.
+ 
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+An important feature of the execution behavior of the module name is that
+ it has the same behavior as a Forth-83 vocabulary name.
+\end_layout
+
+\begin_layout Standard
+Executing the module name will replace the top wordlist in the search order
+ with the wordlist containing the API words of the module.
+ Hence, to append a module's API (public wordlist) to the current search
+ order, one may simply write,
+\end_layout
+
+\begin_layout LyX-Code
+ALSO <module_name>
+\end_layout
+
+\begin_layout Standard
+This isomorphism allows us to treat the Forth-94 standard words, 
+\family typewriter
+FORTH
+\family default
+ and 
+\family typewriter
+ASSEMBLER
+\family default
+ , in nearly the same way as a module name, a feature which will prove beneficia
+l for word name reuse and resolving word references within named modules.
+\end_layout
+
+\begin_layout Subsubsection
+The Modules Wordlist
+\end_layout
+
+\begin_layout Standard
+All module names are compiled into a separate wordlist, referenced by the
+ constant, 
+\family typewriter
+MODULES-WORDLIST
+\family default
+, and added to the search order at the time that the modules library is
+ loaded.
+ Henceforth, 
+\family typewriter
+MODULES-WORDLIST
+\family default
+ must remain in the search order for named modules to be found.
+ 
+\family typewriter
+MODULES-WORDLIST
+\family default
+ 
+\shape italic
+is reserved for use by the modules library, and should not be used as a
+ compilation wordlist for any other purpose
+\shape default
+.
+ In general, this wordlist should be transparent to the application programmer
+ or user, and direct use of 
+\family typewriter
+MODULES-WORDLIST
+\family default
+ is discouraged.
+ However, in an interactive Forth environment, it may be necessary at times
+ to manually push 
+\family typewriter
+MODULES-WORDLIST
+\family default
+ onto the search order, e.g.
+ after a search order reset such as the statement, 
+\family typewriter
+ONLY FORTH
+\family default
+.
+ A Forth-83 vocabulary style word, 
+\family typewriter
+MODULES
+\family default
+, is provided for use with 
+\family typewriter
+ALSO
+\family default
+ to accomplish this.
+\end_layout
+
+\begin_layout Scrap
+
+<<modules wordlist>>=
+\begin_inset Newline newline
+\end_inset
+
+wordlist  constant  MODULES-WORDLIST
+\begin_inset Newline newline
+\end_inset
+
+MODULES-WORDLIST >order
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: MODULES ( -- )  get-order nip MODULES-WORDLIST swap set-order ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The following two statements are, therefore, equivalent.
+\end_layout
+
+\begin_layout LyX-Code
+MODULES-WORDLIST >order
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+ALSO MODULES  
+\backslash
+ equivalent to above
+\end_layout
+
+\begin_layout Standard
+Either syntax may be used -- the latter is already familiar to Forth programmers.
+\end_layout
+
+\begin_layout Standard
+Organization of the named modules into a separate wordlist makes it possible
+ to provide a simple and convenient way for the programmer to view the modules
+ which have been loaded into the Forth environment.
+ This is done with 
+\family typewriter
+SHOW-MODULES
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+
+<<show modules>>=
+\begin_inset Newline newline
+\end_inset
+
+: show-modules ( -- )  
+\backslash
+ Display all loaded modules
+\begin_inset Newline newline
+\end_inset
+
+	MODULES-WORDLIST >order  words  PREVIOUS ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+Public and Private Wordlists
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Public-and-Private"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For named modules, the module name word has a body which stores both the
+ public and private wordlist ids (wids).
+ These two wordlists are newly created when 
+\family typewriter
+BEGIN-MODULE
+\family default
+ is encountered.
+ The corresponding wids are also stored within the body of the module name
+ word.
+\end_layout
+
+\begin_layout Scrap
+
+<<new wordlists>>=
+\begin_inset Newline newline
+\end_inset
+
+wordlist    
+\backslash
+ new private wordlist
+\begin_inset Newline newline
+\end_inset
+
+wordlist    
+\backslash
+ new public wordlist
+\begin_inset Newline newline
+\end_inset
+
+2dup named-module @ 2!
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Direct access to a named module's wids may be needed to support debugging
+ and testing.
+ For example, we may wish to add a module's private wordlist, which is not
+ accessible directly, to the search order.
+ It is possible to retrieve both public and private wids simply from the
+ execution token (xt) of the module name, e.g., for the module named 
+\family typewriter
+Foo
+\family default
+,
+\end_layout
+
+\begin_layout LyX-Code
+' Foo >public     
+\backslash
+ obtain Foo's public wid
+\end_layout
+
+\begin_layout LyX-Code
+' Foo >private    
+\backslash
+ obtain Foo's private wid
+\end_layout
+
+\begin_layout Standard
+The words 
+\family typewriter
+>PUBLIC
+\family default
+ and 
+\family typewriter
+>PRIVATE
+\family default
+ have simple definitions:
+\end_layout
+
+\begin_layout Scrap
+
+<<module wordlist primitives>>=
+\end_layout
+
+\begin_layout Scrap
+
+: >public  ( xtmodule -- wid )  >body @ ;
+\end_layout
+
+\begin_layout Scrap
+
+: >private ( xtmodule -- wid )  >body cell+ @ ;
+\end_layout
+
+\begin_layout Scrap
+
+@
+\end_layout
+
+\begin_layout Standard
+All unnamed modules use a single separate wordlist for their private definitions
+, referenced by the constant, 
+\family typewriter
+Private-Words
+\family default
+.
+ The public wordlist used by an unnamed module is simply the current compilation
+ wordlist.
+ Therefore, retrieval of the pair of existing public and private wordlists
+ for an unnamed module is accomplished by,
+\end_layout
+
+\begin_layout Scrap
+
+<<existing wordlists>>=
+\begin_inset Newline newline
+\end_inset
+
+Private-Words
+\begin_inset Newline newline
+\end_inset
+
+get-current
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+Start of the Module
+\end_layout
+
+\begin_layout Standard
+The start of the body of a module is declared by 
+\family typewriter
+BEGIN-MODULE
+\family default
+.
+ Subsequently defined words are compiled into either the module's private
+ or public wordlists.
+ Prior to modifying the search order and compilation wordlist, 
+\family typewriter
+BEGIN-MODULE
+\family default
+ also saves information which allows 
+\family typewriter
+END-MODULE
+\family default
+ to restore the initial search order depth and initial compilation wordlist.
+\end_layout
+
+\begin_layout Scrap
+
+<<set public private>>=
+\begin_inset Newline newline
+\end_inset
+
+( wid_private wid_public -- )  public-defs !  private-defs !
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Scrap
+
+<<begin module>>=
+\begin_inset Newline newline
+\end_inset
+
+VARIABLE private-defs  0 private-defs !
+\begin_inset Newline newline
+\end_inset
+
+VARIABLE public-defs   0 public-defs  !
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: BEGIN-MODULE  ( -- ) ( o: -- public private )
+\begin_inset Newline newline
+\end_inset
+
+    named-module @ if
+\begin_inset Newline newline
+\end_inset
+
+      <<new wordlists>>
+\begin_inset Newline newline
+\end_inset
+
+    else
+\begin_inset Newline newline
+\end_inset
+
+      save-SO-state
+\begin_inset Newline newline
+\end_inset
+
+      <<existing wordlists>>
+\begin_inset Newline newline
+\end_inset
+
+    then
+\begin_inset Newline newline
+\end_inset
+
+    2dup <<set public private>>
+\begin_inset Newline newline
+\end_inset
+
+    2dup  >order  >order
+\begin_inset Newline newline
+\end_inset
+
+    drop set-current    
+\backslash
+ default section is private
+\begin_inset Newline newline
+\end_inset
+
+;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+The public and private wordlists are pushed onto the search order, and the
+ private wordlist is set to be the current compilation wordlist.
+\end_layout
+
+\begin_layout Subsection
+Body of the Module
+\end_layout
+
+\begin_layout Standard
+The body of the module is the code section between 
+\family typewriter
+BEGIN-MODULE
+\family default
+ and 
+\family typewriter
+END-MODULE
+\family default
+.
+ Defined words in the body of a module are compiled into either the module's
+ public or private wordlists.
+ The word 
+\family typewriter
+PUBLIC:
+\family default
+ declares that subsequent definitions will be placed in the public wordlist,
+ while the word 
+\family typewriter
+PRIVATE:
+\family default
+ declares subsequent definitions will be placed into the private wordlist.
+ 
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+The public words of a module constitute its API to the user or application
+ programmer.
+ Private words are for internal use within the module, and are not intended
+ to be used by external code.
+
+\shape default
+ 
+\end_layout
+
+\begin_layout Standard
+Private words may be internal data manipulated by the module code, along
+ with helper words which are useful factors of the public words.
+ Following 
+\family typewriter
+BEGIN-MODULE
+\family default
+, the compilation wordlist is set to the private wordlist.
+\end_layout
+
+\begin_layout Standard
+The declarations,
+\family typewriter
+ PRIVATE:
+\family default
+ and 
+\family typewriter
+PUBLIC:
+\family default
+, should occur only within the body of a module, and may be invoked any
+ number of times there, and in any order.
+\end_layout
+
+\begin_layout Scrap
+
+<<body declarations>>=
+\begin_inset Newline newline
+\end_inset
+
+: not-in-module ( -- ) ."  Not in Module Body!" cr ABORT ;
+\begin_inset Newline newline
+\end_inset
+
+: safe-set-current ( wid -- ) 
+\begin_inset Newline newline
+\end_inset
+
+	?dup IF set-current ELSE not-in-module THEN ;
+\begin_inset Newline newline
+\end_inset
+
+: PRIVATE:  ( -- )  private-defs @  safe-set-current ;
+\begin_inset Newline newline
+\end_inset
+
+: PUBLIC:   ( -- )  public-defs  @  safe-set-current ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+End of the Module
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:End-of-the-Module"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The task of 
+\family typewriter
+END-MODULE
+\family default
+ is relatively simple: restore the initial search order depth and the initial
+ compilation wordlist, and reset the public and private wordlist variables
+ to a known state.
+ It also resets the variable, 
+\family typewriter
+named-module
+\family default
+, the contents of which are used to determine which type of module is being
+ used for the next use of 
+\family typewriter
+BEGIN-MODULE
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+
+<<end module>>=
+\begin_inset Newline newline
+\end_inset
+
+: END-MODULE  ( o: <extras> -- )
+\begin_inset Newline newline
+\end_inset
+
+    restore-SO-state
+\begin_inset Newline newline
+\end_inset
+
+	0 named-module !
+\begin_inset Newline newline
+\end_inset
+
+	0 private-defs !
+\begin_inset Newline newline
+\end_inset
+
+	0 public-defs  ! ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+If search order manipulations performed after the module name declaration,
+ 
+\family typewriter
+MODULE:
+\family default
+ , or between 
+\family typewriter
+BEGIN-MODULE
+\family default
+ and 
+\family typewriter
+END-MODULE
+\family default
+, only have the effect of adding additional wordlists to the search order,
+ the initial search order will be restored by 
+\family typewriter
+END-MODULE
+\family default
+.
+ An ambiguous search order state exists if the initial search order has
+ been modified, instead of just added to.
+\end_layout
+
+\begin_layout Subsection
+Restrictions
+\end_layout
+
+\begin_layout Standard
+A few restrictions of the present modules library are important to note:
+\end_layout
+
+\begin_layout Enumerate
+The module layout is not nestable.
+\end_layout
+
+\begin_layout Enumerate
+The part of the search order present immediately before the module declaration
+ may not be changed inside the module.
+\end_layout
+
+\begin_layout Standard
+While restriction 1) is not inherent to the modules system, but rather a
+ restriction based on our current implementation, there is presently no
+ compelling reason to allow modules to be nested.
+ Restriction 2) is intended to avoid any side effects on the state of the
+ system due to the module code.
+ Since the search order depth and compilation wordlist just before 
+\family typewriter
+MODULE:
+\family default
+ (or just before 
+\family typewriter
+BEGIN-MODULE
+\family default
+ for unnamed modules) are restored by 
+\family typewriter
+END-MODULE
+\family default
+, this restriction allows for the initial search order to be extended within
+ the module body, and restored to the initial state after 
+\family typewriter
+END-MODULE
+\family default
+.
+ The integrity of the system search order state could be made safer by actually
+ saving and restoring the initial search order.
+ However, our implementation does not do that.
+\end_layout
+
+\begin_layout Section
+Programming with Modules
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Programming-with-Modules"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+An important feature of our modules system, and one which distinguishes
+ our system from prior systems, is support for name reuse of API words.
+ As a general rule,
+\end_layout
+
+\begin_layout Quote
+W
+\shape italic
+e advise against using the names of standard Forth words as module member
+ word names
+\shape default
+.
+\end_layout
+
+\begin_layout Standard
+For example, it is not advisable to use the words 
+\family typewriter
+CREATE
+\family default
+ and 
+\family typewriter
+FREE
+\family default
+ as API names.
+ In contrast, generic words such as those shown in Table
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Reusable-words"
+
+\end_inset
+
+ often provide the clearest API names in various contexts, and may be considered
+ for reuse in different modules, where such names are sensible choices.
+ When a class of modules requires the same high-level API, a generic module
+ may provide an 
+\shape italic
+abstract interface 
+\shape default
+layer, consisting of such generic words, for use by the application.
+ An example is an application which communicates with devices across different
+ hardware interfaces, but using a common software interface, e.g.
+ a graphics program for generating output on various graphics devices.
+ 
+\end_layout
+
+\begin_layout Standard
+When a word name appears in multiple wordlists, there exists a dependency
+ on the current search order for references to the word.
+ Manipulation of the search order is necessary to ensure that the desired
+ word is compiled.
+ Such manipulation can be accomplished with standard Forth, but it may be
+ cumbersome to do so.
+ A similar issue also arises for conditional definitions of words.
+ Our modules system provides operators to directly reference a word within
+ a named module, and to test for membership of a word within a module.
+ Use of these reference operators effectively bypasses the problem of search
+ order dependency and improves the readability of the code.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="11" columns="7">
+<features tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<column alignment="left" valignment="top" width="0pt">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Get
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063517
+New
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Open
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062870
+Commit
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329005055
+Setup
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062994
+Show
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063034
+Solve
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Insert
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063523
+Empty
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Close
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062873
+Verify
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329065639
+Home
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062997
+Display
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063041
+Calc
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Delete
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063699
+Equals
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Read
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062886
+Lock
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329065756
+Track
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063014
+Draw
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063045
+Step
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Copy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063763
+Set
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Write
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062890
+Unlock
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329005146
+Start
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084698
+Refresh
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063105
+Integrate
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Append
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063910
+Index
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Clear
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063730
+Enable
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329005149
+Stop
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084765
+Rotate
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063977
+Reduce
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Put
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064041
+Position
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Init
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Disable
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062968
+Acquire
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084986
+Flush
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064690
+Interpolate
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329006660
+Length
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064258
+Print
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062742
+Reset
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063735
+Assign
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062972
+Sample
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084990
+Sync
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064702
+Fit
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062613
+First
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064365
+Sort
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062755
+Send
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064564
+Detach
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329065645
+Accumulate
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329085025
+Query
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064728
+Tolerance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062627
+Last
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064558
+Remove
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062759
+Receive
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329063755
+Select
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084570
+Store
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329085073
+Clip
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329065539
+Iterate
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062698
+Push
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064856
+Modify
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062793
+Connect
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064491
+Listen
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084575
+Retrieve
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329085077
+Offset
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329065552
+Use
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062713
+Pop
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329065415
+Exchange
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329062832
+Status
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329064493
+Talk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329084906
+Configure
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\change_inserted -1892826167 1329085277
+Mask
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Zero
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Generic API word name examples.
+ 
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Reusable-words"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Modular programming must also take into account dependencies between modules.
+ The dependencies among modules may be depicted using a 
+\shape italic
+dependency graph
+\shape default
+, as shown in Figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moddeps-1"
+
+\end_inset
+
+.
+ Module dependencies affect both the 
+\shape italic
+load sequence
+\shape default
+ of modules, and search order setup required for the successful loading
+ of a module.
+ We discuss the implication of word name reuse for effective search order
+ setup needed by a module.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+setlength{
+\backslash
+unitlength}{.5mm}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{picture}(100, 140)
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+newsavebox{
+\backslash
+module}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+savebox{
+\backslash
+module}(25, 20)[l]{   
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+multiput(0, 0)(0, 20){2}{
+\backslash
+line(1, 0){25}}   
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+multiput(0, 0)(25, 0){2}{
+\backslash
+line(0, 1){20}}
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+multiput(10,90)(40, 0){3}{
+\backslash
+usebox{
+\backslash
+module}} % modules a,b,c
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(10,50){
+\backslash
+usebox{
+\backslash
+module}} % module d
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(50,10){
+\backslash
+usebox{
+\backslash
+module}} % module e
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(20,98){A}  
+\backslash
+put(60,98){B}  
+\backslash
+put(100,98){C}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(20,58){D}  
+\backslash
+put(60,18){E}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(23, 90){
+\backslash
+vector(0,-1){20}}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(23, 50){
+\backslash
+vector( 2,-1){40}}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(63, 90){
+\backslash
+vector(-2,-1){40}}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(63, 90){
+\backslash
+vector(0,-1){60}}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+put(103,90){
+\backslash
+vector(-2,-3){40}}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{picture} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Dependency Graph for a Set of Modules.
+ All modules also have a dependency on the Forth wordlist (not shown).
+ 
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:moddeps-1"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Module Dependencies and the Search Order
+\end_layout
+
+\begin_layout Standard
+Modules, vocabularies, or ordinary wordlists required by a named module
+ should be brought into the search order after the name declaration and
+ before the start of the module, i.e.
+ between 
+\family typewriter
+MODULE:
+\family default
+ and 
+\family typewriter
+BEGIN-MODULE
+\family default
+.
+ Our cardinal rule, that loading of a module should preserve the search
+ order, is provided for by 
+\family typewriter
+END-MODULE
+\family default
+, which automatically removes the wordlists added to the search order after
+ the name declaration.
+ For the dependency graph shown in fig.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:moddeps-1"
+
+\end_inset
+
+, the recommended placement of the declaration of dependencies for module
+ E is illustrated below.
+\end_layout
+
+\begin_layout LyX-Code
+Module: E
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+Also D  Also B  Also C   
+\backslash
+ Dependencies for Module E
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+Begin-Module
+\end_layout
+
+\begin_layout LyX-Code
+( ...
+ )
+\end_layout
+
+\begin_layout LyX-Code
+End-Module
+\end_layout
+
+\begin_layout Standard
+Note that BEGIN-MODULE will push the module's own public and private wordlists
+ onto the search order, so that a module's words are always found first
+ within the body of the module.
+\end_layout
+
+\begin_layout Standard
+It is not recommended that wordlists be added to the search order within
+ the module body, i.e.
+ after 
+\family typewriter
+BEGIN-MODULE
+\family default
+.
+ Since 
+\family typewriter
+BEGIN-MODULE
+\family default
+ pushes the current module's public and private wordlists on top of the
+ search order, adding to the search order after 
+\family typewriter
+BEGIN-MODULE
+\family default
+ can potentially mask the module's own word names within its body.
+ Such a practice can cause problems for the module's author, since he/she
+ has to be aware of any potential name clashes from the dependencies.
+ Also, future versions of the dependent modules could cause the module code
+ to break due to new name clashes being introduced.
+ 
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+Adding to the search order within the body of the module is strongly discouraged
+, with the exception that local modification and restoration of the search
+ order is permissible.
+\end_layout
+
+\begin_layout Standard
+In the presence of name reuse, it appears that one must also be careful
+ with the ordering of the dependencies.
+ However, as mentioned earlier, our modules library provides reference operators
+, the proper use of which can make irrelevant the ordering of dependencies.
+ These operators are discussed in the next section.
+\end_layout
+
+\begin_layout Subsection
+Referencing Module Member Words
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Referencing-Module-Member"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Support for name reuse in modules requires convenient methods for referencing
+ the desired word from a specific module.
+ It is not always convenient to manipulate the search order manually to
+ place a particular module's word(s) on top of the search order.
+ This is particularly true when defining a new word.
+ As an illustration, consider the following case.
+ An existing module named 
+\family typewriter
+Bar
+\family default
+ provides a public word named 
+\family typewriter
+Get
+\family default
+.
+ While coding a new module, 
+\family typewriter
+Foo
+\family default
+, we wish to write a word, 
+\family typewriter
+Insert
+\family default
+, which references 
+\family typewriter
+Get
+\family default
+ from the module 
+\family typewriter
+Bar
+\family default
+.
+ The code is sketched below.
+\end_layout
+
+\begin_layout LyX-Code
+Module: Foo
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+Also Bar
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+Begin-Module
+\end_layout
+
+\begin_layout LyX-Code
+Public:
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+: Get ( ...
+ ) ;  
+\backslash
+ member of Foo
+\end_layout
+
+\begin_layout LyX-Code
+ 
+\end_layout
+
+\begin_layout LyX-Code
+: Insert ( ...
+ )
+\end_layout
+
+\begin_layout LyX-Code
+    [ ALSO Bar ]  Get  [ PREVIOUS ]
+\end_layout
+
+\begin_layout LyX-Code
+    ( ...
+ )
+\end_layout
+
+\begin_layout Standard
+The definition of 
+\family typewriter
+Foo
+\family default
+'s member named 
+\family typewriter
+Get
+\family default
+ masks the definition of 
+\family typewriter
+Bar
+\family default
+'s 
+\family typewriter
+Get
+\family default
+, because 
+\family typewriter
+Bar
+\family default
+'s API words are lower in the search order than those of the current module.
+ To avoid this masking, the search order is locally modified to reference
+ 
+\family typewriter
+Get
+\family default
+ from the module 
+\family typewriter
+Bar
+\family default
+ and then restored.
+ Manipulation of the search order inside the definition of a word is messy,
+ and results in code which is hard to read.
+\end_layout
+
+\begin_layout Standard
+Two operators are introduced to simplify referencing of a word in a specific
+ module, independent of the current search order.
+ These are the module 
+\shape italic
+member reference operator
+\shape default
+, ∋, and the module 
+\shape italic
+self-reference operator
+\shape default
+, ∃.
+ We use the Unicode math symbols, ∋, meaning ``contains as member'' (U+0x220b)
+ and ∃, meaning ``there exists'' (U+0x2203); however, corresponding plain
+ text versions of these operators are also provided: 
+\family typewriter
+[m]
+\family default
+ and 
+\family typewriter
+[this]
+\family default
+, respectively.
+ Both ∋ and ∃ are state smart.
+\end_layout
+
+\begin_layout Subsubsection
+Module Reference Primitives
+\end_layout
+
+\begin_layout Standard
+For proper error reporting by the operators, ∋ and ∃, the word name to be
+ searched for as a member of the specific module is stored.
+ The word 
+\family typewriter
+member-find
+\family default
+ is a parsing word which checks for the presence of the named module, and
+ looks up the member word in the public wordlist of the module.
+ The word 
+\family typewriter
+module-do-ref
+\family default
+ performs either compilation or execution of the referenced word based on
+ the current state 
+\shape italic
+and
+\shape default
+ the precedence of the word.
+\end_layout
+
+\begin_layout Scrap
+
+<<module reference primitives>>=
+\begin_inset Newline newline
+\end_inset
+
+create member_name 128 allot
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: !member-name ( c-addr1 -- c-addr2 u)
+\begin_inset Newline newline
+\end_inset
+
+	dup c@ 127 min 1+ member_name swap move ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: member-find ( "module-name" "word-name" -- 0 | xt 1 | xt -1 )
+\begin_inset Newline newline
+\end_inset
+
+	bl word find 0= ABORT" Unknown Module!"
+\begin_inset Newline newline
+\end_inset
+
+	also execute order> >r ( "word_name" )
+\begin_inset Newline newline
+\end_inset
+
+	bl word !member-name
+\begin_inset Newline newline
+\end_inset
+
+	member_name count r> search-wordlist ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: member-not-found ( -- )
+\begin_inset Newline newline
+\end_inset
+
+	member_name count type
+\begin_inset Newline newline
+\end_inset
+
+	."  : Member Not Found!"  cr ABORT ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: module-do-ref ( ...
+ xt 1 | xt -1 -- ...)
+\begin_inset Newline newline
+\end_inset
+
+	-1 = state @ and IF  compile, ELSE execute THEN ;
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Analogous words to the Forth standard words, 
+\begin_inset Quotes eld
+\end_inset
+
+tick
+\begin_inset Quotes erd
+\end_inset
+
+ ( ' ) and 
+\begin_inset Quotes eld
+\end_inset
+
+bracket-tick
+\begin_inset Quotes erd
+\end_inset
+
+ ( ['] ), may now be defined to return or compile execution tokens referenced
+ by module name.
+\end_layout
+
+\begin_layout Scrap
+
+<<module tick operators>>=
+\begin_inset Newline newline
+\end_inset
+
+: m' ( "module-name" "word-name" -- xt )
+\begin_inset Newline newline
+\end_inset
+
+	member-find 0= IF member-not-found THEN ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: [m'] ( "module-name" "word-name" -- )  m' postpone literal ; immediate
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+	
+\end_layout
+
+\begin_layout Subsubsection
+The Member Reference Operator
+\end_layout
+
+\begin_layout Standard
+The 
+\shape italic
+member reference operator
+\shape default
+, ∋ , allows direct referencing of a word which is a public member of a
+ specific named module, using the syntax,
+\end_layout
+
+\begin_layout LyX-Code
+ ∋ <module_name> <word_name>
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+The reference operator ∋ may be used either inside or outside of a module,
+ and in either compilation or interpretation state.
+\end_layout
+
+\begin_layout Standard
+If the specified word is not found in the public wordlist of the specified
+ module, compilation is aborted with an error message:
+\end_layout
+
+\begin_layout LyX-Code
+<word_name> : Member Not Found!
+\end_layout
+
+\begin_layout Standard
+A plain text representation of the ∋ operator is
+\series bold
+ 
+\family sans
+\series default
+[m]
+\family default
+.
+\end_layout
+
+\begin_layout Scrap
+
+<<member reference operator>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+: [m] ( ...
+ "module-name"  "word-name" -- ? )
+\begin_inset Newline newline
+\end_inset
+
+	member-find
+\begin_inset Newline newline
+\end_inset
+
+	?dup IF  module-do-ref  ELSE  member-not-found  THEN
+\begin_inset Newline newline
+\end_inset
+
+; immediate
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+true [IF] : ∋ postpone [m] ; immediate [THEN]
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Standard
+Our previous example in section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Referencing-Module-Member"
+
+\end_inset
+
+ for the definition of 
+\family typewriter
+Foo
+\family default
+'s member 
+\family typewriter
+Insert
+\family default
+ now may be written as,
+\end_layout
+
+\begin_layout LyX-Code
+Public:
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+: Get ( ...
+ ) ;  
+\backslash
+ member of Foo
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+: Insert ( ...
+ )
+\end_layout
+
+\begin_layout LyX-Code
+    ∋ Bar Get
+\end_layout
+
+\begin_layout LyX-Code
+    ( ...
+ )
+\end_layout
+
+\begin_layout Standard
+Furthermore, it is possible that an API word of the current module may hide
+ an intrinsic word in the Forth wordlist.
+ Here, the design feature of having the execution behavior of a module name
+ be the same as the intrinsic Forth-94 word, 
+\family typewriter
+FORTH
+\family default
+, means that we can apply the member reference operator to the word 
+\family typewriter
+FORTH
+\family default
+.
+ For example, if the Forth wordlist provides the word 
+\family typewriter
+SCAN
+\family default
+, we may write,
+\end_layout
+
+\begin_layout LyX-Code
+∋ Forth scan
+\end_layout
+
+\begin_layout Standard
+to reference the word 
+\family typewriter
+SCAN
+\family default
+ from the Forth wordlist.
+ Such a reference will never be masked by name reuse in other wordlists,
+ which are higher in the search order than the Forth wordlist.
+ While we advised against the reuse of 
+\shape italic
+standard
+\shape default
+ Forth names, a typical system's Forth wordlist provides numerous additional
+ words, beyond just the standard words.
+\end_layout
+
+\begin_layout Subsubsection
+The Self-Reference Operator
+\end_layout
+
+\begin_layout Standard
+The 
+\shape italic
+self-reference operator
+\shape default
+, ∃, is used only within the body of a module, with the syntax,
+\end_layout
+
+\begin_layout LyX-Code
+∃ <word_name>
+\end_layout
+
+\begin_layout Standard
+This operator denotes that the specified word name refers to a word in the
+ 
+\shape italic
+current
+\shape default
+ module's private 
+\shape italic
+or
+\shape default
+ public wordlist.
+ It may be used in either interpretation or compilation state.
+ If the specified word is not found in 
+\shape italic
+either
+\shape default
+ the private or public wordlists of the current module, compilation is aborted
+ with the error message:
+\end_layout
+
+\begin_layout LyX-Code
+<word_name> : Member Not Found!
+\end_layout
+
+\begin_layout Standard
+The plain text representation of the ∃ operator is 
+\family typewriter
+[this]
+\family default
+.
+ 
+\end_layout
+
+\begin_layout Scrap
+
+<<self reference operator>>=
+\begin_inset Newline newline
+\end_inset
+
+: [this] ( "word-name" -- )
+\begin_inset Newline newline
+\end_inset
+
+     bl word !member-name
+\begin_inset Newline newline
+\end_inset
+
+	 private-defs @ 0=  public-defs @ 0= or IF not-in-module THEN
+\begin_inset Newline newline
+\end_inset
+
+	 member_name count private-defs @ search-wordlist
+\begin_inset Newline newline
+\end_inset
+
+	 ?dup IF  
+\end_layout
+
+\begin_layout Scrap
+
+	  	  module-do-ref
+\begin_inset Newline newline
+\end_inset
+
+	 ELSE
+\begin_inset Newline newline
+\end_inset
+
+	   member_name count public-defs @ search-wordlist
+\begin_inset Newline newline
+\end_inset
+
+	   ?dup IF  module-do-ref  ELSE  member-not-found  THEN
+\begin_inset Newline newline
+\end_inset
+
+	 THEN ; immediate
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+true [IF]  : ∃ postpone [this] ; immediate  [THEN]
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Subsection
+Conditional Definitions of API words
+\end_layout
+
+\begin_layout Standard
+It is common practice in Forth source to avoid duplicate definitions of
+ common usage words through conditional definitions, using 
+\family typewriter
+[UNDEFINED]
+\family default
+ or 
+\family typewriter
+[DEFINED]
+\family default
+.
+ A module, however, must guarantee the definition of its member API words
+ within the module body.
+ Therefore,
+\end_layout
+
+\begin_layout Quote
+
+\shape italic
+Conditional definitions of public words in a module must ensure that a new
+ definition always exists.
+\end_layout
+
+\begin_layout Standard
+For example, consider a strings module which provides the commonly used,
+ although not standard, word named 
+\family typewriter
+SCAN
+\family default
+.
+ Since some Forth implementations may provide a built-in 
+\family typewriter
+SCAN
+\family default
+, the following type of conditional definition is often used in Forth source,
+\end_layout
+
+\begin_layout LyX-Code
+[undefined] scan [if]  : scan ...
+ ;  [then]
+\end_layout
+
+\begin_layout Standard
+Such a conditional definition of 
+\family typewriter
+SCAN
+\family default
+, made within the public section of a module, poses a problem.
+ If 
+\family typewriter
+SCAN
+\family default
+ is found in the current search order, the module will provide no definition
+ of an API word named 
+\family typewriter
+SCAN
+\family default
+.
+ Then, an attempt to use the module's member 
+\family typewriter
+SCAN
+\family default
+, via the member reference operator, for example, would fail! 
+\end_layout
+
+\begin_layout Standard
+Within the module, a definition of the module's API word, 
+\family typewriter
+SCAN
+\family default
+, may be ensured by writing,
+\end_layout
+
+\begin_layout LyX-Code
+[undefined] scan [if]  : scan ...
+ ; 
+\end_layout
+
+\begin_layout LyX-Code
+[else]  : scan scan ;  [then]
+\end_layout
+
+\begin_layout Standard
+The above approach is dependent on the current search order.
+ More than one module or F83 vocabulary in the current search order may
+ provide 
+\family typewriter
+SCAN
+\family default
+.
+ We provide the word 
+\family typewriter
+[MEMBER]
+\family default
+ to perform a targeted membership test, thereby avoiding the search order
+ dependency.
+ Thus, if the Forth system provides 
+\family typewriter
+SCAN
+\family default
+, we may write,
+\end_layout
+
+\begin_layout LyX-Code
+[member] Forth scan [if]
+\end_layout
+
+\begin_layout LyX-Code
+  : scan ∋ Forth scan ;
+\end_layout
+
+\begin_layout LyX-Code
+[else]
+\end_layout
+
+\begin_layout LyX-Code
+  : scan ...
+ ;  
+\backslash
+ new source definition of SCAN  
+\end_layout
+
+\begin_layout LyX-Code
+[then]
+\end_layout
+
+\begin_layout Scrap
+
+<<member test>>=
+\begin_inset Newline newline
+\end_inset
+
+: [member] ( "module" "name" -- flag )
+\begin_inset Newline newline
+\end_inset
+
+    member-find if drop true else false then ; immediate
+\end_layout
+
+\begin_layout Scrap
+
+@
+\end_layout
+
+\begin_layout Subsection
+Loading Modules
+\end_layout
+
+\begin_layout Standard
+A module may either choose to load its dependent modules, to ensure they
+ are accessible in the Forth environment, before adding them to the search
+ order, or may leave the task of loading dependencies to the higher level
+ application code.
+ The latter approach is generally more easy to correct when loading problems
+ arise, as may happen when using a later version of a module, for which
+ the dependencies have changed.
+ 
+\end_layout
+
+\begin_layout Section
+Future Directions
+\end_layout
+
+\begin_layout Standard
+The practical application of any framework is essential to closing the feedback
+ loop necessary to craft a useful and usable library.
+ We have put into practice the modules system described here, presently
+ with applications each using on the order of 10 modules.
+ Indeed the exercise of converting existing Forth files to Forth modules
+ has led to iterative enhancements, refinements, and bug fixes with the
+ modules library.
+ The exercise has also demonstrated to us the benefits of name reuse which
+ we discussed in this literate program.
+ At this early stage, it is likely that we may have missed an essential
+ feature (or few), needed to support the conversion of existing code to
+ a modular format.
+ As we, and, hopefully others in the Forth community, gain experience with
+ our modules library, such deficiencies will be made apparent and remedied
+ in future versions of the library.
+\end_layout
+
+\begin_layout Standard
+One area of planned development is to provide additional tools to Forth
+ authors, to aid with development of modules supporting name reuse.
+ Already, the simple tool 
+\family typewriter
+SHOW-MODULES
+\family default
+ is very useful for a programmer to viewthe available modules loaded in
+ a Forth system.
+ Other envisioned tools will support the development and use of generic
+ interfaces by allowing the programmer to query for a list of name overlaps
+ within modules.
+ Such tools include:
+\end_layout
+
+\begin_layout Itemize
+display the names of all modules which provide a particular name in their
+ API,
+\end_layout
+
+\begin_layout LyX-Code
+s" <word_name>" MEMBER-OF 
+\end_layout
+
+\begin_layout Itemize
+display all API names which overlap between two given modules,
+\end_layout
+
+\begin_layout LyX-Code
+' <mod_A>  ' <mod_B>  NAMES-OVERLAP
+\end_layout
+
+\begin_layout Itemize
+display a given module's dependencies,
+\end_layout
+
+\begin_layout LyX-Code
+' <mod_name>  SHOW-DEPENDENCIES
+\end_layout
+
+\begin_layout Standard
+Some of the above tools, such as 
+\family typewriter
+SHOW-DEPENDENCIES
+\family default
+, simply require additional bookkeeping by the modules library -- we have
+ already reserved a cell in the body of a module name word to be able to
+ save a list of dependencies associated with a module.
+ Other tools such as 
+\family typewriter
+MEMBER-OF
+\family default
+ and 
+\family typewriter
+NAMES-OVERLAP
+\family default
+ currently cannot be implemented in standard Forth, due to the lack of a
+ standard way of traversing wordlists and obtaining word names.
+ However, we expect such features may be standardized in the near future
+ since a number of Forth systems already provide such features.
+ A Request for Discussion (RfD) has already been posted to the comp.lang.forth
+ newsgroup for the standardization of a word named 
+\family typewriter
+TRAVERSE-WORDLIST
+\family default
+.
+ We are optimistic that standardized infrastructure will be adopted in Forth
+ systems to support the development of such tools.
+\end_layout
+
+\begin_layout Standard
+Finally, as Bernd Paysan and others have noted, it is desirable to have
+ a modules system which is a subset of a fully-implemented object-oriented
+ programming framework in Forth (OOF).
+ Since our modules library provides some of the features of OOF, further
+ experience with the library may lead to the development of such a framework,
+ usable both as a modules system or for OOF programming.
+ Whether or not such a fusion will be possible, or desirable, we believe
+ that our current modules framework will be useful for the development of
+ robust and comprehensible Forth programs under diverse development environments.
+\end_layout
+
+\begin_layout Section
+The Modules Library
+\end_layout
+
+\begin_layout Subsection
+Forth System Requirements
+\end_layout
+
+\begin_layout Standard
+In addition to system requirements listed below, the modules library assumes
+ that 
+\family typewriter
+HERE
+\family default
+ never returns zero, 
+\family typewriter
+FORTH-WORDLIST
+\family default
+ does not return zero, and any newly created wordlist does not have a wid
+ value of zero.
+\end_layout
+
+\begin_layout Subsubsection
+Maximum Number of Wordlists
+\end_layout
+
+\begin_layout Standard
+The Forth 200x requirements that at least eight wordlists be allowed in
+ the search order and that it must be possible to create at least eight
+ new wordlists, when the Search-Order wordset is present, may be adequate
+ for many uses of modules.
+ The file 
+\family typewriter
+modules.fs
+\family default
+ adds 
+\family typewriter
+MODULES-WORDLIST
+\family default
+ when loaded.
+ During the loading of a module, a minimum of two wordlists is temporarily
+ added.
+ A minimum of one wordlist is needed for each named module on which a module
+ depends.
+\end_layout
+
+\begin_layout Standard
+Having to consider how many wordlists are allowed is not in the spirit of
+ the freedom of name reusage afforded by named modules.
+ Fortunately some common systems do not have an eight wordlist limitation.
+ For the search order, gforth and iForth allow 16, and pfe allows 64, while
+ kForth permits an arbitrary search order depth.
+ An application may use a large number of modules, however only a few wordlists
+ will need to present in the search order at any given time.
+ For example, an application using 50 named modules will require 100 new
+ wordlists to be created, yet it may be reasonable to expect that the search
+ order depth never exceeds ten.
+ At present we have not yet surveyed a large number of Forth systems to
+ determine whether or not practical limits exist for the number of new wordlists
+ which may be created in these systems.
+ We note that some Forth systems (gforth, bigforth, kforth) do not have
+ an arbitrary limit on the number of new wordlists which may be created,
+ while others (iForth) provide a large enough capacity (>900) for the issue
+ to not be of practical concern.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Required Words From Optional Wordsets
+\end_layout
+
+\begin_layout Standard
+The modules library requires words from the following optional wordsets
+ from the Forth 200x standard: 
+\end_layout
+
+\begin_layout Description
+Core
+\begin_inset space ~
+\end_inset
+
+Extension: 
+\family typewriter
+?DO COMPILE, NIP STATE TRUE
+\end_layout
+
+\begin_layout Description
+Programming-Tools: 
+\family typewriter
+WORDS [IF] [THEN]
+\end_layout
+
+\begin_layout Description
+Search-Order: 
+\family typewriter
+GET-CURRENT GET-ORDER SEARCH-WORDLIST SET-CURRENT SET-ORDER WORDLIST
+\end_layout
+
+\begin_layout Description
+Search-Order
+\begin_inset space ~
+\end_inset
+
+Extension: 
+\family typewriter
+ALSO PREVIOUS
+\end_layout
+
+\begin_layout Subsubsection
+Unicode Support
+\end_layout
+
+\begin_layout Standard
+Unicode support is not a system requirement.
+ Optional names for two of the words in 
+\family typewriter
+modules.fs
+\family default
+ use unicode, namely, 
+\family typewriter
+∋
+\family default
+ and 
+\family typewriter
+∃
+\family default
+.
+ Many modern Forth systems support the use of UTF-8 unicode characters,
+ even when they do not include the optional Extended Characters word set,
+ especially when loaded from a source text file.
+ To properly display such characters in a terminal window or enter them
+ from the keyboard, the host terminal application must have them enabled.
+\end_layout
+
+\begin_layout Standard
+The unicode names may be deselected --- the ASCII names 
+\family typewriter
+[M]
+\family default
+ and 
+\family typewriter
+[THIS]
+\family default
+, corresponding to 
+\family typewriter
+∋
+\family default
+ and 
+\family typewriter
+∃
+\family default
+, are always present.
+\end_layout
+
+\begin_layout Subsection
+modules.fs
+\end_layout
+
+\begin_layout Standard
+The chunks of the modules library are now assembled.
+\end_layout
+
+\begin_layout Scrap
+
+<<module utilities>>=
+\begin_inset Newline newline
+\end_inset
+
+<<show modules>>
+\begin_inset Newline newline
+\end_inset
+
+<<module wordlist primitives>>
+\begin_inset Newline newline
+\end_inset
+
+<<module reference primitives>>
+\begin_inset Newline newline
+\end_inset
+
+<<module tick operators>>
+\begin_inset Newline newline
+\end_inset
+
+<<member reference operator>>
+\begin_inset Newline newline
+\end_inset
+
+<<self reference operator>>
+\begin_inset Newline newline
+\end_inset
+
+<<member test>>
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Scrap
+
+<<version utilities>>=
+\begin_inset Newline newline
+\end_inset
+
+create ver-buf 16 allot
+\begin_inset Newline newline
+\end_inset
+
+: ver$ ( "version" -- ca u)
+\begin_inset Newline newline
+\end_inset
+
+	bl parse 16 min 2dup ver-buf swap move
+\begin_inset Newline newline
+\end_inset
+
+	nip ver-buf swap ;
+\begin_inset Newline newline
+\end_inset
+
+: make-$ ( ca1 u "name" -- )
+\begin_inset Newline newline
+\end_inset
+
+	create here over 1+ allot 2dup ! 1+ swap move
+\begin_inset Newline newline
+\end_inset
+
+	does> ( a -- ca2 u ) count ;
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+ver$ <<version>>
+\begin_inset Newline newline
+\end_inset
+
+make-$ MODULES-VERSION
+\end_layout
+
+\begin_layout Scrap
+
+\end_layout
+
+\begin_layout Scrap
+
+<<modules.fs>>=
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Modules library, version <<version>>
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ License: <<license>>
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ <<copyright>>
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ This file is automatically generated using LyX and noweb.
+\begin_inset Newline newline
+\end_inset
+
+
+\backslash
+ Changes should be made to the original file, <<origin file>>
+\begin_inset Newline newline
+\end_inset
+
+<<version utilities>>
+\begin_inset Newline newline
+\end_inset
+
+<<search order utilities>>
+\begin_inset Newline newline
+\end_inset
+
+<<search order state utils>>
+\begin_inset Newline newline
+\end_inset
+
+<<unnamed private words>>
+\begin_inset Newline newline
+\end_inset
+
+<<modules wordlist>>
+\begin_inset Newline newline
+\end_inset
+
+<<module declaration>>
+\begin_inset Newline newline
+\end_inset
+
+<<begin module>>
+\begin_inset Newline newline
+\end_inset
+
+<<body declarations>>
+\begin_inset Newline newline
+\end_inset
+
+<<end module>>
+\begin_inset Newline newline
+\end_inset
+
+<<module utilities>>
+\begin_inset Newline newline
+\end_inset
+
+@
+\end_layout
+
+\begin_layout Section*
+Acknowledgements
+\end_layout
+
+\begin_layout Standard
+Both public discussions on the usenet newsgroup, comp.lang.forth, and private
+ discussions by e-mail with several members of the Forth community have
+ been very influential in the design and coding of the modules library presented
+ here.
+ In particular, we would like to acknowledge Bruce McFarling, with whom
+ we have had extensive public and private discussions.
+ A significant portion of the code, including search order utilities, are
+ due to these discussions.
+ Numerous other members of the Forth community were involved in the comp.lang.fort
+h discussions of modular programming in Forth during October 2011, and this
+ discourse has also significantly influenced the design and consideration
+ of the modules system features.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "wikipedia1"
+
+\end_inset
+
+
+\begin_inset CommandInset href
+LatexCommand href
+name "http://en.wikipedia.org/wiki/Modular_programming"
+target "http://en.wikipedia.org/wiki/Modular_programming"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "williams2011"
+
+\end_inset
+
+D.
+ N.
+ Williams, 
+\family typewriter
+root-module.fs
+\family default
+, v 0.8.2 (2011).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "mcfarling2011"
+
+\end_inset
+
+B.
+ McFarling, suggested module facility for the Forth Scientific Library,
+ 
+\family typewriter
+comp.lang.forth
+\family default
+ (2011).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "carter2008"
+
+\end_inset
+
+E.
+ F.
+ Carter, et.
+ al., Forth Scientific Library Auxiliary File, 
+\family typewriter
+fsl-util.x
+\family default
+,
+\family typewriter
+ 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://www.taygeta.com/fsl/library/fsl-util.fs"
+target "http://www.taygeta.com/fsl/library/fsl-util.fs"
+
+\end_inset
+
+ (2008).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "bridges2006"
+
+\end_inset
+
+N.
+ Bridges, 
+\shape italic
+Named and Anonymous Modules for Standard Forth
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://qualdan.com/forth/modules.fs"
+target "http://qualdan.com/forth/modules.fs"
+
+\end_inset
+
+ (2006).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "myneni2011"
+
+\end_inset
+
+K.
+ Myneni, example use of modules with mini-oof, 
+\begin_inset CommandInset href
+LatexCommand href
+name "ftp://ccreweb.org/software/gforth/experimental/textbox/"
+target "ftp://ccreweb.org/software/gforth/experimental/textbox/"
+
+\end_inset
+
+ (2011).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "paysan2008"
+
+\end_inset
+
+B.
+ Paysan, 
+\shape italic
+Detailed Description of Mini-OOF
+\shape default
+, 
+\family typewriter
+
+\begin_inset CommandInset href
+LatexCommand href
+name "http://bernd-paysan.de/mini-oof.html"
+target "http://bernd-paysan.de/mini-oof.html"
+
+\end_inset
+
+
+\family default
+ (2008).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "stroustrup1991"
+
+\end_inset
+
+B.
+ Stroustrup, 
+\shape italic
+The C++ Programming Language, 2nd ed.
+\shape default
+, Addison-Wesley (1993); see section 1.2.
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "fsl-2011"
+
+\end_inset
+
+C.
+ G.
+ Montgomery, ed., 
+\shape italic
+Forth Scientific Library
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://www.taygeta.com/fsl/sciforth.html"
+target "http://www.taygeta.com/fsl/sciforth.html"
+
+\end_inset
+
+(2011).
+\end_layout
+
+\begin_layout Bibliography
+\labelwidthstring References
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ffl-2010"
+
+\end_inset
+
+D.
+ van Oudheusden, 
+\shape italic
+Forth Foundation Library
+\shape default
+, 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://soton.mpeforth.com/flag/ffl/index.html"
+target "http://soton.mpeforth.com/flag/ffl/index.html"
+
+\end_inset
+
+(2010).
+\end_layout
+
+\end_body
+\end_document
