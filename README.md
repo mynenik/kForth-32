@@ -47,17 +47,17 @@ To build:
 4. Specify the default directory in which kforth32 will search for Forth source
    files not found in the current directory. The environment variable KFORTH_DIR
    may be set to this directory. For example, under the BASH shell, if you want
-   the default directory to be your ~/kForth-32/forth-src/ directory, add the
+   the default directory to be your ~/kForth-32-branch/forth-src/ directory, add the
    following lines to your .bash_profile file (or .profile on some systems):
 
-	KFORTH_DIR=~/kForth-32/forth-src
+	KFORTH_DIR=~/kForth-32-branch/forth-src
 	export KFORTH_DIR
 
 Forth Source Examples
 ---------------------
 
 Sample source code files, typically with the extension ".4th", are
-included in the kForth-32/forth-src/ directory. These files serve as
+included in the kForth-32-branch/forth-src/ directory. These files serve as
 programming examples for kForth-32, in addition to providing useful
 libraries of Forth words and applications written in Forth. Within the
 forth-src/ subdirectory, you will find additional subdirectories containing
