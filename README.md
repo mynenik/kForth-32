@@ -52,34 +52,38 @@ To build:
 	KFORTH_DIR=~/kForth-32/forth-src
 	export KFORTH_DIR
 
-5. Sample source code files, typically with the extension ".4th", are
-   included in the kForth-32/forth-src/ directory. These files serve as
-   programming examples for kForth-32, in addition to providing useful
-   libraries of Forth words and applications written in Forth. Within the
-   forth-src/ subdirectory, you will find additional subdirectories containing
-   different categories of Forth libraries or applications. These include:
+Forth Source Examples
+---------------------
 
-	system-test/     A set of automated tests to validate the Forth system against
+Sample source code files, typically with the extension ".4th", are
+included in the kForth-32/forth-src/ directory. These files serve as
+programming examples for kForth-32, in addition to providing useful
+libraries of Forth words and applications written in Forth. Within the
+forth-src/ subdirectory, you will find additional subdirectories containing
+different categories of Forth libraries or applications. These include:
+
+system-test/     A set of automated tests to validate the Forth system against
                    the Forth-94 standard
 
-	fsl/             modules from the Forth Scientific Library, including test code;
+fsl/             modules from the Forth Scientific Library, including test code;
                    also note the subdirs, fsl/extras/ and fsl/demo/
 
-	games/           console games written in Forth
+games/           console games written in Forth
 
-	libs/            Forth interfaces to C and Fortran shared object libraries, such
+libs/            Forth interfaces to C and Fortran shared object libraries, such
                    as X11 and the GNU Multiprecision Library, gmp.
 
-	benchmarks/      simple benchmarks to compare the relative speed of Forth systems
+benchmarks/      simple benchmarks to compare the relative speed of Forth systems
 
-  Important system-level files in the forth-src/ subdirectory include,
 
-  ans-words.4th   Forth-94 words provided in source form
-	strings.4th     String handling library
-	files.4th       Standard Forth words for file i/o
-	ansi.4th        ANSI terminal control
-	dump.4th	      Forth DUMP utility
-  asm-x86.4th     32-bit x86 assembler ported to kForth-32
-	syscalls.4th	  Operating System calls
-  tester.4th      Test harness used by much of the test code
+Important system-level files in the forth-src/ subdirectory include,
+
+ans-words.4th   Forth-94 words provided in source form
+strings.4th     String handling library
+files.4th       Standard Forth words for file i/o
+ansi.4th        ANSI terminal control
+dump.4th	Forth DUMP utility
+asm-x86.4th     32-bit x86 assembler ported to kForth-32
+syscalls.4th	Operating System calls
+tester.4th      Test harness used by much of the test code
 
