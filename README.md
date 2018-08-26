@@ -37,8 +37,9 @@ To build:
 
 1. Unpack the files if you obtained them as a .zip or .tar.gz file.
 
-2. Change to the src/ directory, and type 'make' to build the executables,
-   kforth32 and kforth32-fast.
+2. Change to the kForth-32-branch/src/ directory, where "branch" is the project
+   branch, e.g. "master", and type 'make' to build the executables. A successful
+   build results in two executables, kforth32 and kforth32-fast.
 
 3. Move the executables into the search path. It is recommended to move
    the kForth-32 executables to /usr/local/bin . You must be root to do this.
@@ -87,3 +88,8 @@ asm-x86.4th     32-bit x86 assembler ported to kForth-32
 syscalls.4th	Operating System calls
 tester.4th      Test harness used by much of the test code
 
+Documentation
+-------------
+
+Prior web-page documentation is the process of being packaged as a pdf file. The current
+version is located in kForth-32-branch/doc/ 
