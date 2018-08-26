@@ -6,7 +6,7 @@ Copyright (c) 1998--2018 Krishna Myneni, <krishna.myneni@ccreweb.org>
 LICENSE
 -------
 
-kForth-32 for x96-GNU/Linux is provided under the terms of the GNU
+kForth-32 for x86-GNU/Linux is provided under the terms of the GNU
 Affero General Public License (AGPL), v3.0 or later.
 
 
