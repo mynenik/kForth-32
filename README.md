@@ -3,7 +3,7 @@
 
 Copyright (c) 1998--2018 Krishna Myneni, <krishna.myneni@ccreweb.org>
 
-GENERAL
+LICENSE
 -------
 
 kForth-32 for x96-GNU/Linux is provided under the terms of the GNU
