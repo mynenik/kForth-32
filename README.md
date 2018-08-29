@@ -76,14 +76,14 @@ different categories of Forth libraries or applications. These include:
 
 Important system-level files in the `forth-src/` subdirectory include,
 
-`ans-words.4th`   Forth-94 words provided in source form
-`strings.4th`     String handling library
-`files.4th`       Standard Forth words for file i/o
-`ansi.4th`        ANSI terminal control
-`dump.4th`	  Forth `DUMP` utility
-`asm-x86.4th`     32-bit x86 assembler ported to kForth-32
-`syscalls.4th`	  Operating System calls
-`tester.4th`      Test harness used by much of the test code
+* `ans-words.4th`   Forth-94 words provided in source form
+* `strings.4th`     String handling library
+* `files.4th`       Standard Forth words for file i/o
+* `ansi.4th`        ANSI terminal control
+* `dump.4th`	    Forth `DUMP` utility
+* `asm-x86.4th`     32-bit x86 assembler ported to kForth-32
+* `syscalls.4th`    Operating System calls
+* `tester.4th`      Test harness used by much of the test code
 
 ## Documentation
 
