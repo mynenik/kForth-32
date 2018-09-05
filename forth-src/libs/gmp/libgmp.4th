@@ -33,7 +33,7 @@ vocabulary gmp
 also gmp definitions
 
 0 value hndl_GMP
-s" libgmp.so" open-lib
+s" libgmp.so.10" open-lib
 dup 0= [IF] check-lib-error [THEN]
 to hndl_GMP
 cr .( Opened the GMP library )
