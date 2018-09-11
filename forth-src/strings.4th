@@ -2,43 +2,13 @@
 \
 \ String utility words for kForth
 \
-\ Copyright (c) 1999--2017 Krishna Myneni
+\ Copyright (c) 1999--2018 Krishna Myneni
 \
 \ This software is provided under the terms of the
 \ GNU General Public License.
 \
-\ Revisions:
+\ Please report bugs to <krishna.myneni@ccreweb.org>.
 \
-\	03-24-1999  created  KM
-\	03-25-1999  added number to string conversions  KM
-\	08-12-1999  fixed f>string  KM
-\	10-11-1999  added blank  KM
-\	12-12-1999  fixed f>string for zero case  KM
-\	12-22-1999  added -trailing, scan, and skip  KM
-\	01-23-2000  replaced char with [char] for ANS Forth compatibility  KM
-\	06-16-2000  added isdigit and modified string>s and string>f  KM
-\	09-02-2000  fixed u>string to work over full range  KM
-\	07-12-2001  used built-in Forth words <# #s #> for conversions,
-\	              added ud>string and d>string. f>string now can handle
-\                     decimal places greater than 8  KM
-\	09-21-2001  changed occurences of DO to ?DO  KM
-\	10-02-2001  added parse_args  KM
-\	10-10-2001  fixed problem with f>string when number is 0e  KM
-\	10-15-2001  added /STRING  KM
-\	03-28-2002  added SEARCH, PARSE_TOKEN, PARSE_LINE, IS_LC_ALPHA  KM
-\	07-31-2002  added SLITERAL; removed SEARCH since SEARCH and
-\		      COMPARE are now part of kForth  KM
-\       28-03-2008  removed SLITERAL, now intrinsic to kForth KM
-\       19-09-2009  removed BLANK, now intrinsic to kForth  KM
-\       26-09-2009  removed /STRING, now intrinsic to kForth  KM
-\       01-10-2009  revised definition of STRLEN  KM
-\       11-24-2009  revised definitions of -trailing, scan, skip,
-\                     is_lc_alpha, and is_digit  KM
-\       12-02-2009  removed -TRAILING, now intrinsic to kForth  KM
-\       04-17-2017  added STRING>UD and STRING>D ; rewrote
-\                     STRING>F using >FLOAT km
-\       04-30-2017  fixed F>STRING for deprecated word, "
-\       07-25-2017  added F>FPSTR and F.RD  km
 
 BASE @
 DECIMAL
@@ -257,9 +227,11 @@ variable number_count
 	fnumber_power @ s>string count strcat
 	strpck 	;
 
+0e 0e f/ fconstant NAN
 	 
 : string>f ( ^str -- r )
-    count base @ >r decimal >float drop r> base ! ;
+    count bl skip base @ >r decimal >float 
+    0= if NAN then r> base ! ;
 
 
 : parse_args ( a u -- r1 ... rn n | parse a string delimited by spaces into fp args )
