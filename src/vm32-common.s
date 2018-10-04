@@ -560,43 +560,79 @@ L_fsqrt:
 	NEXT
 
 L_degtorad:
-        LDSP
+	LDSP
 	fldl FCONST_180
-        INC_DSP
-        fldl (%ebx)
-        fdivp %st, %st(1)
-        fldpi
-        fmulp %st, %st(1)
-        fstpl (%ebx)
+	INC_DSP
+	fldl (%ebx)
+	fdivp %st, %st(1)
+	fldpi
+	fmulp %st, %st(1)
+	fstpl (%ebx)
 	DEC_DSP
-        NEXT
+	NEXT
 
 L_radtodeg:
-        LDSP
-        INC_DSP
-        fldl (%ebx)
-        fldpi
+	LDSP
+	INC_DSP
+	fldl (%ebx)
+	fldpi
 	fxch
-        fdivp %st, %st(1)
-        fldl FCONST_180
-        fmulp %st, %st(1)
-        fstpl (%ebx)
+	fdivp %st, %st(1)
+	fldl FCONST_180
+	fmulp %st, %st(1)
+	fstpl (%ebx)
 	DEC_DSP
-        NEXT
+	NEXT
 
 L_fcos:
 	LDSP
-	fldl WSIZE(%ebx)
-	fcos
-	fstpl WSIZE(%ebx)
+	INC_DSP
+	movl WSIZE(%ebx), %eax
+	pushl %ebx
+	pushl %eax
+	movl (%ebx), %eax
+	pushl %eax
+	call cos
+	addl $8, %esp
+	popl %ebx
+	fstpl (%ebx)
+	DEC_DSP
+	xorl %eax, %eax
 	NEXT
+
+// For native x86 FPU fcos instruction, use FSINCOS
+//
+// L_fcos:
+//	LDSP
+//	fldl WSIZE(%ebx)
+//	fcos
+//	fstpl WSIZE(%ebx)
+//	NEXT
 
 L_fsin:
 	LDSP
-	fldl WSIZE(%ebx)
-	fsin
-	fstpl WSIZE(%ebx)
+	INC_DSP
+	movl WSIZE(%ebx), %eax
+	pushl %ebx
+	pushl %eax
+	movl (%ebx), %eax
+	pushl %eax
+	call sin
+	addl $8, %esp
+	popl %ebx
+	fstpl (%ebx)
+	DEC_DSP
+	xorl %eax, %eax
 	NEXT
+
+// For native x86 FPU fsin instruction, use FSINCOS
+//
+// L_fsin:
+//	LDSP
+//	fldl WSIZE(%ebx)
+//	fsin
+//	fstpl WSIZE(%ebx)
+//	NEXT
 
 L_fatan2:
 	LDSP
