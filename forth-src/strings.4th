@@ -11,8 +11,8 @@
 \
 \ Glossary:
 \
-\  	SCAN ( a1 u1 c -- a2 u2 )
-\ 	SKIP ( a1 u1 c -- a2 u2 )
+\  	SCAN        ( a1 u1 c -- a2 u2 )
+\ 	SKIP        ( a1 u1 c -- a2 u2 )
 \
 \ 	PARSE_TOKEN ( a u -- a2 u2 a3 u3 )
 \ 	PARSE_LINE  ( a u -- a1 u1 a2 u2 ... an un n )
@@ -20,6 +20,7 @@
 \
 \ 	IS_LC_ALPHA ( c -- b )
 \ 	ISDIGIT     ( c -- b )
+\ 	UCASE       ( c1 -- c2 )
 \
 \ 	STRCPY      ( ^str a -- )
 \ 	STRLEN      ( a -- u )
