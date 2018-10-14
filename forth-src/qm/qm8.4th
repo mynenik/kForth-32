@@ -138,10 +138,11 @@
 \                 initial conditions slightly.           km
 \   2006-09-18  added Rabi-cycling example and revised comments km
 \   2006-09-22  added further explanatory material       km
+\   2018-10-13  updated include file paths  km
 include ans-words
-include fsl-util
-include dynmem
-include runge4
+include fsl/fsl-util
+include fsl/dynmem
+include fsl/runge4
 
 fvariable Delta0	\ initial detuning
 fvariable Omega_c	\ Rabi rate for constant field
