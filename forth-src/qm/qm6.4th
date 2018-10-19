@@ -2,26 +2,34 @@
 \
 \ The Pauli Spin Matrices, Spinors, and Measurement Probabilities
 \
-\ Copyright (c) 2003--2004 Krishna Myneni, krishna.myneni@ccreweb.org
+\ Copyright (c) 2003--2017 Krishna Myneni, krishna.myneni@ccreweb.org
 \ Provided under the GNU General Public License
 \
 \ Use the spin state of an electron (or any fermion) to numerically 
 \ illustrate the fundamental principles of quantum mechanics:
 \
 \     a) measurement of a physical quantity is represented by an operator.
+\
 \     b) state of the system (particle) can be represented as a vector in
-\          an N-dimensional space.^*
+\          an N-dimensional space[1].
+\
 \     c) eigenvalues of an operator represent possible measurement 
 \          values for the measurement associated with that operator.
-\     d) probability of measuring a particular eigenvalue is
-\          related to the projection of the state vector onto the
-\          eigenvector corresponding to the particular eigenvalue.
 \
-\ ^*  In the simple case of fermion spin, N=2 because there are only two possible 
-\     outcomes for the measurement of the particle's spin along *any* axis. The 
-\     spin state of a fermion is represented by an ordered set of 2 complex 
-\     numbers, which are the amplitudes along two basis vectors. The basis vectors 
-\     for fermion spin are *chosen* to be the two eigenvectors of the "sz" operator.
+\     d) probability of measuring a particular eigenvalue is
+\          the magnitude squared of the projection of the state
+\          vector onto the eigenvector corresponding to the
+\          particular eigenvalue of the measurement operator
+\          (caveat: this statement assumes the state vector and
+\          eigenvectors of the measurement operator are normalized,
+\          i.e. have unit length).
+\
+\ [1] In the simple case of fermion spin, N=2 because there are only two
+\     possible outcomes for the measurement of the particle's spin along
+\     *any* axis. The spin state of a fermion is represented by an ordered
+\     set of 2 complex numbers, which are the amplitudes along two basis
+\     vectors. The basis vectors for fermion spin are *chosen* to be the
+\     two eigenvectors of the "sz" operator.
 \
 \
 \ Suggested reading:
@@ -125,12 +133,13 @@
 \    probability of measuring -1 ("spin down") along the x, y, 
 \    and z axes.
 \
-\    Hint: Apply the appropriate measurement operator (sx, sy, or sz)
-\          to the input state; then find the projection of the resulting
-\          vector onto the spin up or spin down eigenvector of the
-\          operator. 
+\    Hint: Find the eigenvectors for spin-up and spin-down of the
+\          appropriate measurement operator (sx, sy, or sz). Then,
+\          find the projection of the given spinor onto the
+\          spin-up and spin-down eigenvectors. The final step is
+\          to square the magnitudes of the projections. 
 \
-\    Partial Answer: The probability of measuring spin down along the
+\    Example: The probability of measuring spin down along the
 \                    y-axis is 0.5, or 50%.
 \
 \
@@ -173,7 +182,9 @@
 \ 
 \ Revisions:
 \   
-\	2004-02-19  first release version  km       
+\	2004-02-19  first release version  km
+\       2017-12-01  revised comments, particularly for hint in
+\                   exercise 5, which was mis-stated.  km         
 \
 \ Requires:
 \

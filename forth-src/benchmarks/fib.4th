@@ -4,7 +4,7 @@
 \
 \ To time the execution, type
 \
-\	time&date main time&date .s
+\	ms@ 34 fib drop ms@ swap - .
 \
 
 : fib ( n1 -- n2 )

@@ -38,6 +38,7 @@
 \   2017-05-06  km  handle window resizing and key press.
 
 include ans-words
+include xchars
 include asm
 include strings
 include lib-interface
@@ -96,7 +97,7 @@ XEvent        event
 
 : set-max-extents ( az -- )
    0 h ! 0 w !
-   dup strlen BY/CHAR /
+   dup ( strlen BY/CHAR /) dup strlen xc-len
    0 DO
      dup >r 
      dpy @ font r> BY/CHAR extents XftTextExtentsUtf8
