@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 
     if (debug) {
 	cout << '\n' << nWords << " words defined.\n";
-	cout << "Jump Table address:  " << JumpTable << endl;
+	cout << "Jump Table address:  " << &JumpTable << endl;
 	cout << "Bottom of Stack:     " << BottomOfStack << endl;
 	cout << "Bottom of Ret Stack: " << BottomOfReturnStack << endl;
     }
