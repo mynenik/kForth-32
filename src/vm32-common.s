@@ -28,6 +28,10 @@
 .data
 NDPcw: .int 0
 FCONST_180: .double 180.
+
+// Jump table is read-only
+.section        .rodata
+.align 32
 JumpTable: .int L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .int L_dfloats, L_dfloatplus, CPP_case, CPP_endcase  # 4 -- 7
            .int CPP_of, CPP_endof, C_open, C_lseek     # 8 -- 11
