@@ -212,19 +212,28 @@ variable  number_val
 	number_val @ number_sign @ IF negate THEN ;
 
 \ Convert r to a formatted fixed point string with
-\ n decimal places
+\ n decimal places, 0 <= n <= 17.
+\ WARNING: Requesting a number fixed point decimal places which
+\   results in total number of digits > 17 will give
+\   incorrect results, e.g. "65536.9921875e 15 f>fpstr type"
+\   will output garbage (20 digits are being requested).
 : f>fpstr ( r n -- a u )
-    1 swap dup >r 0 ?do 10 * loop 
-    s>f f* fround f>d dup -rot dabs
-    <# r> 0 ?do # loop [char] . hold #s rot sign #> ; 
+    0 max 17 min >r 10e r@ s>f f** 
+    f* fround f>d dup -rot dabs
+    <# r> 0 ?DO # LOOP [char] . hold #s rot sign #> ; 
 
 \ Print an fp number as a fixed point string with
 \ n decimal places, right-justified in a field of width, w
 : f.rd ( r w n -- )
-    swap >r f>fpstr r> over - 
-    dup 0> IF spaces ELSE drop THEN type ;
+    swap >r f>fpstr dup 20 > IF
+      \ Too many digits requested in fixed point output
+      2drop r> 0 ?DO [char] * emit LOOP
+    ELSE
+      r> over - 
+      dup 0> IF spaces ELSE drop THEN type
+    THEN ;
 
-create fnumber_buf 64 allot
+create    fnumber_buf 64 allot
 variable  fnumber_sign
 variable  fnumber_power
 variable  fnumber_digits
