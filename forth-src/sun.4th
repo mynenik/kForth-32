@@ -19,6 +19,7 @@
 \     added TIMEZONE SET-TIMEZONE LOCAL-OFFSET-HR
 \     UTC>LOCAL_STANDARD ; provide predefined timezones
 \     UTC-12:00 ... ;
+\   2019-01-28 km fixed TIME>MH to handle min = 60
 \
 \ Requires:
 \   ans-words.4th  (kForth32 only)
@@ -148,7 +149,11 @@ UTC+00:00 timezone DEFAULT_TIMEZONE
 : time>mh ( rh -- min hour )
     fdup floor  fover  f- fnegate
     60e f* fround>s  
-    >r floor f>s r> swap ;
+    >r floor f>s r> swap
+    over 60 = IF
+      1+ >r drop 0 r>
+    THEN
+ ;
 
 \ Local latitude and longitude
 \ (west and south are negative, east and north are positive):
@@ -267,6 +272,8 @@ t{ -17e range360 f>s -> 343 }t
 t{  97e floor90  f>s -> 90 }t
 t{ 20 July 1984 day-of-year -> 202 }t
 t{ 3.5e time>mh -> 30 3 }t
+t{ 16.99e  time>mh -> 59 16 }t
+t{ 16.999e time>mh ->  0 17 }t
 
 TESTING SET-LOCATION OFFICIAL-ZENITH UTC-SUNTIME
 \ Sunrise and sunset in UTC for Toronto, Canada ( 43.6N 79.4W )
