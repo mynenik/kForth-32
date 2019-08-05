@@ -12,6 +12,7 @@
 \   2001-12-29  km  Modified to run under kForth
 \   2019-08-04  km  Added utility words to display and reset
 \                   the binary tree
+\   2019-08-05  km  simplified DISPLAY-SUBTREE.
 \
 \ To run this code under ANS Forth, uncomment definition of 
 \ A@ and comment out the empty definition of ALIGN below:
@@ -200,12 +201,8 @@ SEED
 \ Display the subtree starting with the given node
 : display-subtree ( anode -- )  
     dup display-node cr
-    dup left ?dup IF 
-      dup term? IF display-node cr ELSE recurse THEN
-    THEN 
-    dup right ?dup IF 
-      dup term? IF display-node cr ELSE recurse THEN
-    THEN
+    dup left  ?dup IF recurse THEN 
+    dup right ?dup IF recurse THEN 
     drop
 ;
 
@@ -222,16 +219,15 @@ SEED
 : INVENTORY ( -- )
 	0 ROOT A@ CR BEGIN EXPAND DUP 0= UNTIL DROP ;
 
-
 \ plays the animal game
 : ANIMAL
     ROOT BEGIN CR CR GUESS UNTIL DROP ;
 
 
 CR CR 
-.( ANIMAL        -- starts/restarts the game ) CR
-.( INVENTORY     -- list the known animals   ) CR
-.( DISPLAY-TREE  -- display binary tree nodes) CR
+.( ANIMAL        -- starts/continues the game ) CR
+.( INVENTORY     -- list the known animals    ) CR
+.( DISPLAY-TREE  -- display binary tree nodes ) CR
 .( RESET-TREE    -- reset the tree to startup state ) CR
 CR
 
