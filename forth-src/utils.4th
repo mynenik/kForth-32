@@ -13,6 +13,7 @@
 \                   and CTABLE, and simplified $TABLE  KM
 \       2007-08-02  removed useless code from ENUM  km
 \       2011-06-18  added PLACE from Wil Baden's toolbelt  km
+\       2019-08-07  replaced description of PTR in comments  km
 
 : shell ( a u -- n | execute a shell command) 
     strpck system ;
@@ -26,8 +27,9 @@
 \ iforth shell command
 \ : shell  system  RETURNCODE @ ;  \ c-addr u -- n | shell command in iForth
 
-
-: ptr ( a <name> -- | create an address constant ) 
+\ PTR is similar to VALUE except it returns a number with an address
+\ type. The word TO may be used to change the value of a named ptr.
+: ptr ( a <name> -- ) 
     create 1 cells ?allot ! does> a@ ;
 
 
