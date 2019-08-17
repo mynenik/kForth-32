@@ -28,7 +28,7 @@ include terminal
 ALSO serial ALSO serial-comm  ALSO serial-term
 		
 : term ( -- | start the default terminal )
-    COM2    ∋ serial-comm config  port !
+    COM1    ∋ serial-comm config  port !
     B4800   ∋ serial-comm config  baud !
     ∋ serial-comm config  start 
 ;

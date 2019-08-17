@@ -15,9 +15,9 @@ create buf 64 allot
 Public:
 
 struct
-   int:   port
-   int:   baud
-   4 buf: params
+   cell% field   port
+   cell% field   baud
+   cell% field   params
 end-struct serial-config%
 
 create config serial-config% %allot drop
