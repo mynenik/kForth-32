@@ -32,7 +32,7 @@ vmc.c
 #include "fbc.h"
 #include "kfmacros.h"
 
-#define WSIZE 8
+#define WSIZE 4
 #define TRUE -1
 #define FALSE 0
 #define E_V_NOTADDR 1
