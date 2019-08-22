@@ -3,7 +3,7 @@
 // The C++ portion of the kForth Virtual Machine to 
 // execute Forth byte code.
 //
-// Copyright (c) 1996--2018 Krishna Myneni,
+// Copyright (c) 1996--2019 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -36,7 +36,7 @@ extern bool debug;
 extern WordTemplate RootWords[];
 extern WordTemplate ForthWords[];
 extern const char* C_ErrorMessages[];
-extern int linecount;
+extern long int linecount;
 extern istream* pInStream ;    // global input stream
 extern ostream* pOutStream ;   // global output stream
 extern vector<byte>* pCurrentOps;
@@ -80,11 +80,11 @@ extern "C" {
 
   // global pointers exported to other modules
 
-  int* GlobalSp;      // the global stack pointer
+  long int* GlobalSp;      // the global stack pointer
   byte* GlobalIp;     // the global instruction pointer
-  int* GlobalRp;      // the global return stack pointer
-  int* BottomOfStack;
-  int* BottomOfReturnStack;
+  long int* GlobalRp;      // the global return stack pointer
+  long int* BottomOfStack;
+  long int* BottomOfReturnStack;
 
 #ifndef __FAST__
   byte* GlobalTp;     // the global type stack pointer
@@ -93,19 +93,19 @@ extern "C" {
   byte* BottomOfReturnTypeStack;
 #endif
 
-  int* vmEntryRp;
-  int Base;
-  int State;
-  int Precision;
+  long int* vmEntryRp;
+  long int Base;
+  long int State;
+  long int Precision;
   char* pTIB;
-  int NumberCount;
+  long int NumberCount;
   char WordBuf[256];
   char TIB[256];
   char NumberBuf[256];
   char ParseBuf[1024];
 
 }
-extern "C" int JumpTable[];
+extern "C" long int JumpTable[];
 extern "C" void dump_return_stack(void); 
 
 // The Dictionary
@@ -122,8 +122,8 @@ vector<char*> StringTable;               // table for persistent strings
 
 // stacks; these are global to this module
 
-int ForthStack[STACK_SIZE];                  // the stack
-int ForthReturnStack[RETURN_STACK_SIZE];     // the return stack
+long int ForthStack[STACK_SIZE];                  // the stack
+long int ForthReturnStack[RETURN_STACK_SIZE];     // the return stack
 #ifndef __FAST__
 byte ForthTypeStack[STACK_SIZE];             // the value type stack
 byte ForthReturnTypeStack[RETURN_STACK_SIZE];// the return value type stack
@@ -166,8 +166,8 @@ void WordList::RemoveLastWord ()
 // Remove the last entry in the current wordlist
 
 	WordIndex i = end() - 1;
-	delete [] (byte*) i->Pfa;	// free memory
-	if (i->Pfa != i->Cfa) delete [] (byte*) i->Cfa;
+	if (i->Pfa) delete [] (byte*) i->Pfa;	// free memory
+	if (i->Cfa) delete [] (byte*) i->Cfa;
 	pop_back(); 
 }
 
@@ -228,14 +228,14 @@ int Vocabulary::Initialize( WordTemplate wt[], int n )
         wcode = wt[i].WordCode;
 	w.WordCode = wcode;
 	w.Precedence = wt[i].Precedence;
-        w.Pfa = new byte[8];
-	w.Cfa = w.Pfa;
-	byte* bp = (byte*) w.Pfa;
+        w.Cfa = new byte[WSIZE+2];
+	w.Pfa = NULL;
+	byte* bp = (byte*) w.Cfa;
 	if (wcode >> 8)
 	{
 	    bp[0] = OP_CALLADDR;
-	    *((int*) (bp+1)) = (int) JumpTable[wcode];
-	    bp[5] = OP_RET;
+	    *((long int*) (bp+1)) = (long int) JumpTable[wcode];
+	    bp[WSIZE+1] = OP_RET;
 	}
 	else
 	{
@@ -282,6 +282,37 @@ bool SearchList::LocateCfa (void* cfa, WordListEntry* pWord)
 }
 //---------------------------------------------------------------
 
+int InitSystemVars ()
+{
+// Initialize the Forth system variables, and set the Pfa's for
+//   their words.
+
+    Base = 10;
+    State = FALSE;
+    Precision = 15;
+
+    WordIndex i;
+    i = Voc_Forth.IndexOf("STATE");
+    if (i->Pfa == NULL) i->Pfa = &State;  
+    i = Voc_Forth.IndexOf("BASE");
+    if (i->Pfa == NULL) i->Pfa = (void*) &Base;
+    i = Voc_Forth.IndexOf("PRECISION");
+    if (i->Pfa == NULL) i->Pfa = (void*) &Precision;
+    return 0;
+}
+//--------------------------------------------------------------- 
+
+int NullSystemVars ()
+{
+// Set Pfa's of system vars to NULL to prevent Forth system
+// shutdown from trying to free their memory.
+    (Voc_Forth.IndexOf("STATE"))->Pfa = NULL;
+    (Voc_Forth.IndexOf("BASE"))->Pfa = NULL;
+    (Voc_Forth.IndexOf("PRECISION"))->Pfa = NULL;
+    return 0;
+}
+//--------------------------------------------------------------- 
+
 int OpenForth ()
 {
 // Initialize the Forth system, and return the total number of words
@@ -315,9 +346,7 @@ int OpenForth ()
 
    // Other initialization
     vmEntryRp = BottomOfReturnStack;
-    Base = 10;
-    State = FALSE;
-    Precision = 15;
+    InitSystemVars();
     set_start_time();
     save_term();
     L_initfpu();
@@ -328,6 +357,9 @@ int OpenForth ()
 
 void CloseForth ()
 {
+
+    NullSystemVars();
+
     // Clean up the compiled words
     Vocabulary* pVoc;
 
@@ -392,23 +424,31 @@ void ClearControlStacks ()
 }
 //---------------------------------------------------------------
 
-void OpsCopyInt (int offset, int i)
+void OpsCopyInt (long int offset, long int i)
 {
   // Copy integer into the current opcode vector at the specified offset 
 
   vector<byte>::iterator ib = pCurrentOps->begin() + offset;
   byte* ip = (byte*) &i;
-  *ib++ = *ip; *ib++ = *(ip + 1); *ib++ = *(ip + 2); *ib = *(ip + 3);
+  for (unsigned int j = 0; j < WSIZE; j++) *(ib+j) = *(ip + j);
+//  *ib++ = *ip; *ib++ = *(ip + 1); *ib++ = *(ip + 2); *ib = *(ip + 3);
 
 }
 //---------------------------------------------------------------
 
-void OpsPushInt (int i)
+void OpsPushInt (long int i)
 {
   // push an integer into the current opcode vector
 
   byte* ip = (byte*) &i;
-  for (unsigned int j = 0; j < sizeof(int); j++) pCurrentOps->push_back(*(ip + j));
+  for (int j = 0; j < WSIZE; j++) pCurrentOps->push_back(*(ip + j));
+}
+//---------------------------------------------------------------
+
+void OpsPushTwoInt (long int nl, long int nh)
+{
+   // push a double integer into the current opcode vector
+  OpsPushInt( nl ); OpsPushInt( nh );
 }
 //---------------------------------------------------------------
 
@@ -428,7 +468,7 @@ int OpsCompileByte ()
   int endian = 1;
   DROP
   byte* ip = (byte*) GlobalSp;
-  ip += (*((byte*) &endian)) ? 0 : sizeof(int)-1; // handle big or little endian
+  ip += (*((byte*) &endian)) ? 0 : sizeof(long int)-1; // handle big or little endian
   pCurrentOps->push_back(*ip);
   return 0;
 }
@@ -456,14 +496,14 @@ int OpsCompileDouble ()
 }
 //----------------------------------------------------------------
 
-void PrintVM_Error (int ec)
+void PrintVM_Error (long int ec)
 {
     int ei = ec & 0xFF;
     int imax = (ec >> 8) ? MAX_C_ERR_MESSAGES : MAX_V_ERR_MESSAGES;
     const char *pMsg;
     char elabel[12];
     
-    if ((ei >= 0) * (ei < imax))
+    if ((ei >= 0) && (ei < imax))
     {
 	pMsg = (ec >> 8) ? C_ErrorMessages[ei] : V_ErrorMessages[ei];
 	if (ec >> 8)  strcpy(elabel, "Compiler"); 
@@ -474,7 +514,7 @@ void PrintVM_Error (int ec)
 }
 //---------------------------------------------------------------
 
-int ForthVM (vector<byte>* pFBC, int** pStackPtr, byte** pTypePtr)
+int ForthVM (vector<byte>* pFBC, long int** pStackPtr, byte** pTypePtr)
 {
 // The FORTH Virtual Machine
 //
@@ -486,15 +526,19 @@ int ForthVM (vector<byte>* pFBC, int** pStackPtr, byte** pTypePtr)
 //
 // Return value: error code (see ForthVM.h)
 //
-if (debug)  cout << ">ForthVM Sp: " << GlobalSp << " Rp: " << GlobalRp << endl;
+
   if (pFBC->size() == 0) return 0;  // null opcode vector
 
   // Initialize the instruction ptr and error code
 
   // byte *ip = (byte*) pFBC->begin();
   byte *ip = (byte *) &(*pFBC)[0];
-  int ecode = 0;
+  long int ecode = 0;
 
+if (debug)  {
+	cout << ">ForthVM Sp: " << GlobalSp << " Rp: " << GlobalRp << endl;
+	cout << "  Ip: " << (long int) ip << " *Ip: " << (long int) *ip << endl;
+	}
   // Execute the virtual machine; return when error occurs or
   //   the return stack is exhausted.
 
@@ -548,7 +592,7 @@ int CPP_wordlist()
      // Create a new wordlist
      // stack: ( -- wid)
      Vocabulary* pVoc = new Vocabulary(""); // create an unnamed vocabulary
-     *GlobalSp-- = (int) pVoc;
+     *GlobalSp-- = (long int) pVoc;
      STD_ADDR
      Dictionary.push_back(pVoc); 
      return 0;
@@ -558,7 +602,7 @@ int CPP_forthwordlist()
 {
      // Return the Forth wordlist
      // stack: ( -- wid)
-     *GlobalSp-- = (int) &Voc_Forth ;
+     *GlobalSp-- = (long int) &Voc_Forth ;
      STD_ADDR
      return 0;
 }
@@ -567,7 +611,7 @@ int CPP_getcurrent()
 {
      // Return the compilation (current) wordlist
      // stack: ( -- wid)
-     *GlobalSp-- = (int) pCompilationWL;
+     *GlobalSp-- = (long int) pCompilationWL;
      STD_ADDR
      return 0;
 }
@@ -590,7 +634,7 @@ int CPP_getorder()
 
      if (SearchOrder.size()) {
        for ( i = SearchOrder.end()-1; i >= SearchOrder.begin(); i--) {
-	  *GlobalSp-- = (int) (*i);
+	  *GlobalSp-- = (long int) (*i);
           STD_ADDR
        }
      }
@@ -604,7 +648,7 @@ int CPP_setorder()
       // Set the search order
       // stack: ( widn ... wid1 n -- )
       DROP
-      int nWL = TOS;
+      long int nWL = TOS;
       if (nWL == -1) 
         CPP_only();
       else
@@ -627,7 +671,7 @@ int CPP_searchwordlist()
       CHK_ADDR
       WordList* pWL = (WordList*) TOS;
       DROP
-      int len = TOS;
+      long int len = TOS;
       DROP
       CHK_ADDR
       char* cp = (char*) TOS;
@@ -640,7 +684,7 @@ int CPP_searchwordlist()
         bool b = pWL->RetrieveFromName(name, &w);
 	delete [] name;
         if (b) {
-          PUSH_ADDR((int) w.Cfa)
+          PUSH_ADDR((long int) w.Cfa)
           PUSH_IVAL( (w.Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
           return 0;
 	}
@@ -668,21 +712,21 @@ int CPP_vocabulary()
 
      iWord->Precedence = PRECEDENCE_NON_DEFERRED;
      iWord->Pfa = NULL;
-     byte* bp = new byte[20];
+     byte* bp = new byte[3*WSIZE+6];
      iWord->Cfa = bp;
      iWord->WordCode = OP_DEFINITION;
     
      // Execution behavior of new word:
      // get-order nip pVoc swap set-order
      bp[0] = OP_CALLADDR;
-     *((int*)(bp+1)) = (int) JumpTable[OP_GETORDER]; 
-     bp[5] = OP_NIP;
-     bp[6] = OP_ADDR;
-     *((int*)(bp+7)) = (int) pVoc;
-     bp[11] = OP_SWAP;
-     bp[12] = OP_CALLADDR;
-     *((int*) (bp+13)) = (int) JumpTable[OP_SETORDER];
-     bp[17] = OP_RET;
+     *((long int*)(bp+1)) = (long int) JumpTable[OP_GETORDER]; 
+     bp[WSIZE+1] = OP_NIP;
+     bp[WSIZE+2] = OP_ADDR;
+     *((long int*)(bp+WSIZE+3)) = (long int) pVoc;
+     bp[2*WSIZE+3] = OP_SWAP;
+     bp[2*WSIZE+4] = OP_CALLADDR;
+     *((long int*) (bp+2*WSIZE+5)) = (long int) JumpTable[OP_SETORDER];
+     bp[3*WSIZE+5] = OP_RET;
 
      return 0;
 }
@@ -750,6 +794,54 @@ int CPP_assembler()
     SearchOrder[0] = &Voc_Assembler;
     return 0;
 }
+
+int CPP_traverse_wordlist()
+{
+	// Forth 2012 Tools Wordset: 15.6.2.2297
+	// stack: ( i*x xt wid -- j*x | execute xt for every word in wordlist)
+	// Execution of xt has stack effect ( k*x nt -- l*x flag )
+
+	DROP
+	CHK_ADDR
+	WordList* pWL = (WordList*) TOS;
+	DROP
+	CHK_ADDR
+	unsigned char* cfa = (unsigned char*) TOS;  // xt is same as cfa
+	WordIndex i;
+	WordListEntry *w;
+	int e;
+	if (pWL->size()) {
+	  for (i = pWL->end()-1; i >= pWL->begin(); --i) {
+	    w = *((WordListEntry**) &i);  // this is the node token, nt
+	    TOS = (long int) w;
+	    DEC_DSP
+	    STD_ADDR
+	    e = vm(cfa);
+	    DROP
+	    long int b = (long int) TOS;
+	    if (b == 0) break;
+	  }
+   }
+	return e;
+}
+//----------------------------------------------------------------
+
+int CPP_name_to_string()
+{
+	// Forth 2012 Tools Wordset: 15.6.2.1909.40 NAME>STRING
+	// stack: ( nt -- c-addr u )
+	DROP
+	WordListEntry* p = (WordListEntry*) TOS;  // get nt from stack
+	char* cp = (char*) p->WordName;
+	TOS = (long int) cp;
+	DEC_DSP
+	STD_ADDR
+	size_t len = strlen(cp);
+	TOS = (long int) len;
+	DEC_DSP
+	STD_IVAL
+	return 0;	
+}
 //----------------------------------------------------------------
 
 int CPP_colon()
@@ -796,18 +888,18 @@ int CPP_semicolon()
 
       if (debug) OutputForthByteCode (pCurrentOps);
  		  
-      NewWord.Pfa = new byte[pCurrentOps->size()];
-      NewWord.Cfa = NewWord.Pfa;
+      NewWord.Cfa = new byte[pCurrentOps->size()];
+      // NewWord.Pfa = ;
 
       // Resolve any self references (recursion)
 
       byte *bp, *dest;
-      unsigned int i;
+      unsigned long int i;
       vector<byte>::iterator ib;
       WordListEntry d;
 
 
-      bp = (byte*) &NewWord.Pfa;
+      bp = (byte*) &NewWord.Cfa;
       while (recursestack.size())
 	{
 	  i = recursestack[recursestack.size() - 1];
@@ -816,7 +908,7 @@ int CPP_semicolon()
 	  recursestack.pop_back();
 	}
 
-      dest = (byte*) NewWord.Pfa;
+      dest = (byte*) NewWord.Cfa;
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *dest++ = *bp++;
       if (IsForthWord(NewWord.WordName, &d)) {
@@ -904,11 +996,11 @@ int CPP_dot ()
     return E_V_STK_UNDERFLOW;
   else
     {
-      int n = TOS;
+      long int n = TOS;
       if (n < 0)
 	{
 	  *pOutStream << '-';
-	  TOS = abs(n);
+	  TOS = labs(n);
 	}
       DEC_DSP
       DEC_DTSP
@@ -925,8 +1017,8 @@ int CPP_dotr ()
   DROP
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
   
-  int i, n, ndig, nfield;
-  unsigned int u, utemp, uscale;
+  long int i, n, ndig, nfield;
+  long unsigned int u, utemp, uscale;
 
   nfield = TOS;
   DROP
@@ -936,7 +1028,7 @@ int CPP_dotr ()
   if (nfield <= 0) return 0;  // don't print anything if field with <= 0
 
   n = TOS;
-  u = abs(n);
+  u = labs(n);
   ndig = 1;
   uscale = 1;
   utemp = u;
@@ -967,8 +1059,8 @@ int CPP_udotr ()
   DROP
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
   
-  int i, ndig, nfield;
-  unsigned int u, utemp, uscale;
+  long int i, ndig, nfield;
+  unsigned long int u, utemp, uscale;
 
   nfield = TOS;
   DROP
@@ -1004,8 +1096,8 @@ int CPP_udot0 ()
   DROP
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
   
-  int i, ndig, nchar;
-  unsigned int u, utemp, uscale;
+  long int i, ndig, nchar;
+  unsigned long int u, utemp, uscale;
 
   u = TOS;
   ndig = 1;
@@ -1048,7 +1140,7 @@ int CPP_uddot ()
 
   if ((GlobalSp + 2) > BottomOfStack) return E_V_STK_UNDERFLOW;
   
-  unsigned int u1;
+  unsigned long int u1;
 
   u1 = *(GlobalSp + 1);
   if (u1 == 0)
@@ -1078,7 +1170,7 @@ int CPP_ddot ()
     return E_V_STK_UNDERFLOW;
   else
     {
-      int n = *(GlobalSp+1);
+      long int n = *(GlobalSp+1);
       if (n < 0)
 	{
 	  *pOutStream << '-';
@@ -1139,14 +1231,14 @@ int CPP_dots ()
 
   L_depth();  
   DROP
-  int depth = TOS;
+  long int depth = TOS;
   DROP
 
   if (debug)
     {
-      *pOutStream << "\nTop of Stack = " << ((int)ForthStack);
-      *pOutStream << "\nBottom of Stack = " << ((int)BottomOfStack);
-      *pOutStream << "\nStack ptr = " << ((int)GlobalSp);
+      *pOutStream << "\nTop of Stack = " << ((long int)ForthStack);
+      *pOutStream << "\nBottom of Stack = " << ((long int)BottomOfStack);
+      *pOutStream << "\nStack ptr = " << ((long int)GlobalSp);
       *pOutStream << "\nDepth = " << depth;
     }
  
@@ -1161,7 +1253,7 @@ int CPP_dots ()
 	  if (*(GlobalTp + i) == OP_ADDR)
             {
                 bptr = *((byte**) (GlobalSp + i));
-                *pOutStream << "\n\taddr\t" << ((int)bptr);
+                *pOutStream << "\n\taddr\t" << ((long int)bptr);
             }
             else
             {
@@ -1193,15 +1285,31 @@ int CPP_tick ()
     pTIB = ExtractName(pTIB, name);
     strupr(name);
     WordListEntry w;
+    int e = 0;
     if ( SearchOrder.LocateWord (name, &w) )
     {
-        PUSH_ADDR((int) w.Cfa)
+        PUSH_ADDR((long int) w.Cfa)
     }
     else
-	return E_C_UNKNOWNWORD;
+	e = E_C_UNKNOWNWORD;
     
-    return 0;
+    return e;
 }
+//---------------------------------------------------------------
+
+int CPP_tobody ()
+{
+   // stack: ( xt -- pfa | 0 )
+   WordListEntry w;
+   INC_DSP
+   void* cfa = (void*) TOS;
+   void* pfa = (void*) (( SearchOrder.LocateCfa (cfa, &w) ) ? w.Pfa : NULL);
+   TOS = (long int) pfa;
+   DEC_DSP
+
+   return 0;
+}
+//---------------------------------------------------------------
 
 int CPP_defined ()
 {
@@ -1237,7 +1345,7 @@ int CPP_find ()
   int found = SearchOrder.LocateWord (name, &w);  
   if (found)
     {
-      PUSH_ADDR((int) w.Cfa)
+      PUSH_ADDR((long int) w.Cfa)
       PUSH_IVAL( (w.Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
     }
   else
@@ -1314,6 +1422,8 @@ int CPP_type ()
 
 int CPP_words ()
 {
+// Forth-2012: 15.6.1.2465 WORDS ( -- )
+// List the definition names in the first wordlist of the search order
   char *cp, field[16];
   int nc;
   Vocabulary* pVoc = SearchOrder.front();
@@ -1349,7 +1459,7 @@ int CPP_allocate()
 
   unsigned int requested = TOS;
   byte *p = new (nothrow) byte[requested];
-  PUSH_ADDR((int) p)
+  PUSH_ADDR((long int) p)
   PUSH_IVAL(p ? 0 : -1)
   return 0;
 }
@@ -1371,12 +1481,12 @@ int CPP_resize()
 {
     // stack: ( a unew -- anew ior )
     DROP
-    unsigned unew = TOS;
+    unsigned long unew = TOS;
     DROP
     void* pOld = (void*) TOS;
     CHK_ADDR
     void* pNew = realloc(pOld, unew);
-    if (pNew) TOS = (int) pNew;
+    if (pNew) TOS = (long int) pNew;
     DEC_DSP
     DEC_DTSP
     TOS = (pNew == NULL); 
@@ -1398,7 +1508,7 @@ int CPP_allot ()
 #endif
 
   WordIndex id = pCompilationWL->end() - 1;
-  int n = TOS;
+  long int n = TOS;
   if (n > 0)
     {
       if (id->Pfa == NULL)
@@ -1407,11 +1517,11 @@ int CPP_allot ()
 	  if (id->Pfa) memset (id->Pfa, 0, n); 
 
 	  // Provide execution code to the word to return its Pfa
-  	  byte *bp = new byte[6];
+  	  byte *bp = new byte[WSIZE+2];
   	  id->Cfa = bp;
   	  bp[0] = OP_ADDR;
-  	  *((int*) &bp[1]) = (int) id->Pfa;
-  	  bp[5] = OP_RET;
+  	  *((long int*) &bp[1]) = (long int) id->Pfa;
+  	  bp[WSIZE+1] = OP_RET;
 	}
       else 
 	return E_V_REALLOT;
@@ -1433,7 +1543,7 @@ int CPP_queryallot ()
       // Get last word's Pfa and leave on the stack
 
       WordIndex id = pCompilationWL->end() - 1;
-      PUSH_ADDR((int) id->Pfa)
+      PUSH_ADDR((long int) id->Pfa)
     }
   return e;
 }
@@ -1479,14 +1589,14 @@ int CPP_alias ()
     if (found) {
       CPP_create();
       WordIndex j = pCompilationWL->end() - 1;
-      byte* bp = new byte[8];
+      byte* bp = new byte[WSIZE+2];
       j->Cfa = bp;
       j->Pfa = NULL;
       j->Precedence = w.Precedence;
       j->WordCode = OP_DEFINITION;
       bp[0] = OP_DEFINITION;
-      *((int*)(bp+1)) = (int) w.Cfa;
-      bp[5] = OP_RET;
+      *((long int*)(bp+1)) = (long int) w.Cfa;
+      bp[WSIZE+1] = OP_RET;
     }
     else
       return E_C_UNKNOWNWORD;
@@ -1500,7 +1610,19 @@ int CPP_variable ()
   // stack: ( -- | create dictionary entry and allot space )
 
   if (CPP_create()) return E_V_CREATE;  
-  TOS = sizeof(int);
+  TOS = sizeof(long int);
+  DEC_DSP
+  STD_IVAL
+  int e = CPP_allot();
+  return e;
+}
+//-----------------------------------------------------------------
+
+int CPP_twovariable ()
+{
+  // stack: ( -- | create dictionary entry and allot space )
+  if (CPP_create()) return E_V_CREATE;  
+  TOS = 2*sizeof(long int);
   DEC_DSP
   STD_IVAL
   int e = CPP_allot();
@@ -1529,15 +1651,39 @@ int CPP_constant ()
   WordIndex id = pCompilationWL->end() - 1;
   DROP
   id->WordCode = IS_ADDR ? OP_PTR : OP_IVAL;
-  id->Pfa = new int[1];
-  *((int*) (id->Pfa)) = TOS;
-  byte *bp = new byte[7];
+  id->Pfa = new long int[1];
+  *((long int*) (id->Pfa)) = TOS;
+  byte *bp = new byte[WSIZE+3];
   id->Cfa = bp;
   bp[0] = OP_ADDR;
-  *((int*) &bp[1]) = (int) id->Pfa;
-  bp[5] = (id->WordCode == OP_PTR) ? OP_AFETCH : OP_FETCH;
-  bp[6] = OP_RET;
+  *((long int*) &bp[1]) = (long int) id->Pfa;
+  bp[WSIZE+1] = (id->WordCode == OP_PTR) ? OP_AFETCH : OP_FETCH;
+  bp[WSIZE+2] = OP_RET;
   return 0;
+}
+//------------------------------------------------------------------
+
+int CPP_twoconstant ()
+{
+  // create dictionary entry and store n1 and n2 as a 2constant
+  // stack: ( n1 n2 -- )
+
+  if (CPP_create()) return E_V_CREATE;
+  WordIndex id = pCompilationWL->end() - 1;
+  id->WordCode = OP_2VAL;
+  id->Pfa = new long int[2];
+  DROP
+  *((long int*) id->Pfa + 1) = TOS;
+  DROP
+  *((long int*) id->Pfa) = TOS;
+  byte *bp = new byte[WSIZE+3];
+  id->Cfa = bp;
+  bp[0] = OP_ADDR;
+  *((long int*) &bp[1]) = (long int) id->Pfa;
+  bp[WSIZE+1] = OP_2FETCH;
+  bp[WSIZE+2] = OP_RET;
+  return 0;
+
 }
 //------------------------------------------------------------------
 
@@ -1552,12 +1698,12 @@ int CPP_fconstant ()
   DROP
   *((double*) (id->Pfa)) = *((double*)GlobalSp);
   DROP
-  byte *bp = new byte[7];
+  byte *bp = new byte[WSIZE+3];
   id->Cfa = bp;
   bp[0] = OP_ADDR;
-  *((int*) &bp[1]) = (int) id->Pfa;
-  bp[5] = OP_DFFETCH;
-  bp[6] = OP_RET;
+  *((long int*) &bp[1]) = (long int) id->Pfa;
+  bp[WSIZE+1] = OP_DFFETCH;
+  bp[WSIZE+2] = OP_RET;
   return 0;
 }
 //------------------------------------------------------------------
@@ -1630,13 +1776,13 @@ int CPP_postpone ()
 	  if (wc == OP_IVAL)
 	    {
 	      pCurrentOps->push_back(OP_IVAL);
-	      OpsPushInt (*((int*) w.Pfa));
+	      OpsPushInt (*((long int*) w.Pfa));
 	      pCurrentOps->push_back(OP_LITERAL);
 	    }
 	  else if ((wc == OP_ADDR) || (wc == OP_PTR))
 	    {
 	      pCurrentOps->push_back(wc);
-	      OpsPushInt ((int) w.Pfa);
+	      OpsPushInt ((long int) w.Pfa);
 	      pCurrentOps->push_back(OP_LITERAL);
 	    }
 	  else
@@ -1644,28 +1790,28 @@ int CPP_postpone ()
 	      pCurrentOps->push_back(OP_IVAL);
 	      OpsPushInt(wc);
 	      pCurrentOps->push_back(OP_CALLADDR);
-	      OpsPushInt((int) OpsCompileByte);
+	      OpsPushInt((long int) OpsCompileByte);
 
 	      switch (wc)
 		{
 		case OP_DEFINITION:
 		  pCurrentOps->push_back(OP_ADDR);
-		  OpsPushInt((int) w.Cfa);
+		  OpsPushInt((long int) w.Cfa);
 		  pCurrentOps->push_back(OP_CALLADDR);
-		  OpsPushInt((int) OpsCompileInt);
+		  OpsPushInt((long int) OpsCompileInt);
 		  break;
 		case OP_CALLADDR:
 		  pCurrentOps->push_back(OP_ADDR);
 		  bp = (byte*) w.Cfa; ++bp;
-		  OpsPushInt(*((int*)bp));
+		  OpsPushInt(*((long int*)bp));
 		  pCurrentOps->push_back(OP_CALLADDR);
-		  OpsPushInt((int) OpsCompileInt);
+		  OpsPushInt((long int) OpsCompileInt);
 		  break;
 		case OP_FVAL:
 	          pCurrentOps->push_back(OP_FVAL);
 	          OpsPushDouble (*((double*) w.Pfa));
 	          pCurrentOps->push_back(OP_CALLADDR);
-	          OpsPushInt((int) OpsCompileDouble);
+	          OpsPushInt((long int) OpsCompileDouble);
 		  break;
 		default:
 		  ;
@@ -1815,7 +1961,7 @@ int CPP_sliteral ()
 {
   // stack: ( c-addr u -- | place string or copy of string in compiled opcodes )
   DROP
-  unsigned int u = TOS;
+  unsigned long int u = TOS;
   DROP
   CHK_ADDR
   char *cp = (char*) TOS;
@@ -1829,9 +1975,17 @@ int CPP_sliteral ()
     StringTable.push_back(str);
     cp = str;
   }
-  OpsPushInt((int) cp);
+  OpsPushInt((long int) cp);
   pCurrentOps->push_back(OP_IVAL);
   OpsPushInt(u);
+
+  return 0;
+}
+//-------------------------------------------------------------------
+
+int CPP_fliteral ()
+{
+  // stack: ( F: r -- | place fp in compiled opcodes )
 
   return 0;
 }
@@ -1856,7 +2010,7 @@ int CPP_cquote ()
   str[nc+1] = '\0';
   StringTable.push_back(str);
   pCurrentOps->push_back(OP_ADDR);
-  OpsPushInt((int) str);
+  OpsPushInt((long int) str);
 
   return 0;
 }
@@ -1870,7 +2024,7 @@ int CPP_squote ()
   int e = CPP_cquote();
   if (e) return e;
   char* s = *(StringTable.end() - 1);
-  int v = (byte) s[0];
+  long int v = (byte) s[0];
   pCurrentOps->push_back(OP_INC);
   pCurrentOps->push_back(OP_IVAL);
   OpsPushInt(v);
@@ -1939,20 +2093,20 @@ int CPP_abortquote ()
 {
   // stack: ( -- | generate opcodes to print message and abort )
 
-  int nc = strlen(NewWord.WordName);;
+  long int nc = strlen(NewWord.WordName);;
   char* str = new char[nc + 3];
   strcpy(str, NewWord.WordName);
   strcat(str, ": ");
   StringTable.push_back(str);
 
   pCurrentOps->push_back(OP_JZ);
-  OpsPushInt(25);   // relative jump count                       
+  OpsPushInt(4*WSIZE+9);   // relative jump count                       
 
 // the relative jump count (above) must be modified if the 
 // instructions below are updated!
 
   pCurrentOps->push_back(OP_ADDR);
-  OpsPushInt((int) str);
+  OpsPushInt((long int) str);
   pCurrentOps->push_back(OP_IVAL);
   OpsPushInt(nc+2);
   pCurrentOps->push_back(OP_TYPE);
@@ -1994,7 +2148,7 @@ int CPP_repeat()
   int i = beginstack[beginstack.size()-1];
   beginstack.pop_back();
 
-  int ival;
+  long int ival;
 
   if (whilestack.size())
     {
@@ -2002,7 +2156,7 @@ int CPP_repeat()
       if (j > i)
 	{
 	  whilestack.pop_back();
-	  ival = pCurrentOps->size() - j + 6;
+	  ival = pCurrentOps->size() - j + WSIZE + 2;
 	  OpsCopyInt (j, ival);  // write the relative jump count
 	}
     }
@@ -2023,7 +2177,7 @@ int CPP_until()
 
   int i = beginstack[beginstack.size()-1];
   beginstack.pop_back();
-  int ival = i - pCurrentOps->size();
+  long int ival = i - pCurrentOps->size();
   pCurrentOps->push_back(OP_JZ);
   OpsPushInt(ival);   // write the relative jump count
 
@@ -2039,7 +2193,7 @@ int CPP_again()
 
   int i = beginstack[beginstack.size()-1];
   beginstack.pop_back();
-  int ival = i - pCurrentOps->size();
+  long int ival = i - pCurrentOps->size();
   pCurrentOps->push_back(OP_JMP);
   OpsPushInt(ival);   // write the relative jump count
 
@@ -2068,8 +2222,8 @@ int CPP_else()
   if (ifstack.empty()) return E_V_ELSE_NO_IF;  // ELSE without matching IF
   int i = ifstack[ifstack.size()-1];
   ifstack.pop_back();
-  ifstack.push_back(pCurrentOps->size() - sizeof(int));
-  int ival = pCurrentOps->size() - i + 1;
+  ifstack.push_back(pCurrentOps->size() - sizeof(long int));
+  long int ival = pCurrentOps->size() - i + 1;
   OpsCopyInt (i, ival);  // write the relative jump count
 
   return 0;
@@ -2085,7 +2239,7 @@ int CPP_then()
 
   int i = ifstack[ifstack.size()-1];
   ifstack.pop_back();
-  int ival = (int) (pCurrentOps->size() - i) + 1;
+  long int ival = (long int) (pCurrentOps->size() - i) + 1;
   OpsCopyInt (i, ival);   // write the relative jump count
 
   return 0;
@@ -2110,13 +2264,13 @@ int CPP_endcase()
 
   // fix up all absolute jumps
 
-  int i, ival;
+  int i; long int ival;
   do
     {
       i = casestack[casestack.size()-1];
       casestack.pop_back();
       if (i == -1) break;
-      ival = (int) (pCurrentOps->size() - i) + 1;
+      ival = (long int) (pCurrentOps->size() - i) + 1;
       OpsCopyInt (i, ival);   // write the relative jump count
     } while (casestack.size()) ;
 
@@ -2151,7 +2305,7 @@ int CPP_endof()
 
   int i = ofstack[ofstack.size()-1];
   ofstack.pop_back();
-  int ival = (int) (pCurrentOps->size() - i) + 1;
+  long int ival = (long int) (pCurrentOps->size() - i) + 1;
   OpsCopyInt (i, ival);   // write the relative jump count
 
   return 0;
@@ -2168,7 +2322,7 @@ int CPP_recurse()
     }
   else
     {
-      int ival = (int) &(*pCurrentOps)[0]; // ->begin();
+      long int ival = (long int) &(*pCurrentOps)[0]; // ->begin();
       OpsPushInt(ival);
     }
   pCurrentOps->push_back(OP_EXECUTE);
@@ -2204,21 +2358,21 @@ int CPP_does()
 {
   // Allocate new opcode array
 
-  byte* p = new byte[12];
+  byte* p = new byte[2*WSIZE+4];
 
   // Insert pfa of last word in dictionary
 
   p[0] = OP_ADDR;
   WordIndex id = pCompilationWL->end() - 1;
-  *((int*)(p+1)) = (int) id->Pfa;
+  *((long int*)(p+1)) = (long int) id->Pfa;
 
   // Insert current instruction ptr 
 
-  p[5] = OP_ADDR;
-  *((int*)(p+6)) = (int)(GlobalIp + 1);
+  p[WSIZE+1] = OP_ADDR;
+  *((long int*)(p+WSIZE+2)) = (long int)(GlobalIp + 1);
 
-  p[10] = OP_EXECUTE;
-  p[11] = OP_RET;
+  p[2*WSIZE+2] = OP_EXECUTE;
+  p[2*WSIZE+3] = OP_RET;
 
   id->Cfa = (void*) p;
   id->WordCode = OP_DEFINITION;
@@ -2257,7 +2411,7 @@ int CPP_evaluate ()
 
   char s[256], s2[256];
   DROP
-  int nc = TOS, ec = 0;
+  long int nc = TOS; int ec = 0;
   DROP
   char *cp = (char*) TOS;
   if (nc < 256)
@@ -2302,7 +2456,7 @@ int CPP_included()
 
   char filename[256];
   DROP
-  int nc = TOS;
+  long int nc = TOS;
   DROP
   char *cp = (char*) TOS;
 
@@ -2342,7 +2496,7 @@ int CPP_included()
 	
   istream* pTempIn = pInStream;  // save input stream ptr
   SetForthInputStream(f);  // set the new input stream
-  int oldlc = linecount; linecount = 0;
+  long int oldlc = linecount; linecount = 0;
   pOldOps = pCurrentOps;
   ecode = ForthCompiler (&ops, &linecount);
   f.close();
@@ -2357,7 +2511,7 @@ int CPP_included()
 
   // Execute the code immediately
 		      
-  int *sp;
+  long int *sp;
   byte *tp;
   ecode = ForthVM (&ops, &sp, &tp);
   ops.erase(ops.begin(), ops.end());
@@ -2375,7 +2529,7 @@ int CPP_include()
     pTIB = ExtractName (pTIB, WordToken);
     strcpy (s, pTIB);  // save remaining part of input line in TIB
 
-    PUSH_ADDR((int) ((char*) WordToken))
+    PUSH_ADDR((long int) ((char*) WordToken))
     PUSH_IVAL(strlen(WordToken))
     ecode = CPP_included();
     if (ecode) return(ecode);
@@ -2389,7 +2543,7 @@ int CPP_include()
 
 int CPP_source()
 {
-    PUSH_ADDR((int) TIB)
+    PUSH_ADDR((long int) TIB)
     PUSH_IVAL(strlen(TIB))
     return 0;
 }
@@ -2398,7 +2552,7 @@ int CPP_source()
 int CPP_refill()
 {
     pInStream->getline(TIB, 255); 
-    int flag = (pInStream->fail()) ? FALSE : TRUE;
+    long int flag = (pInStream->fail()) ? FALSE : TRUE;
     if (flag) ++linecount;
     PUSH_IVAL(flag)
     pTIB = TIB;
@@ -2408,7 +2562,7 @@ int CPP_refill()
 
 int CPP_state()
 {
-    PUSH_ADDR((int)(&State))
+    PUSH_ADDR((long int)(&State))
     return 0;
 }
 //-------------------------------------------------------------------
@@ -2424,7 +2578,7 @@ int CPP_spstore()
 
     DROP
     CHK_ADDR
-    int* p = (int*) TOS; --p;
+    long int* p = (long int*) TOS; --p;
     if ((p > BottomOfStack) || (p < ForthStack))
 	return E_V_BADSTACKADDR;  // new SP must be within its stack space
     int n = (int) (p - ForthStack);
@@ -2443,7 +2597,7 @@ int CPP_rpstore()
 
     DROP
     CHK_ADDR
-    int* p = (int*) TOS; --p;
+    long int* p = (long int*) TOS; --p;
     if ((p > BottomOfReturnStack) || (p < ForthReturnStack))
 	return E_V_BADSTACKADDR;  // new RP must be within its stack space
 
@@ -2457,7 +2611,7 @@ int CPP_rpstore()
 
 void dump_return_stack()  // for debugging purposes
 {
-    int* p = GlobalRp;
+    long int* p = GlobalRp;
     cout << endl << "Return Stack: " << endl;
     while (p < BottomOfReturnStack)
     {

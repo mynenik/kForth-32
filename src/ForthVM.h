@@ -1,6 +1,6 @@
 // ForthVM.h
 //
-// Copyright (c) 1996--2018, Krishna Myneni
+// Copyright (c) 1996--2019, Krishna Myneni
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -38,6 +38,8 @@
 
 #define DEFAULT_OUTPUT_FILENAME "kforth.out"
 
+int InitSystemVars ();
+int NullSystemVars ();
 int OpenForth ();
 void CloseForth ();
 bool InStringTable (char*);
@@ -45,14 +47,15 @@ void RemoveLastWord ();
 vector<WordListEntry>::iterator LocateWord (char*);
 vector<WordListEntry>::iterator LocateCfa  (void*);
 void ClearControlStacks ();
-void OpsCopyInt (int, int);
-void OpsPushInt (int);
+void OpsCopyInt (long int, long int);
+void OpsPushInt (long int);
+void OpsPushTwoInt (long int, long int);
 void OpsPushDouble (double);
 int OpsCompileByte ();
 int OpsCompileInt ();
 int OpsCompileDouble ();
-void PrintVM_Error (int);
-int ForthVM (vector<byte>*, int**, byte**);
+void PrintVM_Error (long int);
+int ForthVM (vector<byte>*, long int**, byte**);
 
 // The following C++ functions have C linkage
 
@@ -72,11 +75,14 @@ int CPP_previous();
 int CPP_order();
 int CPP_forth();
 int CPP_assembler();
+int CPP_traverse_wordlist();
+int CPP_name_to_string();
 int CPP_colon();
 int CPP_semicolon();
 int CPP_lparen();
 int CPP_dotparen();
 int CPP_tick();
+int CPP_tobody();
 int CPP_defined();
 int CPP_undefined();
 int CPP_find();
@@ -102,8 +108,10 @@ int CPP_words();
 int CPP_create();
 int CPP_alias();
 int CPP_variable();
+int CPP_twovariable();
 int CPP_fvariable();
 int CPP_constant();
+int CPP_twoconstant();
 int CPP_fconstant();
 int CPP_char();
 int CPP_bracketchar();
@@ -114,6 +122,7 @@ int CPP_postpone();
 int CPP_literal();
 int CPP_twoliteral();
 int CPP_sliteral();
+int CPP_fliteral();
 int CPP_cquote();
 int CPP_squote();
 int CPP_dotquote();

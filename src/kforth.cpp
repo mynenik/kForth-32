@@ -2,7 +2,7 @@
 //
 // The kForth environment
 //
-// Copyright (c) 1998--2018 Krishna Myneni, 
+// Copyright (c) 1998--2019 Krishna Myneni, 
 //   <krishna.myneni@ccreweb.org>
 // 
 // This software is provided under the terms of the GNU 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
     if (argc < 2) {
 	cout << "kForth-32 v " << version << "\t (Build: " << build << ")" << endl;
-	cout << "Copyright (c) 1998--2018 Krishna Myneni" << endl;
+	cout << "Copyright (c) 1998--2019 Krishna Myneni" << endl;
         cout << "Contributions by: dpw gd mu bk abs tn cmb bg dnw" << endl;
 	cout << "Provided under the GNU Affero General Public License, v3.0 or later" 
 	  << endl << endl;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     SetForthOutputStream (cout);
 
     char s[256], *input_line;
-    int line_num = 0, ec = 0;
+    long int line_num = 0, ec = 0;
     vector<byte> op;
 
     while (1) {

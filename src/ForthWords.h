@@ -2,7 +2,7 @@
 //
 // The intrinsic Forth word list for kForth
 //
-// Copyright (c) 2008--2018 Krishna Myneni,
+// Copyright (c) 2008--2019 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org> 
 //
 // This software is provided under the terms of the GNU
@@ -28,6 +28,8 @@ WordTemplate ForthWords[] =
     { "SET-CURRENT", OP_SETCURRENT, NONDEFERRED },
     { "GET-ORDER",   OP_GETORDER,      0 },
     { "SEARCH-WORDLIST", OP_SEARCHWORDLIST, 0 },
+    { "TRAVERSE-WORDLIST", OP_TRAVERSE_WORDLIST, 0 },
+    { "NAME>STRING", OP_NAME2STRING,          0 },
     { "ALSO",      OP_ALSO,         NONDEFERRED },
     { "ONLY",      OP_ONLY,         NONDEFERRED },
     { "PREVIOUS",  OP_PREVIOUS,     NONDEFERRED },
@@ -62,7 +64,7 @@ WordTemplate ForthWords[] =
     { "LITERAL",   OP_LITERAL,      IMMEDIATE },
     { "2LITERAL",  OP_2LITERAL,     IMMEDIATE },
     { "SLITERAL",  OP_SLITERAL,     IMMEDIATE },
-    { "FLITERAL",  OP_2LITERAL,     IMMEDIATE },
+    { "FLITERAL",  OP_FLITERAL,     IMMEDIATE },
     { "EVALUATE",  OP_EVALUATE,     0 },
     { "INCLUDED",  OP_INCLUDED,     NONDEFERRED },
     { "INCLUDE",   OP_INCLUDE,      NONDEFERRED },
@@ -71,10 +73,10 @@ WordTemplate ForthWords[] =
     { "IMMEDIATE", OP_IMMEDIATE,    0 },
     { "NONDEFERRED", OP_NONDEFERRED, 0 },
     { "CONSTANT",  OP_CONSTANT,     NONDEFERRED },
-    { "2CONSTANT", OP_FCONSTANT,    NONDEFERRED },
+    { "2CONSTANT", OP_2CONSTANT,    NONDEFERRED },
     { "FCONSTANT", OP_FCONSTANT,    NONDEFERRED },
     { "VARIABLE",  OP_VARIABLE,     NONDEFERRED },
-    { "2VARIABLE", OP_FVARIABLE,    NONDEFERRED },
+    { "2VARIABLE", OP_2VARIABLE,    NONDEFERRED },
     { "FVARIABLE", OP_FVARIABLE,    NONDEFERRED },
     { "CELLS",     OP_CELLS,        0 },
     { "CELL+",     OP_CELLPLUS,     0 },
@@ -88,8 +90,8 @@ WordTemplate ForthWords[] =
     { "?",         OP_QUESTION,     0 },
     { "@",         OP_FETCH,        0 },
     { "!",         OP_STORE,        0 },
-    { "2@",        OP_DFFETCH,      0 },
-    { "2!",        OP_DFSTORE,      0 },
+    { "2@",        OP_2FETCH,       0 },
+    { "2!",        OP_2STORE,       0 },
     { "A@",        OP_AFETCH,       0 },
     { "C@",        OP_CFETCH,       0 },
     { "C!",        OP_CSTORE,       0 },
@@ -191,7 +193,6 @@ WordTemplate ForthWords[] =
     { "#!",        OP_BACKSLASH,    IMMEDIATE | NONDEFERRED },
     { "(",         OP_LPAREN,       IMMEDIATE },
     { ".(",        OP_DOTPAREN,     IMMEDIATE | NONDEFERRED },
-//  { "\x22",      OP_CQUOTE,       IMMEDIATE },
     { "C\x22",     OP_CQUOTE,       IMMEDIATE },
     { "S\x22",     OP_SQUOTE,       IMMEDIATE },
     { "/STRING",   OP_SLASHSTRING,  0 },

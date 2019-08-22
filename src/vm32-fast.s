@@ -771,6 +771,7 @@ L_ptr:
 	xorl %eax, %eax
 	NEXT
 
+L_2val:
 L_fval:
         movl %ebp, %ecx
         incl %ecx
@@ -1186,6 +1187,7 @@ L_sfstore:
 	xorl %eax, %eax
         NEXT
 
+L_2fetch:
 L_dffetch:
 	movl %ebx, %edx
 	INC_DSP
@@ -1200,6 +1202,7 @@ L_dffetch:
 	xorl %eax, %eax
 	NEXT
 
+L_2store:
 L_dfstore:
 	movl $WSIZE, %edx
 	addl %edx, %ebx
