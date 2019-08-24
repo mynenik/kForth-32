@@ -1986,8 +1986,7 @@ int CPP_sliteral ()
 int CPP_fliteral ()
 {
   // stack: ( F: r -- | place fp in compiled opcodes )
-
-  return 0;
+  return( CPP_twoliteral ());
 }
 //-------------------------------------------------------------------
 
