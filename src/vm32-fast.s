@@ -562,7 +562,7 @@ L_puship:
         xor %eax, %eax
         NEXT
 
-L_execute:	
+L_execute_bc:	
         movl %ebp, %ecx
         movl GlobalRp, %edx
         movl %ecx, (%edx)
@@ -575,6 +575,22 @@ L_execute:
 	movl %eax, %ebp
         xorl %eax, %eax
         NEXT
+
+L_execute:
+        movl %ebp, %ecx
+        movl GlobalRp, %edx
+        movl %ecx, (%edx)
+        movl $WSIZE, %eax
+        subl %eax, %edx
+        movl %edx, GlobalRp
+        addl %eax, %ebx
+        movl (%ebx), %eax
+	movl (%eax), %eax
+        decl %eax
+        movl %eax, %ebp
+        xorl %eax, %eax
+        NEXT
+
 
 L_definition:
         movl %ebp, %eax

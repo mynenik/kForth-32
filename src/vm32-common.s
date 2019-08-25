@@ -38,7 +38,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long C_close, C_read, C_write, C_ioctl # 12 -- 15
            .long L_usleep, L_ms, C_msfetch, C_syscall  # 16 -- 19
            .long L_fill, L_cmove, L_cmovefrom, CPP_dotparen # 20 -- 23
-           .long C_bracketsharp, CPP_tofile, CPP_console, C_sharpbracket  # 24 -- 27
+           .long C_bracketsharp, L_execute_bc, L_nop, C_sharpbracket  # 24 -- 27
            .long C_sharps, CPP_squote, CPP_cr, L_bl    # 28 -- 31
            .long CPP_spaces, L_store, CPP_cquote, C_sharp # 32 -- 35
            .long C_sign, L_mod, L_and, CPP_tick    # 36 -- 39
@@ -108,7 +108,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long L_dtwostar, L_dtwodiv, CPP_uddot, L_within  # 292--295
 	   .long CPP_twoliteral, C_tonumber, C_numberquery, CPP_sliteral  # 296--299
            .long CPP_fliteral, CPP_twovariable, CPP_twoconstant, L_nop    # 300--303
-           .long L_nop, L_nop, L_nop, L_nop            # 304--307
+           .long CPP_tofile, CPP_console, L_nop, L_nop # 304--307
            .long L_nop, L_nop, L_nop, L_blank          # 308--311
            .long L_slashstring, C_trailing, C_parse, L_nop  # 312--315
 	   .long L_nop, L_nop, L_nop, L_nop            # 316--319

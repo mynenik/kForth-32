@@ -169,6 +169,7 @@ WordTemplate ForthWords[] =
     { "ABORT",     OP_ABORT,        0 },
     { "ABORT\x22", OP_ABORTQUOTE,   IMMEDIATE },
     { "USLEEP",    OP_USLEEP,       0 },
+    { "EXECUTE-BC", OP_EXECUTE_BC,  0 },
     { "EXECUTE",   OP_EXECUTE,      0 },
     { "CALL",      OP_CALL,         0 },
     { "SYSTEM",    OP_SYSTEM,       0 },

@@ -250,6 +250,20 @@ int Vocabulary::Initialize( WordTemplate wt[], int n )
 
 //---------------------------------------------------------------
 
+bool SearchList::IndexOf (char* name, WordIndex* p)
+{
+    vector<Vocabulary*>::iterator j;
+    WordIndex i;
+    for (j = begin(); j < end(); ++j) {
+      i = (*j)->IndexOf( name );
+      if (i < (*j)->end()) {
+	*p = i;
+	return( true );
+      }
+    }
+    return( false );
+}
+
 bool SearchList::LocateWord (char* name, WordListEntry* pWord)
 {
 // Iterate through the search list, to look for an entry
@@ -680,12 +694,12 @@ int CPP_searchwordlist()
         strncpy(name, cp, len);
         name[len] =  0;
 	strupr(name);
-	WordListEntry w;
-        bool b = pWL->RetrieveFromName(name, &w);
+	WordIndex i = pWL->IndexOf( name );
+        bool b = (i < pWL->end());
 	delete [] name;
         if (b) {
-          PUSH_ADDR((long int) w.Cfa)
-          PUSH_IVAL( (w.Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
+          PUSH_ADDR((long int) &i->Cfa)
+          PUSH_IVAL( (i->Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
           return 0;
 	}
       }
@@ -806,17 +820,17 @@ int CPP_traverse_wordlist()
 	WordList* pWL = (WordList*) TOS;
 	DROP
 	CHK_ADDR
-	unsigned char* cfa = (unsigned char*) TOS;  // xt is same as cfa
+	void** pCfa = (void**) TOS;  // xt is a pointer to Cfa
 	WordIndex i;
 	WordListEntry *w;
-	int e;
+	int e = 0;
 	if (pWL->size()) {
 	  for (i = pWL->end()-1; i >= pWL->begin(); --i) {
 	    w = *((WordListEntry**) &i);  // this is the node token, nt
 	    TOS = (long int) w;
 	    DEC_DSP
 	    STD_ADDR
-	    e = vm(cfa);
+	    e = vm((byte*)(*pCfa));  // vm() requires Cfa
 	    DROP
 	    long int b = (long int) TOS;
 	    if (b == 0) break;
@@ -1284,11 +1298,11 @@ int CPP_tick ()
     char name[128];
     pTIB = ExtractName(pTIB, name);
     strupr(name);
-    WordListEntry w;
     int e = 0;
-    if ( SearchOrder.LocateWord (name, &w) )
+    WordIndex i;
+    if ( SearchOrder.IndexOf( name, &i ) )
     {
-        PUSH_ADDR((long int) w.Cfa)
+        PUSH_ADDR((long int) &i->Cfa)
     }
     else
 	e = E_C_UNKNOWNWORD;
@@ -1300,11 +1314,11 @@ int CPP_tick ()
 int CPP_tobody ()
 {
    // stack: ( xt -- pfa | 0 )
-   WordListEntry w;
    INC_DSP
-   void* cfa = (void*) TOS;
-   void* pfa = (void*) (( SearchOrder.LocateCfa (cfa, &w) ) ? w.Pfa : NULL);
-   TOS = (long int) pfa;
+   void** pCfa = (void**) TOS;
+   void** pPfa = ++pCfa;
+   // void* pfa = (void*) (( SearchOrder.LocateCfa (cfa, &w) ) ? w.Pfa : NULL);
+   TOS = (long int) (*pPfa);
    DEC_DSP
 
    return 0;
@@ -1341,12 +1355,11 @@ int CPP_find ()
   strncpy (name, (char*) s+1, len);
   name[len] = 0;
   strupr(name);
-  WordListEntry w;
-  int found = SearchOrder.LocateWord (name, &w);  
-  if (found)
-    {
-      PUSH_ADDR((long int) w.Cfa)
-      PUSH_IVAL( (w.Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
+  WordIndex i;
+  int found = SearchOrder.IndexOf (name, &i);  
+  if (SearchOrder.IndexOf( name, &i)) {
+      PUSH_ADDR((long int) &i->Cfa)
+      PUSH_IVAL( (i->Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
     }
   else
     {
@@ -1582,10 +1595,10 @@ int CPP_alias ()
 {
     // stack: ( xt "name" -- )
     DROP
-    void* cfa = (void*) TOS;
+    void** pCfa = (void**) TOS;
     CHK_ADDR
     WordListEntry w;
-    bool found = SearchOrder.LocateCfa(cfa, &w);
+    bool found = SearchOrder.LocateCfa(*pCfa, &w);
     if (found) {
       CPP_create();
       WordIndex j = pCompilationWL->end() - 1;
@@ -2324,7 +2337,7 @@ int CPP_recurse()
       long int ival = (long int) &(*pCurrentOps)[0]; // ->begin();
       OpsPushInt(ival);
     }
-  pCurrentOps->push_back(OP_EXECUTE);
+  pCurrentOps->push_back(OP_EXECUTE_BC);
   return 0;
 }
 //---------------------------------------------------------------------
@@ -2370,7 +2383,7 @@ int CPP_does()
   p[WSIZE+1] = OP_ADDR;
   *((long int*)(p+WSIZE+2)) = (long int)(GlobalIp + 1);
 
-  p[2*WSIZE+2] = OP_EXECUTE;
+  p[2*WSIZE+2] = OP_EXECUTE_BC;
   p[2*WSIZE+3] = OP_RET;
 
   id->Cfa = (void*) p;

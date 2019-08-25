@@ -80,6 +80,7 @@ public:
 class SearchList : public vector<Vocabulary*>
 {
 public:
+   bool IndexOf( char*, WordIndex* );
    bool LocateWord( char*, WordListEntry* );
    bool LocateCfa( void* cfa, WordListEntry* );
 };

@@ -762,6 +762,7 @@ L_twopop_r:
 	movl %ebx, GlobalTp
 	xor %eax, %eax				
 	NEXT
+
 L_puship:
         movl %ebp, %eax
         movl GlobalRp, %ebx
@@ -774,6 +775,28 @@ L_puship:
 	decl GlobalRtp
         xor %eax, %eax
         NEXT
+
+L_execute_bc:
+        movl %ebp, %ecx
+        movl GlobalRp, %ebx
+        movl %ecx, (%ebx)
+        movl $WSIZE, %eax
+        subl %eax, %ebx
+        movl %ebx, GlobalRp
+        movl GlobalRtp, %ebx
+        movb $OP_ADDR, (%ebx)
+        decl %ebx
+        movl %ebx, GlobalRtp
+        LDSP
+        addl %eax, %ebx
+        STSP
+        movl (%ebx), %eax
+        decl %eax
+        movl %eax, %ebp
+        INC_DTSP
+        xor %eax, %eax
+        NEXT
+
 L_execute:	
         movl %ebp, %ecx
         movl GlobalRp, %ebx
@@ -789,11 +812,13 @@ L_execute:
         addl %eax, %ebx
 	STSP
         movl (%ebx), %eax
+	movl (%eax), %eax
 	decl %eax
 	movl %eax, %ebp
 	INC_DTSP
         xor %eax, %eax
         NEXT
+
 L_definition:
         movl %ebp, %ebx
 	movl $WSIZE, %eax
