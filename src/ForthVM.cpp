@@ -1686,9 +1686,9 @@ int CPP_twoconstant ()
   id->WordCode = OP_2VAL;
   id->Pfa = new long int[2];
   DROP
-  *((long int*) id->Pfa + 1) = TOS;
-  DROP
   *((long int*) id->Pfa) = TOS;
+  DROP
+  *((long int*) id->Pfa + 1) = TOS;
   byte *bp = new byte[WSIZE+3];
   id->Cfa = bp;
   bp[0] = OP_ADDR;

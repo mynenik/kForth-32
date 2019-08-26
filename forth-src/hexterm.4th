@@ -45,7 +45,7 @@ create buf 64 allot
 	\ white foreground
 	\ black background
 	
-	COM2 ∋ serial open com !
+	COM1 ∋ serial open com !
 	com @ c" 8N1" set-params
 	com @ B4800 set-baud
 
