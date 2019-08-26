@@ -316,8 +316,9 @@
 #define OP_FLITERAL		300
 #define OP_2VARIABLE		301
 #define OP_2CONSTANT		302
-#define OP_TOFILE               303
-#define OP_CONSOLE              304
+
+#define OP_TOFILE               304
+#define OP_CONSOLE              305
 
 #define OP_SPACE                310
 #define OP_BLANK                311

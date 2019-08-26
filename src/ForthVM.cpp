@@ -826,7 +826,7 @@ int CPP_traverse_wordlist()
 	int e = 0;
 	if (pWL->size()) {
 	  for (i = pWL->end()-1; i >= pWL->begin(); --i) {
-	    w = *((WordListEntry**) &i);  // this is the node token, nt
+	    w = *((WordListEntry**) &i);  // this is the head token, ht (also nt)
 	    TOS = (long int) w;
 	    DEC_DSP
 	    STD_ADDR
