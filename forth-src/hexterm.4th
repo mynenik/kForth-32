@@ -74,7 +74,7 @@ create buf 64 allot
 	  then
 	again ;
 		
-." Type 'ht' to start hex terminal on COM2 at 4800, 8N1"
+." Type 'ht' to start hex terminal on COM1 at 4800, 8N1"
 
 
 
