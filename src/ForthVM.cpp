@@ -12,6 +12,7 @@
 const char* dir_env_var=DIR_ENV_VAR;
 
 #include <string.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
 #include <iostream>
@@ -49,7 +50,7 @@ extern vector<int> leavestack;
 extern vector<int> recursestack;
 extern vector<int> casestack;
 extern vector<int> ofstack;
-extern WordListEntry NewWord;
+extern WordListEntry* pNewWord;
 extern size_t NUMBER_OF_INTRINSIC_WORDS;
 
 extern "C" {
@@ -165,12 +166,15 @@ void WordList::RemoveLastWord ()
 {
 // Remove the last entry in the current wordlist
 
-	WordIndex i = end() - 1;
-	if (i->Pfa) delete [] (byte*) i->Pfa;	// free memory
-	if (i->Cfa) delete [] (byte*) i->Cfa;
-	pop_back(); 
+	vector<WordListEntry*>::iterator i = end() - 1;
+	WordListEntry* pWord = *i;
+	if (pWord->Pfa) delete [] (byte*) pWord->Pfa;	// free memory
+	if (pWord->Cfa) delete [] (byte*) pWord->Cfa;
+	pop_back();
+	delete pWord;
 }
 
+/*
 WordIndex WordList::IndexOf ( char* name )
 {
    // Return the index (iterator) of the most recently defined
@@ -183,27 +187,33 @@ WordIndex WordList::IndexOf ( char* name )
    }
    return( end() );
 }
+*/
 
-bool WordList::RetrieveFromName (char* name, WordListEntry* pWord)
+WordListEntry* WordList::GetFromName (char* name)
 {
-     WordIndex i = IndexOf( name );
-     bool b = i < end();
-     if (b) *pWord = *i;
-     return b;
+   vector<WordListEntry*>::iterator i;
+   if (size()) {
+     WordListEntry* pWord;
+     for (i = end()-1; i >= begin(); --i) {
+       pWord = *i;
+       if (*((word*) name) == *((word*) pWord->WordName))  // pre-compare
+         if (strcmp(name, pWord->WordName) == 0) return( pWord );
+     }
+   }
+   return NULL;
 }
 
-bool WordList::RetrieveFromCfa (void* cfa, WordListEntry* pWord)
+WordListEntry* WordList::GetFromCfa (void* cfa)
 {
-     WordIndex i;
-     
-     if (size()) {
-	for (i = end()-1; i >= begin(); --i)
-	  	if (cfa == i->Cfa)  {
-			*pWord = *i;
-			return( true );
-		}
+   vector<WordListEntry*>::iterator i;
+   if (size()) {
+     WordListEntry* pWord;
+     for (i = end()-1; i >= begin(); --i) {
+       pWord = *i;
+       if (cfa == pWord->Cfa)  return( pWord );
      }
-    return( false );
+   }
+   return NULL;
 }
 
 //---------------------------------------------------------------
@@ -219,37 +229,36 @@ Vocabulary::Vocabulary( const char* name )
 
 int Vocabulary::Initialize( WordTemplate wt[], int n )
 {
-    int i, wcode;
-    WordListEntry w;
+   int i, wcode;
+   WordListEntry* pWord;
 
-    for (i = 0; i < n; i++)
-    {
-        strcpy(w.WordName, wt[i].WordName);
-        wcode = wt[i].WordCode;
-	w.WordCode = wcode;
-	w.Precedence = wt[i].Precedence;
-        w.Cfa = new byte[WSIZE+2];
-	w.Pfa = NULL;
-	byte* bp = (byte*) w.Cfa;
-	if (wcode >> 8)
-	{
-	    bp[0] = OP_CALLADDR;
-	    *((long int*) (bp+1)) = (long int) JumpTable[wcode];
-	    bp[WSIZE+1] = OP_RET;
-	}
-	else
-	{
-	    bp[0] = wcode;
-	    bp[1] = OP_RET;
-	}
+   for (i = 0; i < n; i++)
+   {
+     pWord = new WordListEntry;   
+     strcpy(pWord->WordName, wt[i].WordName);
+     wcode = wt[i].WordCode;
+     pWord->WordCode = wcode;
+     pWord->Precedence = wt[i].Precedence;
+     pWord->Cfa = new byte[WSIZE+2];
+     pWord->Pfa = NULL;
+     byte* bp = (byte*) pWord->Cfa;
+     if (wcode >> 8) {
+       bp[0] = OP_CALLADDR;
+       *((long int*) (bp+1)) = (long int) JumpTable[wcode];
+       bp[WSIZE+1] = OP_RET;
+     }
+     else {
+       bp[0] = wcode;
+       bp[1] = OP_RET;
+     }
 	
-        push_back(w);
-    }
-    return 0;
+     push_back(pWord);
+   }
+   return 0;
 }
-
 //---------------------------------------------------------------
 
+/*
 bool SearchList::IndexOf (char* name, WordIndex* p)
 {
     vector<Vocabulary*>::iterator j;
@@ -263,36 +272,36 @@ bool SearchList::IndexOf (char* name, WordIndex* p)
     }
     return( false );
 }
+*/
 
-bool SearchList::LocateWord (char* name, WordListEntry* pWord)
+WordListEntry* SearchList::LocateWord (char* name)
 {
 // Iterate through the search list, to look for an entry
-//   with the specified name. If found, copy the WordListEntry at
-//   the specified pointer, and return true. Return false if not found.
+//   with the specified name. If found, return the pointer
+//   to the WordListEntry. Return NULL if not found.
 
-    	vector<Vocabulary*>::iterator j;
-	bool b = false;
-	for (j = begin(); j < end(); ++j) {
-          b = (*j)->RetrieveFromName( name, pWord );
-	  if (b) return b;
-	}
-	return false;
+   vector<Vocabulary*>::iterator j;
+   WordListEntry* pWord;
+   for (j = begin(); j < end(); ++j) {
+     pWord = (*j)->GetFromName( name );
+     if (pWord) return pWord;
+   }
+   return NULL;
 }
 
-bool SearchList::LocateCfa (void* cfa, WordListEntry* pWord)
+WordListEntry* SearchList::LocateCfa (void* cfa)
 {
 // Iterate through the search list, to look for an entry
-//   with the specified Cfa. If found, copy the WordListEntry at 
-//   the specified pointer, and return true. Return false if not found.
+//   with the specified Cfa. If found, return the pointer
+//   to the WordListEntry. Return NULL if not found.
 
-    	vector<Vocabulary*>::iterator j;
-	bool b = false;
-
-	for (j = begin(); j < end(); ++j) {
-          b = (*j)->RetrieveFromCfa( cfa, pWord );
-          if (b) return b;
-	}
-	return false;
+   vector<Vocabulary*>::iterator j;
+   WordListEntry* pWord;
+   for (j = begin(); j < end(); ++j) {
+     pWord = (*j)->GetFromCfa( cfa );
+     if (pWord) return pWord;
+   }
+   return NULL;
 }
 //---------------------------------------------------------------
 
@@ -305,13 +314,13 @@ int InitSystemVars ()
     State = FALSE;
     Precision = 15;
 
-    WordIndex i;
-    i = Voc_Forth.IndexOf("STATE");
-    if (i->Pfa == NULL) i->Pfa = &State;  
-    i = Voc_Forth.IndexOf("BASE");
-    if (i->Pfa == NULL) i->Pfa = (void*) &Base;
-    i = Voc_Forth.IndexOf("PRECISION");
-    if (i->Pfa == NULL) i->Pfa = (void*) &Precision;
+    WordListEntry* pWord;
+    pWord = Voc_Forth.GetFromName("STATE");
+    if (pWord->Pfa == NULL) pWord->Pfa = &State;  
+    pWord = Voc_Forth.GetFromName("BASE");
+    if (pWord->Pfa == NULL) pWord->Pfa = (void*) &Base;
+    pWord = Voc_Forth.GetFromName("PRECISION");
+    if (pWord->Pfa == NULL) pWord->Pfa = (void*) &Precision;
     return 0;
 }
 //--------------------------------------------------------------- 
@@ -320,9 +329,9 @@ int NullSystemVars ()
 {
 // Set Pfa's of system vars to NULL to prevent Forth system
 // shutdown from trying to free their memory.
-    (Voc_Forth.IndexOf("STATE"))->Pfa = NULL;
-    (Voc_Forth.IndexOf("BASE"))->Pfa = NULL;
-    (Voc_Forth.IndexOf("PRECISION"))->Pfa = NULL;
+    (Voc_Forth.GetFromName("STATE"))->Pfa = NULL;
+    (Voc_Forth.GetFromName("BASE"))->Pfa = NULL;
+    (Voc_Forth.GetFromName("PRECISION"))->Pfa = NULL;
     return 0;
 }
 //--------------------------------------------------------------- 
@@ -445,7 +454,6 @@ void OpsCopyInt (long int offset, long int i)
   vector<byte>::iterator ib = pCurrentOps->begin() + offset;
   byte* ip = (byte*) &i;
   for (unsigned int j = 0; j < WSIZE; j++) *(ib+j) = *(ip + j);
-//  *ib++ = *ip; *ib++ = *(ip + 1); *ib++ = *(ip + 2); *ib = *(ip + 3);
 
 }
 //---------------------------------------------------------------
@@ -545,7 +553,6 @@ int ForthVM (vector<byte>* pFBC, long int** pStackPtr, byte** pTypePtr)
 
   // Initialize the instruction ptr and error code
 
-  // byte *ip = (byte*) pFBC->begin();
   byte *ip = (byte *) &(*pFBC)[0];
   long int ecode = 0;
 
@@ -694,12 +701,12 @@ int CPP_searchwordlist()
         strncpy(name, cp, len);
         name[len] =  0;
 	strupr(name);
-	WordIndex i = pWL->IndexOf( name );
-        bool b = (i < pWL->end());
+	WordListEntry* pWord = pWL->GetFromName( name );
 	delete [] name;
-        if (b) {
-          PUSH_ADDR((long int) &i->Cfa)
-          PUSH_IVAL( (i->Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
+        if (pWord) {
+          byte* p = (byte*) pWord + offsetof(struct WordListEntry, Cfa);
+          PUSH_ADDR( ((long int) p) )
+          PUSH_IVAL( (pWord->Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
           return 0;
 	}
       }
@@ -720,15 +727,15 @@ int CPP_vocabulary()
      // Make a new vocabulary
      // stack: ( "name" -- )
      CPP_create();
-     WordIndex iWord = pCompilationWL->end() - 1;
-     Vocabulary *pVoc = new Vocabulary(iWord->WordName);
+     WordListEntry* pWord = *(pCompilationWL->end() - 1);
+     Vocabulary* pVoc = new Vocabulary(pWord->WordName);
      Dictionary.push_back(pVoc);
 
-     iWord->Precedence = PRECEDENCE_NON_DEFERRED;
-     iWord->Pfa = NULL;
+     pWord->Precedence = PRECEDENCE_NON_DEFERRED;
+     pWord->Pfa = NULL;
      byte* bp = new byte[3*WSIZE+6];
-     iWord->Cfa = bp;
-     iWord->WordCode = OP_DEFINITION;
+     pWord->Cfa = bp;
+     pWord->WordCode = OP_DEFINITION;
     
      // Execution behavior of new word:
      // get-order nip pVoc swap set-order
@@ -811,50 +818,50 @@ int CPP_assembler()
 
 int CPP_traverse_wordlist()
 {
-	// Forth 2012 Tools Wordset: 15.6.2.2297
-	// stack: ( i*x xt wid -- j*x | execute xt for every word in wordlist)
-	// Execution of xt has stack effect ( k*x nt -- l*x flag )
+// Forth 2012 Tools Wordset: 15.6.2.2297
+// stack: ( i*x xt wid -- j*x | execute xt for every word in wordlist)
+// Execution of xt has stack effect ( k*x nt -- l*x flag )
 
-	DROP
-	CHK_ADDR
-	WordList* pWL = (WordList*) TOS;
-	DROP
-	CHK_ADDR
-	void** pCfa = (void**) TOS;  // xt is a pointer to Cfa
-	WordIndex i;
-	WordListEntry *w;
-	int e = 0;
-	if (pWL->size()) {
-	  for (i = pWL->end()-1; i >= pWL->begin(); --i) {
-	    w = *((WordListEntry**) &i);  // this is the head token, ht (also nt)
-	    TOS = (long int) w;
-	    DEC_DSP
-	    STD_ADDR
-	    e = vm((byte*)(*pCfa));  // vm() requires Cfa
-	    DROP
-	    long int b = (long int) TOS;
-	    if (b == 0) break;
-	  }
+   DROP
+   CHK_ADDR
+   WordList* pWL = (WordList*) TOS;
+   DROP
+   CHK_ADDR
+   void** pCfa = (void**) TOS;  // xt is a pointer to Cfa
+   vector<WordListEntry*>::iterator i;
+   WordListEntry* pWord;
+   int e = 0;
+   if (pWL->size()) {
+     for (i = pWL->end()-1; i >= pWL->begin(); --i) {
+       pWord = *(i);  // this is the head token, ht (also nt)
+       TOS = (long int) pWord;
+       DEC_DSP
+       STD_ADDR
+       e = vm((byte*)(*pCfa));  // vm() requires Cfa
+       DROP
+       long int b = (long int) TOS;
+       if (b == 0) break;
+     }
    }
-	return e;
+   return e;
 }
 //----------------------------------------------------------------
 
 int CPP_name_to_string()
 {
-	// Forth 2012 Tools Wordset: 15.6.2.1909.40 NAME>STRING
-	// stack: ( nt -- c-addr u )
-	DROP
-	WordListEntry* p = (WordListEntry*) TOS;  // get nt from stack
-	char* cp = (char*) p->WordName;
-	TOS = (long int) cp;
-	DEC_DSP
-	STD_ADDR
-	size_t len = strlen(cp);
-	TOS = (long int) len;
-	DEC_DSP
-	STD_IVAL
-	return 0;	
+// Forth 2012 Tools Wordset: 15.6.2.1909.40 NAME>STRING
+// stack: ( nt -- c-addr u )
+   DROP
+   WordListEntry* pWord = (WordListEntry*) TOS;  // get nt from stack
+   char* cp = (char*) pWord->WordName;
+   TOS = (long int) cp;
+   DEC_DSP
+   STD_ADDR
+   size_t len = strlen(cp);
+   TOS = (long int) len;
+   DEC_DSP
+   STD_IVAL
+   return 0;	
 }
 //----------------------------------------------------------------
 
@@ -866,11 +873,12 @@ int CPP_colon()
     State = TRUE;
     pTIB = ExtractName (pTIB, WordToken);
     strupr(WordToken);
-    strcpy (NewWord.WordName, WordToken);
-    NewWord.WordCode = OP_DEFINITION;
-    NewWord.Precedence = PRECEDENCE_NONE;
-    NewWord.Pfa = NULL;
-    NewWord.Cfa = NULL;
+    pNewWord = new WordListEntry;
+    strcpy (pNewWord->WordName, WordToken);
+    pNewWord->WordCode = OP_DEFINITION;
+    pNewWord->Precedence = PRECEDENCE_NONE;
+    pNewWord->Pfa = NULL;
+    pNewWord->Cfa = NULL;
     recursestack.erase(recursestack.begin(), recursestack.end());
 
     return 0;
@@ -902,7 +910,7 @@ int CPP_semicolon()
 
       if (debug) OutputForthByteCode (pCurrentOps);
  		  
-      NewWord.Cfa = new byte[pCurrentOps->size()];
+      pNewWord->Cfa = new byte[pCurrentOps->size()];
       // NewWord.Pfa = ;
 
       // Resolve any self references (recursion)
@@ -913,7 +921,7 @@ int CPP_semicolon()
       WordListEntry d;
 
 
-      bp = (byte*) &NewWord.Cfa;
+      bp = ((byte*) pNewWord + offsetof(struct WordListEntry, Cfa));
       while (recursestack.size())
 	{
 	  i = recursestack[recursestack.size() - 1];
@@ -922,15 +930,16 @@ int CPP_semicolon()
 	  recursestack.pop_back();
 	}
 
-      dest = (byte*) NewWord.Cfa;
+      dest = (byte*) pNewWord->Cfa;
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *dest++ = *bp++;
-      if (IsForthWord(NewWord.WordName, &d)) {
-          WordIndex wi = pCompilationWL->IndexOf( NewWord.WordName );
-          if (wi < pCompilationWL->end())
-	      *pOutStream << NewWord.WordName << " is redefined\n";
+
+      if (IsForthWord(pNewWord->WordName, &d)) {
+          WordListEntry* wi = pCompilationWL->GetFromName( pNewWord->WordName );
+          if (wi)
+	      *pOutStream << pNewWord->WordName << " is redefined\n";
       }
-      pCompilationWL->push_back(NewWord);
+      pCompilationWL->push_back(pNewWord);
       pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
       State = FALSE;
     }
@@ -1299,10 +1308,11 @@ int CPP_tick ()
     pTIB = ExtractName(pTIB, name);
     strupr(name);
     int e = 0;
-    WordIndex i;
-    if ( SearchOrder.IndexOf( name, &i ) )
+    WordListEntry* pWord = SearchOrder.LocateWord( name );
+    if ( pWord )
     {
-        PUSH_ADDR((long int) &i->Cfa)
+      byte* p = (byte*) pWord + offsetof(struct WordListEntry, Cfa);
+        PUSH_ADDR( ((long int) p) )
     }
     else
 	e = E_C_UNKNOWNWORD;
@@ -1317,7 +1327,6 @@ int CPP_tobody ()
    INC_DSP
    void** pCfa = (void**) TOS;
    void** pPfa = ++pCfa;
-   // void* pfa = (void*) (( SearchOrder.LocateCfa (cfa, &w) ) ? w.Pfa : NULL);
    TOS = (long int) (*pPfa);
    DEC_DSP
 
@@ -1355,11 +1364,11 @@ int CPP_find ()
   strncpy (name, (char*) s+1, len);
   name[len] = 0;
   strupr(name);
-  WordIndex i;
-  int found = SearchOrder.IndexOf (name, &i);  
-  if (SearchOrder.IndexOf( name, &i)) {
-      PUSH_ADDR((long int) &i->Cfa)
-      PUSH_IVAL( (i->Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
+  WordListEntry* pWord = SearchOrder.LocateWord( name );
+  if (pWord) {
+      byte* p = (byte*) pWord + offsetof( struct WordListEntry, Cfa );
+      PUSH_ADDR( ((long int) p) )
+      PUSH_IVAL( (pWord->Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
     }
   else
     {
@@ -1441,13 +1450,15 @@ int CPP_words ()
   int nc;
   Vocabulary* pVoc = SearchOrder.front();
   *pOutStream << pVoc->size() << " words.\n";
-  WordIndex i;
+  vector<WordListEntry*>::iterator i;
+  WordListEntry* pWord;
   int j = 0;
   for (i = pVoc->begin(); i < pVoc->end(); i++)
     {
+      pWord = *(i);
       memset (field, 32, 16);
       field[15] = '\0';
-      cp = i->WordName;
+      cp = pWord->WordName;
       nc = strlen(cp);
       strncpy (field, cp, (nc > 15) ? 15 : nc);
       *pOutStream << field;
@@ -1520,27 +1531,27 @@ int CPP_allot ()
     return E_V_BADTYPE;  // need an int
 #endif
 
-  WordIndex id = pCompilationWL->end() - 1;
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
   long int n = TOS;
   if (n > 0)
     {
-      if (id->Pfa == NULL)
+      if (pWord->Pfa == NULL)
 	{ 
-	  id->Pfa = new byte[n];
-	  if (id->Pfa) memset (id->Pfa, 0, n); 
+	  pWord->Pfa = new byte[n];
+	  if (pWord->Pfa) memset (pWord->Pfa, 0, n); 
 
 	  // Provide execution code to the word to return its Pfa
   	  byte *bp = new byte[WSIZE+2];
-  	  id->Cfa = bp;
+  	  pWord->Cfa = bp;
   	  bp[0] = OP_ADDR;
-  	  *((long int*) &bp[1]) = (long int) id->Pfa;
+  	  *((long int*) &bp[1]) = (long int) pWord->Pfa;
   	  bp[WSIZE+1] = OP_RET;
 	}
       else 
 	return E_V_REALLOT;
     }
   else
-    id->Pfa = NULL;
+    pWord->Pfa = NULL;
 
   return 0;
 }
@@ -1555,8 +1566,8 @@ int CPP_queryallot ()
     {
       // Get last word's Pfa and leave on the stack
 
-      WordIndex id = pCompilationWL->end() - 1;
-      PUSH_ADDR((long int) id->Pfa)
+      WordListEntry* pWord = *(pCompilationWL->end() - 1);
+      PUSH_ADDR((long int) pWord->Pfa)
     }
   return e;
 }
@@ -1573,15 +1584,15 @@ int CPP_create ()
 
   if (nc)
     {
-      WordListEntry NewWord;
+      pNewWord = new WordListEntry;
       strupr(token);
-      strcpy (NewWord.WordName, token);
-      NewWord.WordCode = OP_ADDR;
-      NewWord.Pfa = NULL;
-      NewWord.Cfa = NULL;
-      NewWord.Precedence = 0;
+      strcpy (pNewWord->WordName, token);
+      pNewWord->WordCode = OP_ADDR;
+      pNewWord->Pfa = NULL;
+      pNewWord->Cfa = NULL;
+      pNewWord->Precedence = 0;
 
-      pCompilationWL->push_back(NewWord);
+      pCompilationWL->push_back(pNewWord);
       return 0;
     }
   else
@@ -1597,18 +1608,17 @@ int CPP_alias ()
     DROP
     void** pCfa = (void**) TOS;
     CHK_ADDR
-    WordListEntry w;
-    bool found = SearchOrder.LocateCfa(*pCfa, &w);
-    if (found) {
+    WordListEntry* pWord = SearchOrder.LocateCfa(*pCfa);
+    if (pWord) {
       CPP_create();
-      WordIndex j = pCompilationWL->end() - 1;
+      WordListEntry* pLastWord = *(pCompilationWL->end() - 1);
       byte* bp = new byte[WSIZE+2];
-      j->Cfa = bp;
-      j->Pfa = NULL;
-      j->Precedence = w.Precedence;
-      j->WordCode = OP_DEFINITION;
+      pLastWord->Cfa = bp;
+      pLastWord->Pfa = NULL;
+      pLastWord->Precedence = pWord->Precedence;
+      pLastWord->WordCode = OP_DEFINITION;
       bp[0] = OP_DEFINITION;
-      *((long int*)(bp+1)) = (long int) w.Cfa;
+      *((long int*)(bp+1)) = (long int) pWord->Cfa;
       bp[WSIZE+1] = OP_RET;
     }
     else
@@ -1661,16 +1671,16 @@ int CPP_constant ()
   // stack: ( n -- | create dictionary entry and store n as constant )
 
   if (CPP_create()) return E_V_CREATE;
-  WordIndex id = pCompilationWL->end() - 1;
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
   DROP
-  id->WordCode = IS_ADDR ? OP_PTR : OP_IVAL;
-  id->Pfa = new long int[1];
-  *((long int*) (id->Pfa)) = TOS;
+  pWord->WordCode = IS_ADDR ? OP_PTR : OP_IVAL;
+  pWord->Pfa = new long int[1];
+  *((long int*) (pWord->Pfa)) = TOS;
   byte *bp = new byte[WSIZE+3];
-  id->Cfa = bp;
+  pWord->Cfa = bp;
   bp[0] = OP_ADDR;
-  *((long int*) &bp[1]) = (long int) id->Pfa;
-  bp[WSIZE+1] = (id->WordCode == OP_PTR) ? OP_AFETCH : OP_FETCH;
+  *((long int*) &bp[1]) = (long int) pWord->Pfa;
+  bp[WSIZE+1] = (pWord->WordCode == OP_PTR) ? OP_AFETCH : OP_FETCH;
   bp[WSIZE+2] = OP_RET;
   return 0;
 }
@@ -1682,21 +1692,20 @@ int CPP_twoconstant ()
   // stack: ( n1 n2 -- )
 
   if (CPP_create()) return E_V_CREATE;
-  WordIndex id = pCompilationWL->end() - 1;
-  id->WordCode = OP_2VAL;
-  id->Pfa = new long int[2];
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
+  pWord->WordCode = OP_2VAL;
+  pWord->Pfa = new long int[2];
   DROP
-  *((long int*) id->Pfa) = TOS;
+  *((long int*) pWord->Pfa) = TOS;
   DROP
-  *((long int*) id->Pfa + 1) = TOS;
+  *((long int*) pWord->Pfa + 1) = TOS;
   byte *bp = new byte[WSIZE+3];
-  id->Cfa = bp;
+  pWord->Cfa = bp;
   bp[0] = OP_ADDR;
-  *((long int*) &bp[1]) = (long int) id->Pfa;
+  *((long int*) &bp[1]) = (long int) pWord->Pfa;
   bp[WSIZE+1] = OP_2FETCH;
   bp[WSIZE+2] = OP_RET;
   return 0;
-
 }
 //------------------------------------------------------------------
 
@@ -1705,16 +1714,16 @@ int CPP_fconstant ()
   // stack: ( f -- | create dictionary entry and store f )
 
   if (CPP_create()) return E_V_CREATE;
-  WordIndex id = pCompilationWL->end() - 1;
-  id->WordCode = OP_FVAL;
-  id->Pfa = new double[1];
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
+  pWord->WordCode = OP_FVAL;
+  pWord->Pfa = new double[1];
   DROP
-  *((double*) (id->Pfa)) = *((double*)GlobalSp);
+  *((double*) (pWord->Pfa)) = *((double*)GlobalSp);
   DROP
   byte *bp = new byte[WSIZE+3];
-  id->Cfa = bp;
+  pWord->Cfa = bp;
   bp[0] = OP_ADDR;
-  *((long int*) &bp[1]) = (long int) id->Pfa;
+  *((long int*) &bp[1]) = (long int) pWord->Pfa;
   bp[WSIZE+1] = OP_DFFETCH;
   bp[WSIZE+2] = OP_RET;
   return 0;
@@ -1775,27 +1784,26 @@ int CPP_postpone ()
 
   pTIB = ExtractName (pTIB, token);
   strupr(token);
-  WordListEntry w;
-  int found = SearchOrder.LocateWord(token, &w);
-  if (found) {
-      if (w.Precedence & PRECEDENCE_IMMEDIATE)
+  WordListEntry* pWord = SearchOrder.LocateWord(token);
+  if (pWord) {
+      if (pWord->Precedence & PRECEDENCE_IMMEDIATE)
 	{
-	  CompileWord(w);
+	  CompileWord(*pWord);
 	}
       else
 	{
-	  int wc = (w.WordCode >> 8) ? OP_CALLADDR : w.WordCode;
+	  int wc = (pWord->WordCode >> 8) ? OP_CALLADDR : pWord->WordCode;
 
 	  if (wc == OP_IVAL)
 	    {
 	      pCurrentOps->push_back(OP_IVAL);
-	      OpsPushInt (*((long int*) w.Pfa));
+	      OpsPushInt (*((long int*) pWord->Pfa));
 	      pCurrentOps->push_back(OP_LITERAL);
 	    }
 	  else if ((wc == OP_ADDR) || (wc == OP_PTR))
 	    {
 	      pCurrentOps->push_back(wc);
-	      OpsPushInt ((long int) w.Pfa);
+	      OpsPushInt ((long int) pWord->Pfa);
 	      pCurrentOps->push_back(OP_LITERAL);
 	    }
 	  else
@@ -1809,20 +1817,20 @@ int CPP_postpone ()
 		{
 		case OP_DEFINITION:
 		  pCurrentOps->push_back(OP_ADDR);
-		  OpsPushInt((long int) w.Cfa);
+		  OpsPushInt((long int) pWord->Cfa);
 		  pCurrentOps->push_back(OP_CALLADDR);
 		  OpsPushInt((long int) OpsCompileInt);
 		  break;
 		case OP_CALLADDR:
 		  pCurrentOps->push_back(OP_ADDR);
-		  bp = (byte*) w.Cfa; ++bp;
+		  bp = (byte*) pWord->Cfa; ++bp;
 		  OpsPushInt(*((long int*)bp));
 		  pCurrentOps->push_back(OP_CALLADDR);
 		  OpsPushInt((long int) OpsCompileInt);
 		  break;
 		case OP_FVAL:
 	          pCurrentOps->push_back(OP_FVAL);
-	          OpsPushDouble (*((double*) w.Pfa));
+	          OpsPushDouble (*((double*) pWord->Pfa));
 	          pCurrentOps->push_back(OP_CALLADDR);
 	          OpsPushInt((long int) OpsCompileDouble);
 		  break;
@@ -1831,8 +1839,8 @@ int CPP_postpone ()
 		}
 	    } 
 	}
-      if (State && (w.Precedence & PRECEDENCE_NON_DEFERRED)) 
-	NewWord.Precedence |= PRECEDENCE_NON_DEFERRED;
+      if (State && (pWord->Precedence & PRECEDENCE_NON_DEFERRED)) 
+	pNewWord->Precedence |= PRECEDENCE_NON_DEFERRED;
 
     }
 
@@ -1849,8 +1857,8 @@ int CPP_forget ()
   pTIB = ExtractName (pTIB, token);
   strupr(token);
 
-  WordIndex i = pCompilationWL->IndexOf( token );
-  WordIndex j = pCompilationWL->end();
+  WordListEntry* i = pCompilationWL->GetFromName( token );
+  WordListEntry* j = *(pCompilationWL->end());
   if ( i < j )
     {
        while (j > i) {
@@ -2105,9 +2113,9 @@ int CPP_abortquote ()
 {
   // stack: ( -- | generate opcodes to print message and abort )
 
-  long int nc = strlen(NewWord.WordName);;
+  long int nc = strlen(pNewWord->WordName);;
   char* str = new char[nc + 3];
-  strcpy(str, NewWord.WordName);
+  strcpy(str, pNewWord->WordName);
   strcat(str, ": ");
   StringTable.push_back(str);
 
@@ -2375,8 +2383,8 @@ int CPP_does()
   // Insert pfa of last word in dictionary
 
   p[0] = OP_ADDR;
-  WordIndex id = pCompilationWL->end() - 1;
-  *((long int*)(p+1)) = (long int) id->Pfa;
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
+  *((long int*)(p+1)) = (long int) pWord->Pfa;
 
   // Insert current instruction ptr 
 
@@ -2386,8 +2394,8 @@ int CPP_does()
   p[2*WSIZE+2] = OP_EXECUTE_BC;
   p[2*WSIZE+3] = OP_RET;
 
-  id->Cfa = (void*) p;
-  id->WordCode = OP_DEFINITION;
+  pWord->Cfa = (void*) p;
+  pWord->WordCode = OP_DEFINITION;
 
   L_ret();
   return 0;
@@ -2399,8 +2407,8 @@ int CPP_immediate ()
   // Mark the most recently defined word as immediate.
   // stack: ( -- )
 
-  WordIndex id = pCompilationWL->end() - 1;
-  id->Precedence |= PRECEDENCE_IMMEDIATE;
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
+  pWord->Precedence |= PRECEDENCE_IMMEDIATE;
   return 0;
 }
 //-------------------------------------------------------------------
@@ -2410,8 +2418,8 @@ int CPP_nondeferred ()
   // Mark the most recently defined word as non-deferred.
   // stack: ( -- )
 
-  WordIndex id = pCompilationWL->end() - 1;
-  id->Precedence |= PRECEDENCE_NON_DEFERRED;
+  WordListEntry* pWord = *(pCompilationWL->end() - 1);
+  pWord->Precedence |= PRECEDENCE_NON_DEFERRED;
   return 0;
 }
 //-------------------------------------------------------------------

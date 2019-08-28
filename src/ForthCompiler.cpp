@@ -112,7 +112,7 @@ vector<byte>* pCurrentOps;
 
 // The word currently being compiled (needs to be global)
 
-WordListEntry NewWord;
+WordListEntry* pNewWord;
 //---------------------------------------------------------------
 
 
@@ -140,8 +140,10 @@ bool IsForthWord (char* name, WordListEntry* pE)
 //   with the specified name.  Return True if found,
 //   False otherwise. A copy of the entry is returned
 //   in *pE.
-
-    return( SearchOrder.LocateWord (name, pE) );
+    WordListEntry* pWord = SearchOrder.LocateWord (name);
+    bool b = (bool) pWord;
+    if (b) *pE = *pWord;
+    return( b );
 }
 //---------------------------------------------------------------
 
@@ -338,7 +340,7 @@ int ForthCompiler (vector<byte>* pOpCodes, long int* pLc)
 			break;
 		      case NONDEFERRED:
 			if (State)
-			  NewWord.Precedence |= NONDEFERRED ;
+			  pNewWord->Precedence |= NONDEFERRED ;
 			else
 			  execution_method = EXECUTE_UP_TO;
 			break;
