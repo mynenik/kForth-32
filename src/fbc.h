@@ -366,6 +366,7 @@
 #define OP_BRACKET_IF           352
 #define OP_BRACKET_ELSE         353
 #define OP_BRACKET_THEN         354
+#define OP_MYNAME               355
 
 #define OP_PRECISION            360
 #define OP_SET_PRECISION        361

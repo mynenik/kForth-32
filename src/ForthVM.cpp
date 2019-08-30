@@ -158,7 +158,8 @@ const char* V_ErrorMessages[] =
 	"Cannot open file",
 	"Address outside of stack space",
 	"Division overflow",
-        "Unsigned double number overflow"
+        "Unsigned double number overflow",
+	"Compile only word"
 };
 //---------------------------------------------------------------
 
@@ -862,6 +863,19 @@ int CPP_name_to_string()
    DEC_DSP
    STD_IVAL
    return 0;	
+}
+//----------------------------------------------------------------
+
+int CPP_name_to_interpret()
+{
+// Forth 2012 Tools Wordset: 15.6.2.1909.20 NAME>INTERPRET
+// stack: ( nt -- xt | 0 )
+   INC_DSP
+   WordListEntry* pWord = (WordListEntry*) TOS;
+   void* xt = (void*) ((byte*) pWord + offsetof(struct WordListEntry, Cfa));
+   TOS = (long int) xt;
+   DEC_DSP
+   return 0;
 }
 //----------------------------------------------------------------
 
@@ -1758,6 +1772,14 @@ int CPP_brackettick ()
   CPP_tick ();
   return CPP_literal();  
 }
+//-------------------------------------------------------------------
+// experimental non-standard word MY-NAME
+int CPP_myname()
+{
+  PUSH_ADDR( ((long int) pNewWord) )
+  return 0;
+}
+
 //-------------------------------------------------------------------
 
 int CPP_compilecomma ()

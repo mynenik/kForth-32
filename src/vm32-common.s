@@ -119,9 +119,9 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long CPP_searchwordlist, CPP_definitions, CPP_vocabulary, L_nop  # 336--339
            .long CPP_only, CPP_also, CPP_order, CPP_previous                 # 340--343
            .long CPP_forth, CPP_assembler, CPP_traverse_wordlist, CPP_name_to_string # 344--347
-           .long L_nop, L_nop, CPP_defined, CPP_undefined      # 348--351
-           .long L_nop, L_nop, L_nop, L_nop            # 352--355
-           .long L_nop, L_nop, L_nop, L_nop            # 356--359
+           .long CPP_name_to_interpret, L_nop, CPP_defined, CPP_undefined    # 348--351
+           .long L_nop, L_nop, L_nop, CPP_myname            # 352--355
+           .long L_nop, L_nop, L_nop, L_nop                 # 356--359
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
 	   .long L_nop, L_nop, C_fexpm1, C_flnp1	      # 364--367
 	   .long L_nop, L_nop, L_f2drop, L_f2dup	      # 368--371

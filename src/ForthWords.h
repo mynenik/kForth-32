@@ -30,6 +30,8 @@ WordTemplate ForthWords[] =
     { "SEARCH-WORDLIST", OP_SEARCHWORDLIST, 0 },
     { "TRAVERSE-WORDLIST", OP_TRAVERSE_WORDLIST, 0 },
     { "NAME>STRING", OP_NAME2STRING,          0 },
+    { "NAME>INTERPRET", OP_NAME2INTERPRET,    0 },
+    { "MY-NAME",   OP_MYNAME,                 0 },
     { "ALSO",      OP_ALSO,         NONDEFERRED },
     { "ONLY",      OP_ONLY,         NONDEFERRED },
     { "PREVIOUS",  OP_PREVIOUS,     NONDEFERRED },
