@@ -175,21 +175,6 @@ void WordList::RemoveLastWord ()
 	delete pWord;
 }
 
-/*
-WordIndex WordList::IndexOf ( char* name )
-{
-   // Return the index (iterator) of the most recently defined
-   //   word of the specified name
-   WordIndex i;
-   if (size()) {
-	for (i = end()-1; i >= begin(); --i)
-		if (*((word*)name) == *((word*) i->WordName)) // pre-compare
-			if (strcmp(name, i->WordName) == 0) return( i );
-   }
-   return( end() );
-}
-*/
-
 WordListEntry* WordList::GetFromName (char* name)
 {
    vector<WordListEntry*>::iterator i;
@@ -231,18 +216,17 @@ Vocabulary::Vocabulary( const char* name )
 int Vocabulary::Initialize( WordTemplate wt[], int n )
 {
    int i, wcode;
-   WordListEntry* pWord;
 
    for (i = 0; i < n; i++)
    {
-     pWord = new WordListEntry;   
-     strcpy(pWord->WordName, wt[i].WordName);
+     pNewWord = new WordListEntry;   
+     strcpy(pNewWord->WordName, wt[i].WordName);
      wcode = wt[i].WordCode;
-     pWord->WordCode = wcode;
-     pWord->Precedence = wt[i].Precedence;
-     pWord->Cfa = new byte[WSIZE+2];
-     pWord->Pfa = NULL;
-     byte* bp = (byte*) pWord->Cfa;
+     pNewWord->WordCode = wcode;
+     pNewWord->Precedence = wt[i].Precedence;
+     pNewWord->Cfa = new byte[WSIZE+2];
+     pNewWord->Pfa = NULL;
+     byte* bp = (byte*) pNewWord->Cfa;
      if (wcode >> 8) {
        bp[0] = OP_CALLADDR;
        *((long int*) (bp+1)) = (long int) JumpTable[wcode];
@@ -253,27 +237,11 @@ int Vocabulary::Initialize( WordTemplate wt[], int n )
        bp[1] = OP_RET;
      }
 	
-     push_back(pWord);
+     push_back(pNewWord);
    }
    return 0;
 }
 //---------------------------------------------------------------
-
-/*
-bool SearchList::IndexOf (char* name, WordIndex* p)
-{
-    vector<Vocabulary*>::iterator j;
-    WordIndex i;
-    for (j = begin(); j < end(); ++j) {
-      i = (*j)->IndexOf( name );
-      if (i < (*j)->end()) {
-	*p = i;
-	return( true );
-      }
-    }
-    return( false );
-}
-*/
 
 WordListEntry* SearchList::LocateWord (char* name)
 {
@@ -609,10 +577,11 @@ if (debug)  cout << "<ForthVM Sp: " << GlobalSp << " Rp: " << GlobalRp <<
 
 extern "C" {
 
+// WORDLIST  ( -- wid )
+// Create a new empty wordlist
+// Forth 2012 Search-Order Wordset 16.6.1.2460
 int CPP_wordlist()
 {
-     // Create a new wordlist
-     // stack: ( -- wid)
      Vocabulary* pVoc = new Vocabulary(""); // create an unnamed vocabulary
      *GlobalSp-- = (long int) pVoc;
      STD_ADDR
@@ -620,38 +589,42 @@ int CPP_wordlist()
      return 0;
 }
 
+// FORTH-WORDLIST ( -- wid )  
+// Return the Forth wordlist identifier
+// Forth 2012 Search-Order Wordset 16.6.1.1595
 int CPP_forthwordlist()
 {
-     // Return the Forth wordlist
-     // stack: ( -- wid)
      *GlobalSp-- = (long int) &Voc_Forth ;
      STD_ADDR
      return 0;
 }
 
+// GET-CURRENT ( -- wid )  
+// Return the compilation (current) wordlist
+// Forth 2012 Search-Order Wordset 16.6.1.1643
 int CPP_getcurrent()
 {
-     // Return the compilation (current) wordlist
-     // stack: ( -- wid)
      *GlobalSp-- = (long int) pCompilationWL;
      STD_ADDR
      return 0;
 }
 
+// SET-CURRENT ( wid -- )
+// Set the compilation (current) wordlist
+// Forth 2012 Search-Order Wordset 16.6.1.2195
 int CPP_setcurrent()
 {
-     // Set the compilation (current) wordlist
-     // stack: ( wid -- )
      DROP
      CHK_ADDR
      pCompilationWL = (WordList*) TOS;
      return 0;
 }
 
+// GET-ORDER  ( -- widn ... wid1 n)
+// Return the current search order
+// Forth 2012 Search-Order Wordset 16.6.1.1647
 int CPP_getorder()
 {
-      // Return the current search order
-      // stack: ( -- widn ... wid1 n)
      vector<Vocabulary*>::iterator i;
 
      if (SearchOrder.size()) {
@@ -665,10 +638,11 @@ int CPP_getorder()
      return 0;
 }
 
+// SET-ORDER  ( widn ... wid1 n -- )
+// Set the search order
+// Forth 2012 Search-Order Wordset 16.6.1.2197
 int CPP_setorder()
 {
-      // Set the search order
-      // stack: ( widn ... wid1 n -- )
       DROP
       long int nWL = TOS;
       if (nWL == -1) 
@@ -685,10 +659,11 @@ int CPP_setorder()
       return 0;
 }
 
+// SEARCH-WORDLIST  ( c-addr u wid -- 0 | xt 1 | xt -1)
+// Search for the word in the specified wordlist
+// Forth 2012 Search-Order Wordset 16.6.1.2192
 int CPP_searchwordlist()
 {
-      // Search for the word in the specified wordlist
-      // stack: ( c-addr u wid -- 0 | xt 1 | xt -1)
       DROP
       CHK_ADDR
       WordList* pWL = (WordList*) TOS;
@@ -715,18 +690,20 @@ int CPP_searchwordlist()
       return 0;
 }
 
+// DEFINITIONS  ( -- )
+// Make the compilation wordlist the same as the first search order wordlist
+// Forth 2012 Search-Order Wordset 16.6.1.1180
 int CPP_definitions()
 {
-     // Make the compilation wordlist the same as the first search order wordlist
-     // stack: ( -- )
      if (SearchOrder.size()) pCompilationWL = SearchOrder.front();
      return 0;
 }
 
+// VOCABULARY  ( "name" -- )
+// Make a new vocabulary
+// Forth 83
 int CPP_vocabulary()
 {
-     // Make a new vocabulary
-     // stack: ( "name" -- )
      CPP_create();
      WordListEntry* pWord = *(pCompilationWL->end() - 1);
      Vocabulary* pVoc = new Vocabulary(pWord->WordName);
@@ -753,28 +730,31 @@ int CPP_vocabulary()
      return 0;
 }
 
+// ONLY  ( -- )
+// Set the minimum search order: Root
+// Forth 2012 Search-Order Extension Wordset 16.6.2.1965
 int CPP_only()
 {
-     // Make the Forth wordlist the current wordlist and the only
-     //   wordlist in the search order.
-     // stack: ( -- )
      SearchOrder.clear();
      SearchOrder.push_back(&Voc_Root);
      return 0;
 }
 
+// ALSO  ( -- )
+// Add the first wordlist in the search order to the search order  
+// Forth 2012 Search-Order Extension Wordset 16.6.2.0715
 int CPP_also()
 {
-     // Duplicate the first wordlist in the search order
-     // stack: ( -- )
      SearchOrder.insert(SearchOrder.begin(), SearchOrder.front());
      return 0;
 }
 
+// ORDER  ( -- )
+// Display the wordlist search order, denoting the current compilation
+// wordlist in brackets
+// Forth 2012 Search-Order Extension Wordset 16.6.2.1985
 int CPP_order()
 {
-     // Display the wordlist search order with the current compilation wordlist
-     //   in brackets
      Vocabulary* pVoc;
      vector<Vocabulary*>::iterator i;
      const char* cp;
@@ -792,37 +772,41 @@ int CPP_order()
      return 0;
 }
 
+// PREVIOUS  ( -- )
+// Remove the first wordlist in the search order
+// Forth 2012 Search-Order Extension Wordset 16.6.2.2037
 int CPP_previous()
 {
-     // Remove the first wordlist in the search order
      SearchOrder.erase(SearchOrder.begin());
      return 0;
 }
 
-
+// FORTH  ( -- )
+// Replace first wordlist in search with the Forth wordlist.
+// Ensure that the Root wordlist remains in the search order
+// Forth 2012 Search-Order Extension Wordset 16.6.2.1590
 int CPP_forth()
 {
-     // Make the first wordlist in the search order be the Forth wordlist.
-     // Ensure that the Root wordlist remains in the search order
-     // stack: ( -- )
      if (SearchOrder.size() == 1) CPP_also();
      SearchOrder[0] = &Voc_Forth;
      return 0;
 }
 
+// ASSEMBLER ( -- )
+// Replace first wordlist in search order with Assembler wordlist.
+// Forth 2012 Programming Tools Extension Wordset 15.6.2.0740
 int CPP_assembler()
 {
-    // stack: ( -- | make the Assembler wordlist the current wordlist)
     SearchOrder[0] = &Voc_Assembler;
     return 0;
 }
 
+// TRAVERSE-WORDLIST  ( i*x xt wid -- j*x )
+// Execute xt for every word in wordlist.
+// Execution of xt has stack effect ( k*x nt -- l*x flag )
+// Forth 2012 Programming Tools Wordset 15.6.2.2297
 int CPP_traverse_wordlist()
 {
-// Forth 2012 Tools Wordset: 15.6.2.2297
-// stack: ( i*x xt wid -- j*x | execute xt for every word in wordlist)
-// Execution of xt has stack effect ( k*x nt -- l*x flag )
-
    DROP
    CHK_ADDR
    WordList* pWL = (WordList*) TOS;
@@ -846,12 +830,12 @@ int CPP_traverse_wordlist()
    }
    return e;
 }
-//----------------------------------------------------------------
 
+// NAME>STRING  ( nt -- c-addr u )
+// Return the name string associated with the named-word token, "nt".
+// Forth 2012 Tools Wordset 15.6.2.1909.40
 int CPP_name_to_string()
 {
-// Forth 2012 Tools Wordset: 15.6.2.1909.40 NAME>STRING
-// stack: ( nt -- c-addr u )
    DROP
    WordListEntry* pWord = (WordListEntry*) TOS;  // get nt from stack
    char* cp = (char*) pWord->WordName;
@@ -864,12 +848,12 @@ int CPP_name_to_string()
    STD_IVAL
    return 0;	
 }
-//----------------------------------------------------------------
 
+// NAME>INTERPRET  ( nt -- xt|0 )
+// Return xt for interpretation semantics of named-word.
+// Forth 2012 Tools Wordset 15.6.2.1909.20
 int CPP_name_to_interpret()
 {
-// Forth 2012 Tools Wordset: 15.6.2.1909.20 NAME>INTERPRET
-// stack: ( nt -- xt | 0 )
    INC_DSP
    WordListEntry* pWord = (WordListEntry*) TOS;
    void* xt = (void*) ((byte*) pWord + offsetof(struct WordListEntry, Cfa));
@@ -877,12 +861,12 @@ int CPP_name_to_interpret()
    DEC_DSP
    return 0;
 }
-//----------------------------------------------------------------
 
+// :  ( "name" -- )
+// Parse name and create a definition for name
+// Forth 2012 Core Wordset 6.1.0450
 int CPP_colon()
 {
-    // stack: ( -- | the colon compiler )
-
     char WordToken[256];
     State = TRUE;
     pTIB = ExtractName (pTIB, WordToken);
@@ -898,10 +882,11 @@ int CPP_colon()
     return 0;
 }
 
+// ; ( -- )
+// End the current definition
+// Forth 2012 Core Wordset 6.1.0460
 int CPP_semicolon()
 {
-  // stack: ( -- | terminate compilation of word )
-
   int ecode = 0;
 
   pCurrentOps->push_back(OP_RET);
@@ -965,12 +950,13 @@ int CPP_semicolon()
     
   return ecode;
 }
-//-----------------------------------------------------------------
 
+// (  ( "text" -- )
+// Parse comment text delimited by right parenthesis and discard.
+// pTIB is advanced past end of the comment.
+// Forth 2012 Core Wordset 6.1.0080
 int CPP_lparen()
 {
-  // stack: ( -- | advance pTIB past end of comment )
-
   while (TRUE)
     {
       while ((pTIB < (TIB + 255)) && (! (*pTIB == ')')) && *pTIB) ++pTIB;
@@ -990,8 +976,10 @@ int CPP_lparen()
 
   return 0;
 }
-//---------------------------------------------------------------
 
+// .(  ( "text" -- )
+// Parse and display text delimited by right parenthesis.
+// Forth 2012 Core Extensions Wordset 6.2.0200
 int CPP_dotparen()
 {
   // stack: ( -- | display comment and advance pTIB past end of comment )
@@ -1022,12 +1010,12 @@ int CPP_dotparen()
 
   return 0;
 }
-//---------------------------------------------------------------
 
+// .  ( n -- )
+// Display n in current base
+// Forth 2012 Core Wordset 6.1.0180
 int CPP_dot ()
 {
-  // stack: ( n -- | print n in current base ) 
-
   DROP
   if (GlobalSp > BottomOfStack) 
     return E_V_STK_UNDERFLOW;
@@ -1045,12 +1033,12 @@ int CPP_dot ()
     }
   return 0;
 }
-//--------------------------------------------------------------
 
+// .R  ( n1 n2 -- )
+// Display n1 in current base, right justified in field width n2.
+// Forth 2012 Core Extension Wordset 6.2.0210
 int CPP_dotr ()
 {
-  // stack: ( n1 n2 -- | print n1 in field n2 wide )
-
   DROP
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
   
