@@ -9,8 +9,10 @@
 \   2001-10-18 -- initial port (non-functional)
 \   2007-01-07 -- working version; required fixes to asm-x86 for
 \                   proper assembly of byte and word register operands  km
-\
-\ Requires: asm-x86.4th
+\   2019-09-09 -- revised comments; modified crc32s km
+\ 
+\ Requires: 
+\   asm-x86.4th
 \
 base @
 hex
@@ -30,7 +32,7 @@ CODE crc32  ( n1 char -- n2 )
         bx   ax  mov,   \ save character
         bh   bl  xor,   \ xor
         0<, IF,   	\ skip if equal
-          CRC-POLYNOMIAL # edx xor,  \ crc-32 polymial 1 04C1 1DB7
+          CRC-POLYNOMIAL # edx xor,  \ crc-32 polynomial 1 04C1 1DB7
         THEN,
         ax   bx  mov,   	\ restore character
     LOOP,   		\ next bit
@@ -39,24 +41,25 @@ CODE crc32  ( n1 char -- n2 )
     0 #     eax  mov,
 END-CODE
 
-base !
 
-\ calculate crc-32 for several strings
+\ accumulate a 32-bit crc
 : crc-32  ( n1 c-addr u -- n2 )
     0 do   \ n c-addr
       dup >r c@ crc32 r> 1+ loop drop ;
 
 \ calculate crc-32 of a string
 : crc32s  ( c-addr u -- n )
-    -1 -rot crc-32 invert ;
+    FFFFFFFF -rot crc-32 invert ;
 
-\ test
+\ calculate crc-32 for several strings
 : test
     cr cr ." crc-32" cr
     s" An Arbitrary String" 2dup type cr
     ."   crc-32: " crc32s hex u. decimal ." should be 6FBEAAE7" cr
     s" ZYXWVUTSRQPONMLKJIHGFEDBCA" 2dup type cr
     ."   crc-32: " crc32s hex u. decimal ." should be 99CDFDB2" cr ;
+
+base !
 
 test
 
