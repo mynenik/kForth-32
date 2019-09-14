@@ -58,14 +58,12 @@ struct WordListEntry
   void* Pfa;
 };
 
-// typedef vector<WordListEntry>::iterator  WordIndex;
 
 class WordList : public vector<WordListEntry*> 
 {
 public:
    WordListEntry* GetFromName( char* );
    WordListEntry* GetFromCfa( void* );
-//   WordIndex IndexOf( char* );
    void RemoveLastWord( void );
 };
 
@@ -80,7 +78,6 @@ public:
 class SearchList : public vector<Vocabulary*>
 {
 public:
-//   bool IndexOf( char*, WordIndex* );
    WordListEntry* LocateWord( char* );
    WordListEntry* LocateCfa( void*  );
 };
