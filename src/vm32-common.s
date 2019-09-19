@@ -99,7 +99,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long L_utmslash, L_utsslashmod, L_stsslashrem, L_udmstar   # 256 -- 259
 	   .long CPP_included, CPP_include, CPP_source, CPP_refill # 260--263
 	   .long CPP_state, CPP_allocate, CPP_free, CPP_resize  # 264--267
-	   .long L_cputest, L_dsstar, CPP_compilecomma, L_nop   # 268--271
+	   .long L_cputest, L_dsstar, CPP_compilecomma, CPP_compilename   # 268--271
 	   .long CPP_postpone, CPP_nondeferred, CPP_forget, C_forth_signal # 272--275
 	   .long C_raise, C_setitimer, C_getitimer, C_us2fetch  # 276--279
 	   .long C_tofloat, L_fsincos, C_facosh, C_fasinh # 280--283
@@ -114,12 +114,12 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long L_nop, L_nop, L_nop, L_nop            # 316--319
            .long C_dlopen, C_dlerror, C_dlsym, C_dlclose # 320--323
 	   .long C_usec, CPP_alias, C_system, C_chdir    # 324--327
-           .long C_timeanddate, L_nop, CPP_wordlist, CPP_forthwordlist               # 328--331
+           .long C_timeanddate, L_nop, CPP_wordlist, CPP_forthwordlist       # 328--331
            .long CPP_getcurrent, CPP_setcurrent, CPP_getorder, CPP_setorder  # 332--335
            .long CPP_searchwordlist, CPP_definitions, CPP_vocabulary, L_nop  # 336--339
            .long CPP_only, CPP_also, CPP_order, CPP_previous                 # 340--343
            .long CPP_forth, CPP_assembler, CPP_traverse_wordlist, CPP_name_to_string # 344--347
-           .long CPP_name_to_interpret, L_nop, CPP_defined, CPP_undefined    # 348--351
+           .long CPP_name_to_interpret, CPP_name_to_compile, CPP_defined, CPP_undefined # 348--351
            .long L_nop, L_nop, L_nop, CPP_myname            # 352--355
            .long L_nop, L_nop, L_nop, L_nop                 # 356--359
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
