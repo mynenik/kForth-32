@@ -20,11 +20,9 @@
 : immediate? ( nt -- flag )
     name>compile ['] execute = nip ;
 
-: word-info ( wid nt -- wid flag )
-\   over >r          \ keep a copy of the wid
+: word-info ( nt -- flag )
    cr
    dup name>string 32 $.R      \ display the word name
-\   r> search-wordlist  \ obtain the word's xt and precedence
    dup immediate? 
    4 spaces
    IF   s" IMM "  \ display precedence IMMEDIATE
@@ -40,7 +38,7 @@
 \ Display info on each word in the specified wordlist:
 \   Name, Precedence, xt/cfa, pfa 
 : wl-info ( wid -- )
-   dup ['] word-info swap traverse-wordlist drop ;
+    ['] word-info swap traverse-wordlist ;
 
 \ Display name of IMMEDIATE word
 : immediate-word ( nt -- flag )
@@ -100,4 +98,3 @@ variable wid2
 : wl-collisions ( wid1 wid2 -- ) 
 	wid2 ! ['] next-name1 swap traverse-wordlist ;
 
-	
