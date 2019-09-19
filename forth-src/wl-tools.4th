@@ -29,14 +29,14 @@
    ELSE s"     "
    THEN type
    name>interpret   
-   dup >body swap   \ -- pfa xt/cfa 
-   16 u.r           \ display the xt/cfa
+   dup >body swap   \ -- pfa xt 
+   16 u.r           \ display the xt
    2 spaces
    16 u.r           \ display the pfa
    true ;
 
 \ Display info on each word in the specified wordlist:
-\   Name, Precedence, xt/cfa, pfa 
+\   Name, Precedence, xt, pfa 
 : wl-info ( wid -- )
     ['] word-info swap traverse-wordlist ;
 
