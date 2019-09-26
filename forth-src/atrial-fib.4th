@@ -26,8 +26,7 @@
 \ show the onset of AF, followed by a return to normal
 \ heartbeat.
 \
-\ Copyright (c) 2015 Krishna Myneni,
-\ http://ccreweb.org
+\ Copyright (c) 2015--2019 Krishna Myneni
 \
 \ This code may be used for any purpose, as long as the copyright
 \ notice above is preserved.
@@ -35,7 +34,8 @@
 \ Revisions:
 \   2015-02-15  km; first working version.
 \   2015-02-16  km; minor cleanup; set initial value of RNG seed.
-\
+\   2019-09-18  km; revised def. of uw@ to mask 16 bits;
+\                     use USLEEP delay instead of MS .
 \ References:
 \
 \  1. K. Christensen, K.A. Manani, and N.S. Peters, "Simple Model
@@ -45,14 +45,16 @@
 include ans-words
 include strings
 include ansi
+include modules.fs
 include fsl/fsl-util
 
 \ === Memory utility words
+hex
 [UNDEFINED] w@ [IF]
 : uw@ ( a -- u ) dup 1+ >r c@ r> c@ 8 lshift or ;
-: uw! ( u a -- ) >r dup 255 and r@ c! 8 rshift r> 1+ c! ;
+: uw! ( u a -- ) >r dup ff and r@ c! 8 rshift r> 1+ c! ;
 [ELSE]
-: uw@ w@ ;
+: uw@ w@ ffff and ;
 : uw! w! ;
 [THEN]
 
@@ -384,7 +386,7 @@ L dup 2 matrix CellInfoNew{{
       CellInfoNew{{ 0 0 }} CellInfo{{ 0 0 }} L DUP * 2* MOVE
       1 heart-clock +!
 
-      display-cells 30 ms
+      display-cells ( 30 ms ) 10000 usleep
       key?
    UNTIL
    key drop ;
