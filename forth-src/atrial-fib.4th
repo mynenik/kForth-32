@@ -36,6 +36,11 @@
 \   2015-02-16  km; minor cleanup; set initial value of RNG seed.
 \   2019-09-18  km; revised def. of uw@ to mask 16 bits;
 \                     use USLEEP delay instead of MS .
+\   2019-09-27  km; implemented moment of inertia method for detecting
+\                   AF at a given instant; record moments for up to
+\                   MAX_HC heart clock cycles; determine fraction of
+\                   time in AF for a single trial; compute analytic
+\                   risk probability of AF.
 \ References:
 \
 \  1. K. Christensen, K.A. Manani, and N.S. Peters, "Simple Model
@@ -162,10 +167,14 @@ variable nbeats
 \ with a fixed period between RESTING and EXCITED
 \ states.
 
-
 L dup 2 matrix CellInfo{{
 L dup 2 matrix CellInfoNew{{
 
+\ Array for storing "moments of inertia" at each heart clock cycle,
+\ for determining when AF occurs.
+100000 constant MAX_HC
+MAX_HC INTEGER ARRAY moments{
+ 
 \ === Basic manipulation of cell info values
 
 : excited? ( cellinfo -- flag ) STATE_MASK and EXCITED = ;
@@ -357,6 +366,11 @@ L dup 2 matrix CellInfoNew{{
     L 0 DO dup CellInfoNew{{ I 0 }} uw! LOOP drop
 ;
 
+: display-beat ( -- )
+    nbeats @ 4 .r heart-clock @ 8 .r 
+    moments{ heart-clock @ } @ 6 .r 
+;
+
 : display-cells ( -- )
     page
     80 0 DO
@@ -366,8 +380,40 @@ L dup 2 matrix CellInfoNew{{
       LOOP
       cr
     LOOP
-    nbeats @ 4 .r heart-clock @ 6 .r ;
+    display-beat ;
 
+\ Fetch column values of all excited cells and store in
+\ array; return number of excited cells.
+L 10 * INTEGER ARRAY ExcitedCellCols{
+
+: fetch-exc-cols ( -- n )
+    0
+    L 0 DO
+        L 0 DO
+          CellInfo{{ J I }} uw@ excited? IF
+            ExcitedCellCols{ over } I swap !
+            1+
+          THEN
+        LOOP
+    LOOP
+;
+
+\ Compute center of mass column for n excited cells
+: center-of-mass ( n -- u )
+    0 over 0 ?DO  ExcitedCellCols{ I } @ +  LOOP 
+    swap dup 0= IF drop ELSE / THEN
+;
+
+\ Compute "moment of inertia" about center of mass column
+\ for excited cells
+variable cm
+: moment-of-inertia ( -- u )
+    fetch-exc-cols
+    dup center-of-mass cm !
+    0 swap 0 ?DO  ExcitedCellCols{ I } @ cm @ - abs +  LOOP 
+    L / ;
+
+true value display?
 
 : resume-heartbeat ( -- )
     BEGIN      
@@ -384,18 +430,56 @@ L dup 2 matrix CellInfoNew{{
 
       \ Copy new cell info to current info
       CellInfoNew{{ 0 0 }} CellInfo{{ 0 0 }} L DUP * 2* MOVE
+      
+      \ Compute and store "moment of inertia" for excited cells
+      moment-of-inertia moments{ heart-clock @ } !
+
+      display? IF
+        display-cells ( 30 ms ) 10000 usleep
+      ELSE
+        heart-clock @ 100 mod 0= IF 
+          cr display-beat THEN
+      THEN
+
       1 heart-clock +!
 
-      display-cells ( 30 ms ) 10000 usleep
-      key?
+      heart-clock @ MAX_HC = key? or
    UNTIL
-   key drop ;
-   
+   key? IF  key drop 
+   ELSE  cr ." Maximum heart cycles reached!" 
+   THEN ;
+
+\ Compute fraction of time in which AF occurred within a single run 
+\ (trial) by thresholding the recorded moments.
+: f_AF ( -- r )
+    heart-clock @ MAX_HC 10 / < ABORT" Insufficient data!"
+    0
+    heart-clock @ 0 DO
+      moments{ I } @ 15 > IF 1+ THEN
+    LOOP
+    s>f heart-clock @ s>f f/ ;
+
+\ Probability of having at least one fibrillation-inducing
+\ structure, computed by the analytic formula given in [1], eq. 2.,
+\ using the current value of NU and other parameters.
+: P_risk ( -- r )
+    nu @ s>f 100e f/
+    1e fswap f- REF_TIME s>f f**
+    1e fswap f- DELTA s>f 100e f/ L s>f fdup f* f* f**
+    1e fswap f- ;
+ 
 : beat ( -- )
     0 nbeats !
     0 heart-clock !
     init-cells
     resume-heartbeat  
  ;
-      
+
+cr 
+cr .( NU        -- variable containing percentage of transverse connections.)
+cr .( DISPLAY?  -- true/false value to enable/disable text graphic display.)
+cr .( BEAT      -- begin a trial.)
+cr .( f_AF      -- return fraction of time in AF during last trial.)
+cr .( P_risk    -- return theoretical probability of AF for current params.)
+cr cr
 
