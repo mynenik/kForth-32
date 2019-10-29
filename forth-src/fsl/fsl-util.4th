@@ -74,13 +74,14 @@
 \                    zero number of columns, and aborts for negative row or
 \                    column count.
 \   2017-05-19  km;  add the constant DFLOAT which has the value 1 DFLOATS.
+\   2019-10-29  km;  conditional def. of F2DUP (intrinsic to some Forths).
 \ ================= kForth specific defs/notes ==============================
 \ Requires ans-words.4th
 
 [undefined] ptr [IF] : ptr create 1 cells ?allot ! does> a@ ; [THEN]
 \ ================= end of kForth specific defs ==============================
 
-CR .( FSL-UTIL          V1.20          19 May     2017   EFC, KM )
+CR .( FSL-UTIL          V1.21          29 October 2019   EFC, KM )
 BASE @ DECIMAL
 
 \ ================= compilation control ======================================
@@ -193,7 +194,7 @@ TRUE  VALUE is-static?     \ TRUE for statically allocated structs and arrays
 : -FROT    FROT FROT ;
 : F2*   2.0e0 F*     ;
 : F2/   2.0e0 F/     ;
-: F2DUP     FOVER FOVER ;
+[undefined] F2DUP  [IF] : F2DUP     FOVER FOVER ; [THEN]
 [undefined] F2DROP [IF] : F2DROP    FDROP FDROP ; [THEN]
 
 \ : F,   HERE FALIGN 1 FLOATS ALLOT F! ;
