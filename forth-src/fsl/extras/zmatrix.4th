@@ -11,7 +11,7 @@
 \   }}ZPUT     ( z_1 ... z_nm n m a -- )  initialize matrix
 \   }}ZPRINT   ( nrows a -- )             print matrix
 \   }}ZZERO    ( nrows a -- )             zero all elements of matrix
-\   }}ZCOPY    ( nrows a1 a2 -- ) copy all elements of one matrix to another
+\   }}ZCOPY    ( nrows a1 a2 -- ) copy all elements of matrix: a1->a2
 \   }}ZROW@    ( i a -- zrc )        fetch row i of matrix onto stack
 \   }}ZCOL@    ( nrows i a -- zrc )  fetch column i of matrix onto stack
 \   }}ZROW!    ( zrc i a -- )        store zrc to row i of matrix 
@@ -26,8 +26,8 @@
 \   }}Z+   ( nrows a1 a2 a3 -- ) element by element addition of matrices
 \   }}ZDOT-PRODUCT ( i a1 j a2 -- z ) dot product of row i of a1 with
 \                                     col j of a2
-\   }}ZMUL    ( nrows1 a1 nrows2 a2 a3 -- )  a3 is matrix mult of a1, a2
-\
+\   }}ZMUL  ( nrows1 a1 nrows2 a2 a3 -- ) a3 is matrix mult of a1, a2
+\   }}ZKRON ( nrows1 a1 nrows2 a2 a3 -- ) Kronecker outer product
 \ To implement:
 \
 \   }}ZCOPY-ROW ( i a1 j a2 -- )  copy row i of matrix a1 to row j of a2
@@ -46,6 +46,7 @@
 \   2011-04-25  define constants Z=0, Z=1, Z=I, which must have
 \               been removed from complex.4th
 \   2019-10-31  revised for consistency with FSL matrices  km
+\   2019-11-06  added Kronecker outer product, }}ZKRON   km
 
 [UNDEFINED] zfloats [IF]
 : zfloats ( u -- ubytes ) 2* dfloats ;
@@ -249,6 +250,44 @@ Public:
 	  LOOP
 	LOOP
 	drop ;
+
+Private:
+variable zm_1
+variable zm_2
+variable zm_3
+variable nrows1
+variable ncols1
+variable nrows2
+variable ncols2
+variable nrows3
+variable ncols3
+variable RowOffset
+variable ColOffset
+
+Public:
+
+: }}zkron ( nrows1 a1 nrows2 a2 a3 -- )
+    zm_3 ! zm_2 ! >r zm_1 ! r>  \ -- nrows1 nrows2
+    2dup nrows2 ! nrows1 ! 
+    * nrows3 !
+    zm_1 a@ }}ncols dup ncols1 ! 
+    zm_2 a@ }}ncols dup ncols2 !
+    * dup ncols3 !
+    zm_3 a@ }}ncols <> Abort" Matrix size error!"
+    nrows1 @ 0 ?DO
+      ncols1 @ 0 ?DO
+        J nrows2 @ * RowOffset !  
+        I ncols2 @ * ColOffset !
+        zm_1 a@ J I }} z@
+        nrows2 @ 0 ?DO
+          ncols2 @ 0 ?DO
+            zdup zm_2 a@ J I }} z@ z*
+            zm_3 a@  RowOffset @ J +  ColOffset @ I + }} z!
+          LOOP
+        LOOP
+        zdrop
+      LOOP
+    LOOP ;
 
 BASE !
 END-MODULE
