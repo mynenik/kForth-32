@@ -46,7 +46,8 @@
 \   2011-04-25  define constants Z=0, Z=1, Z=I, which must have
 \               been removed from complex.4th
 \   2019-10-31  revised for consistency with FSL matrices  km
-\   2019-11-06  added Kronecker outer product, }}ZKRON   km
+\   2019-11-05  added Kronecker outer product, }}ZKRON   km
+\   2019-11-06  fixed }}ZTRANSPOSE  km
 
 [UNDEFINED] zfloats [IF]
 : zfloats ( u -- ubytes ) 2* dfloats ;
@@ -158,11 +159,11 @@ variable zm_nrows
 
 Public:
 : }}ztranspose ( nrows a1 a2 -- | a2 will be the transpose of a1)
-	2dup }}ncols= invert Abort" Matrix size error!"
-	zm_2 ! zm_1 ! dup zm_nrows !
+	2 pick over }}ncols = invert Abort" Matrix size error!"
+	zm_2 ! dup zm_1 ! }}ncols zm_ncols !
 	0 ?DO 
 	  I zm_1 a@ }}zrow@  
-	  zm_nrows @ I zm_2 a@ }}zcol!
+	  zm_ncols @ I zm_2 a@ }}zcol!
 	LOOP ;
 
 : }}zswap-rows ( i j a -- | interchange rows i and j for zmatrix a )
