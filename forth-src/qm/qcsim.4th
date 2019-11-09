@@ -41,10 +41,17 @@
 \      dynamic buffer (transient persistence) or to the reserved 
 \      storage in a named child of one the following defining words:
 \      KET  BRA  GATE
+\
+\ References:
+\
+\   1.  Quantum computation and Quantum Information, M. A. Nielsen
+\       and I. L. Chuang, Cambridge University Press, 2000.
 \      
 \ Glossary:
 \
 \  2^      ( n -- m )  m = 2^n
+\  ILOG2   ( u1 -- u2 ) floored log base 2 of integer
+\  }}ZCLEAN  ( r nrows a -- ) threshold absolute values of zmatrix elements
 \  DIM     ( a -- nrows ncols ) return dimensions of xzmatrix
 \  QDIM    ( q -- 2^n ) return dimensionality of quantum state or gate
 \  ALLOC_QBUF ( u -- a )  get transient memory for u bytes  
@@ -62,10 +69,15 @@
 \  Q.      ( q -- )    print a qubit state or gate matrix
 \  Q!      ( z1 ... zm o -- )  store elements of o from stack
 \  ->      ( q1 q2 -- ) copy qubit state or gate: q1->q2
+\  QCLEAN? flag when true prints elements with value < minClean as zero
 \
 \  Q+      ( q1 q2 -- q3 ) add two q's
+\  F*Q     ( r  q1 -- q2 ) Multiply q1 by a real scalar
+\  Z*Q     ( z  q1 -- q2 ) Multiply q2 by a complex scalar
 \  %*%     ( q1 q2 -- q3 ) Matrix multiplication of q1 and q2
 \  %x%     ( q1 q2 -- q3 ) Kronecker outer product of q1 and q2
+\  U_C     ( icntrl itarg qgate n -- qgate2 ) conditional n-qubit gate
+\  U_SW    ( i j n -- qgate ) swap gate for qbits i and j in n-qubit gate
 \  ADJOINT ( q1 -- q2 )    q2 = adjoint of q1 (q1 "dagger")
 \
 \  PROB     ( c q -- r )  return probability for measuring c for state q
@@ -73,10 +85,7 @@
 \
 \  Not yet implemented:
 \
-\  U_C     ( icntrl itarg qgate n -- qgate2 ) conditional n-qubit gate
 \  Q-      ( q1 q2 -- q3 ) subtract two q's
-\  F*Q     ( r  q1 -- q2 ) Multiply q1 by a real scalar
-\  Z*Q     ( z  q1 -- q2 ) Multiply q2 by a complex scalar
 \  SAMPLES  ( q u a -- ) obtain u measurement samples for state q  
 \  MEASURE  ( qin xtqc -- c ) execute quantum circuit with state qin
 \                       and measure bit outputs c
@@ -89,7 +98,10 @@
 \   2019-11-02 km  first version, one and two-qubit quantum circuits
 \   2019-11-07 km  generic operators for quantum states and gates;
 \                    simplified notation.
-
+\   2019-11-08 km  implemented words U_C and U_SW to generate conditional
+\                    two-qubit gates and swap gates for an n-qubit circuit;
+\                    implemented F*Q and Z*Q and added 3-qubit QFT circuit
+\                    example and a 3-qubit circuit exercise.
 include ans-words.4th
 include strings.4th
 include fsl/fsl-util.4th
@@ -97,8 +109,14 @@ include fsl/complex.4th
 include fsl/extras/zmatrix.4th
 
 \ General utilities
-
+[UNDEFINED] 4dup [IF] : 4dup 2over 2over ; [THEN]
 : 2^ ( n -- m ) 1 swap lshift ;
+: u2/ ( u -- u/2 ) 1 rshift ;
+
+\ Implementation of ILOG2 by Rick C., comp.lang.forth, 2019-11-07
+: ilog2 ( u1 -- u2 )  \ Find floored log base 2
+  0 BEGIN swap u2/ dup WHILE swap 1+ REPEAT drop ;
+
 : c. ( c -- | print binary form of c) 
    base @ binary swap . base ! ;
 
@@ -108,6 +126,23 @@ include fsl/extras/zmatrix.4th
    >r s>d <# r>
    0 ?DO # LOOP #> 
    r> base ! ;
+
+true value qclean?
+1e-14 fconstant minClean
+
+\ Threshold the absolute values of the real and imaginary parts
+\ of each element in a zmatrix. If a part of the element has 
+\ absolute value less than the threshold, set that part to zero.
+\ This is useful for suppressing numerical errors for printing.
+: }}zclean ( r nrows a -- )
+    tuck }}ncols * 0 ?DO  \ -- r a
+      dup >r f@  f2dup fabs  \ -- r Re(z) r |Re(z)|  R: a
+      f> IF fdrop 0e r@ f! ELSE fdrop THEN  \ -- r 
+      r> float+ 
+      dup >r f@ f2dup fabs   \ -- r Im(z) r |Im(z)|  R: a 
+      f> IF fdrop 0e r@ f! ELSE fdrop THEN
+      r> float+
+    LOOP drop fdrop ;
 
 \ An extended zmatrix structure. FSL matrices do not store the
 \ number of rows in the header. To abstract the interface for
@@ -168,8 +203,19 @@ variable qptr   qbuf qptr !
 \ Return dimensionality of quantum state or gate
 : qdim ( q -- 2^n ) dim max ;
 
+\ Copy ket, bra, or gate: q1 -> q2
+: -> ( q1 q2 -- )
+    2dup >r dim r>  dim d= invert Abort" Object size mismatch!"
+    dup dim * zfloats move ;
+
 \ Print a state vector or a gate
-: q. ( q -- )  dup }}nrows swap }}zprint ;
+: q. ( q -- )
+    qclean? IF  
+      dup dim alloc_xzmat dup >r ->
+      minClean r@ }}nrows r@ }}zclean
+      r>
+    THEN  
+    dup }}nrows swap }}zprint ;
 
 \ Store qubit state vector or gate matrix elements from stack
 : q! ( z1 ... zm q -- )
@@ -190,11 +236,12 @@ variable qptr   qbuf qptr !
     >r dup }}nrows swap r> 
     r@ }}z- r> ;
 [THEN]
-   
-\ Copy ket, bra, or gate: q1 -> q2
-: -> ( q1 q2 -- )
-    2dup >r dim r>  dim d= invert Abort" Object size mismatch!"
-    dup dim * zfloats move ;
+
+\ Scale q by a real number
+: f*q ( r q -- )  dup qdim swap }}f*z ;
+
+\ Scale q by a complex number
+: z*q ( z q -- )  dup qdim swap }}z*z ;
 
 \ Probability of measuring classical bits c in ket q
 : prob ( c q -- r )
@@ -284,34 +331,57 @@ variable qptr   qbuf qptr !
 1 gate S   z=1 z=0 z=0 z=i  S q!
 1 gate T   z=1 z=0 z=0 pi 4e f/ fsincos fswap T q!
 1 gate H   X Z q+ H ->
-1e 2e f/ fsqrt 2 H }}f*z
+1e 2e f/ fsqrt H f*q
 
+\ Conditional 2-qubit unitary gate:
+\   n is number of qubits in circuit; n >=2
+\   icontrol is index of control qubit: 0 -- n-1
+\   itarget  is index of target  qubit: 0 -- n-1, itarget <> icontrol
+\   q1 is the one-qubit gate to be used in conditional 2-qubit gate
+variable cntrl
+variable targ
+variable qtemp
+
+: U_c ( icontrol itarget q1 n -- q2 )
+    dup 2 < Abort" ** Circuit must have minimum of 2 qubits!"
+    >r qtemp ! targ ! cntrl ! r>
+    cntrl @ over >= >r targ @ over >= r> or
+    Abort" ** Control or target qubits are out of range!"
+    cntrl @ targ @ = 
+    Abort" ** Control and target cannot be same qubits!"
+    0 2^ alloc_g >r z=1 r@ q! r> dup  \ -- n q=1 q=1
+    rot 0 ?DO
+       cntrl @ I = IF
+          >r >r  P0 r> %x%  P1 r> %x%
+       ELSE
+         targ @ I = IF
+           >r >r I1 r> %x%  qtemp a@ r> %x% 
+         ELSE
+           >r >r I1 r> %x%  I1 r> %x%
+         THEN
+      THEN
+    LOOP
+    q+ 
+;
+
+\ SWAP gate for qubits i and j for an n-qubit circuit
+variable qtemp
+
+: U_sw ( i j n -- q )
+   dup 2 < Abort" ** Circuit must have minimum of 2 qubits!"
+   X swap 
+   4dup U_c qtemp !
+   2>r swap 2r> U_c
+   qtemp a@ tuck >r 
+   %*% r> %*% ;
+   
 \ Two qubit gates: I2, U2CN, U2CNR, U2CZ, U2SW
 
-2 gate I2     I1 dup %x% I2 ->
-2 gate U2CX
-z=1 z=0 z=0 z=0
-z=0 z=1 z=0 z=0
-z=0 z=0 z=0 z=1
-z=0 z=0 z=1 z=0  U2CX q!   \ CNOT gate: q0=target, q1=control
-
-2 gate U2CXR
-z=1 z=0 z=0 z=0
-z=0 z=0 z=0 z=1
-z=0 z=0 z=1 z=0
-z=0 z=1 z=0 z=0  U2CXR q!   \ CNOT gate: q0=control, q1=target
-
-2 gate U2CZ
-z=1 z=0 z=0 z=0
-z=0 z=1 z=0 z=0
-z=0 z=0 z=1 z=0
-z=0 z=0 z=0 z=1 znegate U2CZ q! \ CZ gate: q0=target, q1=control
-
-2 gate U2SW   \ two-qubit SWAP gate
-z=1 z=0 z=0 z=0
-z=0 z=0 z=1 z=0
-z=0 z=1 z=0 z=0
-z=0 z=0 z=0 z=1  U2SW q!
+2 gate I2     I1 dup %x%   I2 ->
+2 gate U2CX   1 0 X 2 U_c  U2CX ->  \ CNOT gate: q0=target, q1=control
+2 gate U2CXR  0 1 X 2 U_c  U2CXR -> \ CNOT gate: q0=control, q1=target
+2 gate U2CZ   1 0 Z 2 U_c  U2CZ ->  \ CZ   gate: q0=target, q1=control
+2 gate U2SW   0 1   2 U_sw U2SW ->  \ SWAP gate for q0 and q1
 
 \ Examples:
 \
@@ -350,7 +420,7 @@ z=0 z=0 z=0 z=1  U2SW q!
 \ Define the quantum circuit operations on an input state of 2 qubits to
 \ transform it into the output state.
 \
-\    : qc ( qin[2] -- qout[2] )
+\    : qc3 ( qin[2] -- qout[2] )
 \        H X %x%  \ compose the 2-qubit gate prior to 1; note the order.
 \        swap %*%      \ apply to input state to give quantum state at 1
 \        U2CX swap %*% \ apply CNOT gate to give output state
@@ -361,4 +431,47 @@ z=0 z=0 z=0 z=1  U2SW q!
 \    |10> qc q.  \   "                   "      |10>
 \    |11> qc q.  \   "                   "      |11>
 \
+\
+\ 4) Three-Qubit Quantum Fourier Transform
+\
+\    Compose a 3-qubit gate for the circuit below.
+\
+\                  :         :
+\  q2 ---[H]---[S]---[T]----------------x----
+\               |  :  |      :          |
+\  q1 ----------*-----|--[H]---[S]------|----
+\                  :  |      :  |       |
+\  q0 ----------------*---------*--[H]--x----
+\                  :         :
+\                  1         2
+
+2 gate U2CS01   0 1 S 2 U_c  U2CS01 ->   \ Controlled-phase gate
+
+3 gate U3QFT  \ 3-qubit gate for full circuit
+  H I1 %x% 
+  U2CS01          swap %*%     \ 2-qubit gate at 1 for q1,q2                     
+  I1 %x%                       \ transform to 3-qubit gate
+  0 2 T 3 U_c     swap %*%
+  I1 H %x% I1 %x% swap %*%     \ 3-qubit gate at 2
+  I1 U2CS01 %x%   swap %*%
+  I2 H %x%        swap %*%
+  0 2 3 U_sw      swap %*%
+  U3QFT  ->
+
+\ 5) Exercise: 
+\
+\    Compose the following implementation of the 3-qubit Toffoli gate.
+\
+\ q2 ------------------*------------------*---------*---------*--[T]--
+\                      |                  |         |         |
+\ q1 --------*---------|--------*---------|--[Td]-[CX]-[Td]-[CX]-[S]--
+\            |         |        |         |
+\ q0 --[H]-[CX]-[Td]-[CX]-[T]-[CX]-[Td]-[CX]-[T]-[H]------------------
+\
+\  The Td gate is defined below. Use the word U_c to define the 
+\  conditional NOT gates [CX] between the appropriate qubits.
+\  You may want to define other intermediate gates to help compose 
+\  the gate for the entire circuit.
+
+1 gate Td  T adjoint Td ->
 
