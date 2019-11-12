@@ -67,7 +67,7 @@
 \  CBITS   ( c n -- caddr u ) return n-bit string for c 
 \  C.      ( c -- )    print binary representation of c
 \  Q.      ( q -- )    print a qubit state or gate matrix
-\  Q!      ( z1 ... zm o -- )  store elements of o from stack
+\  Q!      ( z1 ... zm q -- )  store elements of q from stack
 \  ->      ( q1 q2 -- ) copy qubit state or gate: q1->q2
 \  QCLEAN? flag when true prints elements with value < minClean as zero
 \
@@ -102,14 +102,26 @@
 \                    two-qubit gates and swap gates for an n-qubit circuit;
 \                    implemented F*Q and Z*Q and added 3-qubit QFT circuit
 \                    example and a 3-qubit circuit exercise.
+\   2019-11-11 km  fix comments; add MAXN and constants; use ilog2; begin
+\                    implementation of measurement words.
 include ans-words.4th
 include strings.4th
 include fsl/fsl-util.4th
 include fsl/complex.4th
+include fsl/horner.4th
 include fsl/extras/zmatrix.4th
+include fsl/extras/noise.4th
 
 \ General utilities
 [UNDEFINED] 4dup [IF] : 4dup 2over 2over ; [THEN]
+
+8 constant MAXN   \ maximum number of qubits
+
+1e 2e f/ fsqrt fconstant 1/sqrt2 
+pi 2e f/ fconstant pi/2
+1e 1e 1/sqrt2 z*f      zconstant z=sqrti   \ square root of  i
+z=sqrti conjg znegate  zconstant z=sqrt-i  \ square root of -i
+
 : 2^ ( n -- m ) 1 swap lshift ;
 : u2/ ( u -- u/2 ) 1 rshift ;
 
@@ -126,6 +138,9 @@ include fsl/extras/zmatrix.4th
    >r s>d <# r>
    0 ?DO # LOOP #> 
    r> base ! ;
+
+\ Initialization of pseudo random number generator ran0
+37882569 idum !
 
 true value qclean?
 1e-14 fconstant minClean
@@ -243,19 +258,54 @@ variable qptr   qbuf qptr !
 \ Scale q by a complex number
 : z*q ( z q -- )  dup qdim swap }}z*z ;
 
-\ Probability of measuring classical bits c in ket q
+\ Probability of measuring classical bits c given ket q
 : prob ( c q -- r )
     dup >r qdim 1- and r> swap 0 }} z@ |z|^2 ;
 
-\ Print the probabilities for measuring all n classical
+\ Print the probabilities for measuring all 2^n classical
 \ outputs for ket q
 : all-prob ( q -- )
-    dup qdim   \ -- q 2^n
+    dup qdim  \ -- q 2^n
     dup 0 ?DO
       2dup I swap 
-      2 spaces cbits type 2 spaces
+      2 spaces ilog2 cbits type 2 spaces
       I swap prob f. cr
     LOOP  2drop ;
+
+\ Utilties for sampling bit strings
+MAXN 2^ float array p{
+variable nprob
+
+\ Store the probabilities for each possible bit string
+: set-p ( q -- )
+    dup dim = Abort" Not a state vector!"
+    dup qdim
+    dup MAXN 2^ > Abort" Maximum dimension exceeded!"
+    dup nprob !
+    0 ?DO 
+      I over prob    
+      p{ I } f!
+    LOOP  drop ;
+
+\ Map ranges in unit interval to correspond to probabilities
+\ for each bit string
+MAXN 2^ float array rngmap{
+: set-rngmap ( q -- )
+    dup set-p
+    p{ 0 } f@  rngmap{ 0 } f!
+    qdim 1 ?DO
+      rngmap{ I 1- } f@ p{ I } f@ f+
+      rngmap{ I } f!
+    LOOP
+;
+
+0 [IF] 
+\ Obtain u measurements of n-qubit state vector q and return
+\ the measurements in a integer array
+: samples ( q u a -- )
+
+;
+[THEN] 
 
 \ Create a named, uninitialized n-qubit ket state vector.
 : ket ( n "name" -- )  2^ 1 xzmatrix ;
@@ -295,9 +345,9 @@ variable qptr   qbuf qptr !
  
 \ Kronecker outer products of quantum states and gates.
 : %x% ( q1 q2 -- q3 )
-    2dup >r dim r> dim    \ -- o1 o2 nrows1 ncols1 nrows2 ncols2
-    >r swap >r * r> r> *  \ -- o1 o2 nrows1*nrows2 ncols1*ncols2
-    alloc_xzmat >r        \ -- o1 o2  r: o3
+    2dup >r dim r> dim    \ -- q1 q2 nrows1 ncols1 nrows2 ncols2
+    >r swap >r * r> r> *  \ -- q1 q2 nrows1*nrows2 ncols1*ncols2
+    alloc_xzmat >r        \ -- q1 q2  r: q3
     >r dup }}nrows swap
     r> dup }}nrows swap
     r@ }}zkron r> ;
@@ -330,8 +380,21 @@ variable qptr   qbuf qptr !
 1 gate Z   z=1 z=0 z=0 z=1 znegate Z q!
 1 gate S   z=1 z=0 z=0 z=i  S q!
 1 gate T   z=1 z=0 z=0 pi 4e f/ fsincos fswap T q!
-1 gate H   X Z q+ H ->
-1e 2e f/ fsqrt H f*q
+1 gate H   X Z q+ H ->  1/sqrt2 H f*q
+
+0 [IF]
+: RX ( rtheta -- q )
+;
+
+: RY ( rtheta -- q )
+;
+
+: RZ ( rtheta -- q )
+;
+
+1 gate SQRTX   pi/2 RX  SQRTX ->
+1 gate SQRTY   pi/2 RY  SQRTY ->
+[THEN]
 
 \ Conditional 2-qubit unitary gate:
 \   n is number of qubits in circuit; n >=2
@@ -364,7 +427,7 @@ variable qtemp
     q+ 
 ;
 
-\ SWAP gate for qubits i and j for an n-qubit circuit
+\ SWAP gate for qubits i and j in an n-qubit circuit
 variable qtemp
 
 : U_sw ( i j n -- q )
