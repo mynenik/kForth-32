@@ -72,8 +72,8 @@
 \  QCLEAN? flag when true prints elements with value < minClean as zero
 \
 \  Q+      ( q1 q2 -- q3 ) add two q's
-\  F*Q     ( r  q1 -- q2 ) Multiply q1 by a real scalar
-\  Z*Q     ( z  q1 -- q2 ) Multiply q2 by a complex scalar
+\  F*Q     ( r  q1 -- q2 ) Multiply q1 by a real scalar; return in q2
+\  Z*Q     ( z  q1 -- q2 ) Multiply q1 by a complex scalar; return in q2
 \  %*%     ( q1 q2 -- q3 ) Matrix multiplication of q1 and q2
 \  %x%     ( q1 q2 -- q3 ) Kronecker outer product of q1 and q2
 \  U_C     ( icntrl itarg qgate n -- qgate2 ) conditional n-qubit gate
@@ -82,11 +82,11 @@
 \
 \  PROB     ( c q -- r )  return probability for measuring c for state q
 \  ALL-PROB ( q -- )   show all bit string probabilities for state q
+\  }SAMPLES  ( q u a -- ) obtain u measurement samples for state q  
 \
 \  Not yet implemented:
 \
 \  Q-      ( q1 q2 -- q3 ) subtract two q's
-\  SAMPLES  ( q u a -- ) obtain u measurement samples for state q  
 \  MEASURE  ( qin xtqc -- c ) execute quantum circuit with state qin
 \                       and measure bit outputs c
 \ Requires:
@@ -189,6 +189,10 @@ variable qptr   qbuf qptr !
 \ Allocate usize bytes and in dynamic buffer;
 \ Return start address of newly allocated region.
 : alloc_qbuf ( usize -- a | allocate size bytes and return address)
+    dup QBUF_SIZE >= Abort" Object too big for dynamic buffer!"
+    dup QBUF_SIZE 2/ 2/ >= IF 
+      ." WARNING: QBUF_SIZE should be increased!" 
+    THEN
     >r qptr a@ dup r@ + dup qbuf QBUF_SIZE + >=
     IF 2drop qbuf dup r> +          \ wraparound 
     ELSE r> drop THEN
@@ -253,10 +257,14 @@ variable qptr   qbuf qptr !
 [THEN]
 
 \ Scale q by a real number
-: f*q ( r q -- )  dup qdim swap }}f*z ;
+: f*q ( r q1 -- q2 )  
+    dup dim alloc_xzmat dup >r ->
+    r@  dup qdim swap }}f*z r> ;
 
 \ Scale q by a complex number
-: z*q ( z q -- )  dup qdim swap }}z*z ;
+: z*q ( z q1 -- q2 )  
+    dup dim alloc_xzmat dup >r ->
+    r@  dup qdim swap }}z*z r> ;
 
 \ Probability of measuring classical bits c given ket q
 : prob ( c q -- r )
@@ -296,16 +304,25 @@ MAXN 2^ float array rngmap{
     qdim 1 ?DO
       rngmap{ I 1- } f@ p{ I } f@ f+
       rngmap{ I } f!
+    LOOP ;
+
+\ Return the measured bits for the current probability
+\ distribution (set-rngmap should have been called prior)
+\ for the quantum state.
+: rng>bits ( r -- c )
+    nprob @ 0 ?DO
+      fdup rngmap{ I } f@ f< IF fdrop I unloop EXIT THEN
     LOOP
-;
+    true Abort" Random trial is out of range!" ;
 
-0 [IF] 
 \ Obtain u measurements of n-qubit state vector q and return
-\ the measurements in a integer array
-: samples ( q u a -- )
-
-;
-[THEN] 
+\ the measurements in an integer array
+: }samples ( q u a -- )
+    rot set-rngmap
+    swap 0 ?DO  \ -- a
+      ran0 rng>bits over !
+      cell+
+    LOOP ;
 
 \ Create a named, uninitialized n-qubit ket state vector.
 : ket ( n "name" -- )  2^ 1 xzmatrix ;
@@ -315,6 +332,11 @@ MAXN 2^ float array rngmap{
 
 \ Create a named, uninitialized n-qubit unitary transformation
 : gate ( n "name" -- ) 2^ dup xzmatrix ;
+
+\ Create a special 1x1 xzmatrix to use for building up
+\ multi-qubit gates or state vectors with the outer product
+0 gate one
+z=1 one z!
 
 0 [IF]
 \ Return flag indicating whether or not matrix object is unitary
@@ -380,7 +402,7 @@ MAXN 2^ float array rngmap{
 1 gate Z   z=1 z=0 z=0 z=1 znegate Z q!
 1 gate S   z=1 z=0 z=0 z=i  S q!
 1 gate T   z=1 z=0 z=0 pi 4e f/ fsincos fswap T q!
-1 gate H   X Z q+ H ->  1/sqrt2 H f*q
+1 gate H   X Z q+ H ->  1/sqrt2 H f*q H ->
 
 0 [IF]
 : RX ( rtheta -- q )
@@ -412,7 +434,7 @@ variable qtemp
     Abort" ** Control or target qubits are out of range!"
     cntrl @ targ @ = 
     Abort" ** Control and target cannot be same qubits!"
-    0 2^ alloc_g >r z=1 r@ q! r> dup  \ -- n q=1 q=1
+    one dup  \ -- n q=1 q=1
     rot 0 ?DO
        cntrl @ I = IF
           >r >r  P0 r> %x%  P1 r> %x%
@@ -428,6 +450,7 @@ variable qtemp
 ;
 
 \ SWAP gate for qubits i and j in an n-qubit circuit
+\ implemented using CNOT gates.
 variable qtemp
 
 : U_sw ( i j n -- q )
