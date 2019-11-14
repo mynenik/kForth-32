@@ -80,8 +80,9 @@
 \  U_SW    ( i j n -- qgate ) swap gate for qbits i and j in n-qubit gate
 \  ADJOINT ( q1 -- q2 )    q2 = adjoint of q1 (q1 "dagger")
 \
-\  PROB     ( c q -- r )  return probability for measuring c for state q
-\  ALL-PROB ( q -- )   show all bit string probabilities for state q
+\  PROB      ( c q -- r )  return probability for measuring c for state q
+\  ALL-PROB  ( q -- ) print all bit string probabilities for state q
+\  SHOW-PROB ( q -- ) display bit string probabilities as text bar graph
 \  }SAMPLES  ( q u a -- ) obtain u measurement samples for state q  
 \
 \  Not yet implemented:
@@ -104,6 +105,9 @@
 \                    example and a 3-qubit circuit exercise.
 \   2019-11-11 km  fix comments; add MAXN and constants; use ilog2; begin
 \                    implementation of measurement words.
+\   2019-11-14 km  added SHOW-PROB , }SAMPLES , and related utilities;
+\                    added SQRTX and SQRTY gates.
+\
 include ans-words.4th
 include strings.4th
 include fsl/fsl-util.4th
@@ -119,8 +123,8 @@ include fsl/extras/noise.4th
 
 1e 2e f/ fsqrt fconstant 1/sqrt2 
 pi 2e f/ fconstant pi/2
-1e 1e 1/sqrt2 z*f      zconstant z=sqrti   \ square root of  i
-z=sqrti conjg znegate  zconstant z=sqrt-i  \ square root of -i
+1e  1e 1/sqrt2 z*f     zconstant z=sqrti   \ square root of  i
+1e -1e 1/sqrt2 z*f     zconstant z=sqrt-i  \ square root of -i
 
 : 2^ ( n -- m ) 1 swap lshift ;
 : u2/ ( u -- u/2 ) 1 rshift ;
@@ -266,26 +270,19 @@ variable qptr   qbuf qptr !
     dup dim alloc_xzmat dup >r ->
     r@  dup qdim swap }}z*z r> ;
 
+\ Probabilities for measuring bit patterns for a given state
+
 \ Probability of measuring classical bits c given ket q
 : prob ( c q -- r )
     dup >r qdim 1- and r> swap 0 }} z@ |z|^2 ;
 
-\ Print the probabilities for measuring all 2^n classical
-\ outputs for ket q
-: all-prob ( q -- )
-    dup qdim  \ -- q 2^n
-    dup 0 ?DO
-      2dup I swap 
-      2 spaces ilog2 cbits type 2 spaces
-      I swap prob f. cr
-    LOOP  2drop ;
-
-\ Utilties for sampling bit strings
+\ Store the probabilities for each possible bit string;
+\ Return the sum of all probabilities (use as check for
+\ r = 1).
 MAXN 2^ float array p{
 variable nprob
 
-\ Store the probabilities for each possible bit string
-: set-p ( q -- )
+: set-p ( q -- r)
     dup dim = Abort" Not a state vector!"
     dup qdim
     dup MAXN 2^ > Abort" Maximum dimension exceeded!"
@@ -293,13 +290,48 @@ variable nprob
     0 ?DO 
       I over prob    
       p{ I } f!
-    LOOP  drop ;
+    LOOP  drop
+    0e nprob @ 0 ?DO  p{ I } f@ f+  LOOP ;
 
+\ Print the probabilities for measuring all 2^n classical
+\ outputs for ket q
+fvariable tprob
+
+: all-prob ( q -- )
+    dup set-p tprob f!
+    qdim  \ -- 2^n
+    dup 0 ?DO
+      dup I swap 
+      2 spaces ilog2 cbits type 2 spaces
+      p{ I } f@ 
+      qclean? IF
+        fdup minClean f< IF fdrop 0e THEN
+      THEN 
+      6 4 f.rd cr
+    LOOP  >r
+    tprob f@  r> ilog2 10 + 4 f.rd 
+;
+
+\ Display a text bar graph of the bit string probabilities
+\ for a given quantum state
+: show-prob ( q -- )
+    dup set-p fdrop
+    qdim  \ -- 2^n
+    dup 0 ?DO
+      dup I swap
+      2 spaces ilog2 cbits type space
+      p{ I } f@ 100e f* fround>s
+      0 ?DO [char] * emit LOOP cr
+    LOOP  drop
+;
+
+\ Utilties for sampling bit strings
 \ Map ranges in unit interval to correspond to probabilities
 \ for each bit string
 MAXN 2^ float array rngmap{
 : set-rngmap ( q -- )
-    dup set-p
+    dup set-p 
+    1e f- fabs minClean f> Abort" Total probability is not unity!"
     p{ 0 } f@  rngmap{ 0 } f!
     qdim 1 ?DO
       rngmap{ I 1- } f@ p{ I } f@ f+
@@ -403,6 +435,10 @@ z=1 one z!
 1 gate S   z=1 z=0 z=0 z=i  S q!
 1 gate T   z=1 z=0 z=0 pi 4e f/ fsincos fswap T q!
 1 gate H   X Z q+ H ->  1/sqrt2 H f*q H ->
+1 gate SQRTX z=1 z=i z=i z=1 SQRTX q!
+  z=sqrti conjg 1/sqrt2 z*f  SQRTX z*q SQRTX ->
+1 gate SQRTY z=1 z=1 znegate z=1 z=1 SQRTY q!
+  1/sqrt2 SQRTY f*q SQRTY ->
 
 0 [IF]
 : RX ( rtheta -- q )
@@ -413,9 +449,6 @@ z=1 one z!
 
 : RZ ( rtheta -- q )
 ;
-
-1 gate SQRTX   pi/2 RX  SQRTX ->
-1 gate SQRTY   pi/2 RY  SQRTY ->
 [THEN]
 
 \ Conditional 2-qubit unitary gate:
@@ -448,6 +481,10 @@ variable qtemp
     LOOP
     q+ 
 ;
+
+\ Non-unitary operators
+1 gate P01  |0> <1| %*% P01 ->
+1 gate P10  |1> <0| %*% P10 ->
 
 \ SWAP gate for qubits i and j in an n-qubit circuit
 \ implemented using CNOT gates.
