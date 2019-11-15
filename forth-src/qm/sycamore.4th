@@ -118,12 +118,12 @@ SQRTW swap !
     dup MAXN > Abort" Dimensionality is too large!"
     one swap 0 ?DO  Random1G swap %x%  LOOP ;
 
-\ Full cycle (m=1) random circuit. We will not enforce the rule that
+\ Sequential random circuits. We will not enforce the rule that
 \ two sequential single-qubit gates cannot be the same, as restricted
 \ in [1--2]. 
 
-\ Return the 5-qubit gate for a random circuit executing one 
-\ full cycle (m=1), ABCDCDAB.
+\ Return the 5-qubit gate for a random circuit executing 
+\ eight cycles (m=8), ABCDCDAB.
 : ABCDCDAB ( -- qgate )
     UA           5 nRandom1G swap %*%
     UB swap %*%  5 nRandom1G swap %*%
@@ -134,14 +134,26 @@ SQRTW swap !
     UA swap %*%  5 nRandom1G swap %*%
     UB swap %*%  5 nRandom1G swap %*% ;
 
-\ Return a gate for m cycles of ABCDCDAB
-: cycles ( m -- qgate )
+\ Return a gate for k iterations of ABCDCDAB
+: iterations ( k -- qgate )
     ABCDCDAB swap 1- 0 ?DO ABCDCDAB swap %*%  LOOP ;
 
+\ Linear Cross-Entropy Benchmark (XEB) fidelity
+100000 constant NSAMPLES
+NSAMPLES integer array s{
+
+: fidelity ( q -- r )
+    dup set-p fdrop
+    dup NSAMPLES s{ }samples
+    qdim >r
+    0e NSAMPLES 0 ?DO  p{ s{ I } @ } f@ f+  LOOP
+    NSAMPLES s>f f/ r> s>f f* 1e f- ;
+ 
 cr
 cr .( Computing bit string probabilities for 10-cycles of 5-qubit)
 cr .( random quantum circuit: "10 cycles |in> %*% show-prob" )
 cr
-10 cycles |in> %*% show-prob
+2 iterations |in> %*% |out> ->
+|out> show-prob
 
 

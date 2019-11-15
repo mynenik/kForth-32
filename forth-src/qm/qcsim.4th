@@ -147,7 +147,7 @@ pi 2e f/ fconstant pi/2
 37882569 idum !
 
 true value qclean?
-1e-14 fconstant minClean
+1e-12 fconstant minClean
 
 \ Threshold the absolute values of the real and imaginary parts
 \ of each element in a zmatrix. If a part of the element has 
@@ -354,7 +354,7 @@ MAXN 2^ float array rngmap{
     swap 0 ?DO  \ -- a
       ran0 rng>bits over !
       cell+
-    LOOP ;
+    LOOP  drop ;
 
 \ Create a named, uninitialized n-qubit ket state vector.
 : ket ( n "name" -- )  2^ 1 xzmatrix ;
