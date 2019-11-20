@@ -83,7 +83,8 @@
 \  PROB      ( c q -- r )  return probability for measuring c for state q
 \  ALL-PROB  ( q -- ) print all bit string probabilities for state q
 \  SHOW-PROB ( q -- ) display bit string probabilities as text bar graph
-\  }SAMPLES  ( q u a -- ) obtain u measurement samples for state q  
+\  }SAMPLES  ( q u a -- ) obtain u measurement samples for state q
+\  P_OBS     ( u1 a1 u2 a2 -- ) compute observed bitstring probabilities.
 \
 \  Not yet implemented:
 \
@@ -107,7 +108,7 @@
 \                    implementation of measurement words.
 \   2019-11-14 km  added SHOW-PROB , }SAMPLES , and related utilities;
 \                    added SQRTX and SQRTY gates.
-\
+\   2019-11-20 km  added P_OBS to compute observed probabilities.
 include ans-words.4th
 include strings.4th
 include fsl/fsl-util.4th
@@ -356,6 +357,27 @@ MAXN 2^ float array rngmap{
       cell+
     LOOP  drop ;
 
+\ Compute the observed probabilities for u1 samples 
+\ stored in an integer array a1 for a quantum state of
+\ dimension u2. The observed probabilities are stored in
+\ floating point array a2.
+variable a_obs
+variable udim
+: P_obs ( u1 a1 u2 a2 -- )
+    a_obs ! dup udim !
+    0 ?DO  \ loop over u2 probabilities
+      over 0 ?DO  \ loop over u1 samples
+        dup I } @ J = IF
+          a_obs a@ J } dup >r f@ 1e f+  r> f!
+        THEN
+      LOOP
+    LOOP  drop
+    s>f
+    udim @ 0 ?DO 
+      a_obs a@ I } dup >r 
+      f@ fover f/ r> f!  
+    LOOP  fdrop ;
+
 \ Create a named, uninitialized n-qubit ket state vector.
 : ket ( n "name" -- )  2^ 1 xzmatrix ;
 
@@ -423,11 +445,14 @@ z=1 one z!
 2 bra <01|   |01> adjoint <01| ->
 2 bra <10|   |10> adjoint <10| ->
 2 bra <11|   |11> adjoint <11| ->
- 
-\ Single qubit operators and gates: P0, P1, I1, X, Y, Z, S, T, H
 
-1 gate P0  |0> <0| %*% P0 ->  \ projection operator |0><0|
-1 gate P1  |1> <1| %*% P1 ->  \ projection operator |1><1|
+\ Non-unitary operators P0, P1, P01, P10
+1 gate P0   |0> <0| %*% P0  ->  \ projection operator |0><0|
+1 gate P1   |1> <1| %*% P1  ->  \ projection operator |1><1|
+1 gate P01  |0> <1| %*% P01 ->
+1 gate P10  |1> <0| %*% P10 ->
+
+\ Single qubit operators and gates: I1, X, Y, Z, S, T, H
 1 gate I1  P0 P1 q+ I1 ->
 1 gate X   z=0 z=1 z=1 z=0  X q!
 1 gate Y   z=0 z=i znegate z=i z=0 Y q!
@@ -481,10 +506,6 @@ variable qtemp
     LOOP
     q+ 
 ;
-
-\ Non-unitary operators
-1 gate P01  |0> <1| %*% P01 ->
-1 gate P10  |1> <0| %*% P10 ->
 
 \ SWAP gate for qubits i and j in an n-qubit circuit
 \ implemented using CNOT gates.

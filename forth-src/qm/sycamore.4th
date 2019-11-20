@@ -4,6 +4,9 @@
 \
 \ K. Myneni, 2019-11-09
 \
+\ Revised:
+\   2019-11-20  km added linear cross-entropy fidelity calculation.
+\
 \ References:
 \   1. F. Arute, et al., Nature vol. 574, pp. 505--511 (2019).
 \   2. F. Arute, et al., Supplementary Information to [1]. 
@@ -58,15 +61,15 @@ z=sqrt-i z=1  SQRTW q!
 \ We will first run a simulation with a hand-picked
 \ selection of gates
 \ 
-\  q4 |0>--[3]-----[1]-----[3]-[x]-[2]-----[1]
+\  q4 |0>--[3]-----[1]-----[3]-[x]-[2]-----[1]---
 \                               |
-\  q3 |0>--[1]-[x]-[2]-----[3]--|--[1]-----[3]
+\  q3 |0>--[1]-[x]-[2]-----[3]--|--[1]-----[3]---
 \               |               |
-\  q2 |0>--[1]-[x]-[2]-[x]-[1]-[x]-[3]-[x]-[2]
+\  q2 |0>--[1]-[x]-[2]-[x]-[1]-[x]-[3]-[x]-[2]---
 \               :       |       :       |
-\  q1 |0>--[3]-----[1]-[x]-[2]-----[1]--|--[2]
+\  q1 |0>--[3]-----[1]-[x]-[2]-----[1]--|--[2]---
 \               :       :       :       |
-\  q0 |0>--[2]-----[1]-----[2]-----[1]-[x]-[3]
+\  q0 |0>--[2]-----[1]-----[2]-----[1]-[x]-[3]---
 \               :       :       :       :
 \               A       B       C       D
 
@@ -142,16 +145,18 @@ SQRTW swap !
 100000 constant NSAMPLES
 NSAMPLES integer array s{
 
+\ Compute linear XEB fidelity for one quantum state
 : fidelity ( q -- r )
     dup set-p fdrop
     dup NSAMPLES s{ }samples
     qdim >r
     0e NSAMPLES 0 ?DO  p{ s{ I } @ } f@ f+  LOOP
-    NSAMPLES s>f f/ r> s>f f* 1e f- ;
- 
+    NSAMPLES s>f f/ 
+    r> s>f f* 1e f- ;
+    
 cr
-cr .( Computing bit string probabilities for 10-cycles of 5-qubit)
-cr .( random quantum circuit: "10 cycles |in> %*% show-prob" )
+cr .( Computing bit string probabilities for 2 iterations of 5-qubit)
+cr .( random quantum circuit: "2 iterations |in> %*% show-prob" )
 cr
 2 iterations |in> %*% |out> ->
 |out> show-prob
