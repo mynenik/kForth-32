@@ -14,22 +14,19 @@
 \  Requires: qcsim.4th
 \               A       B       C       D       C       D       A       B
 \               :       :       :       :       :       :       :       :
-\  q4 |0>--[3]-----[?]-----[?]-[x]-[?]-----[?]-[x]-[?]-----[?]-----[?]-----
+\  q4 |0>-[√W]-----[?]-----[?]-[x]-[?]-----[?]-[x]-[?]-----[?]-----[?]-----
 \               :       :       |       :       |       :       :       :
-\  q3 |0>--[1]-[x]-[?]-----[?]--|--[?]-----[?]--|--[?]-----[?]-[x]-[?]-----
+\  q3 |0>-[√X]-[x]-[?]-----[?]--|--[?]-----[?]--|--[?]-----[?]-[x]-[?]-----
 \               |       :       |       :       |       :       |       :
-\  q2 |0>--[1]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-
+\  q2 |0>-[√X]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-[?]-[x]-
 \               :       |       :       |       :       |       :       |
-\  q1 |0>--[3]-----[?]-[x]-[?]-----[?]--|--[?]-----[?]--|--[?]-----[?]-[x]-
+\  q1 |0>-[√W]-----[?]-[x]-[?]-----[?]--|--[?]-----[?]--|--[?]-----[?]-[x]-
 \               :       :       :       |       :       |       :       :
-\  q0 |0>--[2]-----[?]-----[?]-----[?]-[x]-[?]-----[?]-[x]-[?]-----[?]-----
+\  q0 |0>-[√Y]-----[?]-----[?]-----[?]-[x]-[?]-----[?]-[x]-[?]-----[?]-----
 \               :       :       :       :       :       :       :       :
-\               A       B       C       D       C       D       A       B   
-\  One-Qubit Gates:
+\               A       B       C       D       C       D       A       B 
 \
-\  [1] = SQRTX
-\  [2] = SQRTY
-\  [3] = SQRTW
+\  One-Qubit Gates: { √X, √Y, √W }
 \
 \  [x] = 2-qubit iSWAP 
 \
@@ -46,10 +43,13 @@ z=1 z=sqrti znegate
 z=sqrt-i z=1  SQRTW q!
 1/sqrt2 SQRTW f*q SQRTW ->
 
+: √X SQRTX ;
+: √Y SQRTY ;
+: √W SQRTW ;
+
 \ The input state to the random circuit cycle is defined below
 5 ket |in> 
-  SQRTW  SQRTX %x% SQRTX %x% SQRTW  %x% SQRTY %x%
-  |00000> %*% |in> ->
+  √W  √X %x% √X %x% √W  %x% √Y %x%  |00000> %*% |in> ->
 
 5 gate UA  2 3 5 U_isw  UA ->
 5 gate UB  2 1 5 U_isw  UB ->
@@ -61,46 +61,37 @@ z=sqrt-i z=1  SQRTW q!
 \ We will first run a simulation with a hand-picked
 \ selection of gates
 \ 
-\  q4 |0>--[3]-----[1]-----[3]-[x]-[2]-----[1]---
-\                               |
-\  q3 |0>--[1]-[x]-[2]-----[3]--|--[1]-----[3]---
-\               |               |
-\  q2 |0>--[1]-[x]-[2]-[x]-[1]-[x]-[3]-[x]-[2]---
-\               :       |       :       |
-\  q1 |0>--[3]-----[1]-[x]-[2]-----[1]--|--[2]---
-\               :       :       :       |
-\  q0 |0>--[2]-----[1]-----[2]-----[1]-[x]-[3]---
-\               :       :       :       :
-\               A       B       C       D
+\  q4 |0>-[√W]-----[√X]-----[√W]-[x]-[√Y]-----[√X]---
+\                                 |
+\  q3 |0>-[√X]-[x]-[√Y]-----[√W]--|--[√X]-----[√W]---
+\               |                 |
+\  q2 |0>-[√X]-[x]-[√Y]-[x]-[√X]-[x]-[√W]-[x]-[√Y]---
+\               :        |        :        |
+\  q1 |0>-[√W]-----[√X]-[x]-[√Y]-----[√X]--|--[√Y]---
+\               :        :        :        |
+\  q0 |0>-[√Y]-----[√X]-----[√Y]-----[√X]-[x]-[√W]---
+\               :        :        :        :
+\               A        B        C        D
 
 \ The gate for the above "random" circuit test case, starting
 \ at A is given below
 5 gate U5RQC1
-  UA           \ A
-  SQRTX SQRTY %x% SQRTY %x% SQRTX %x% SQRTX %x%
-  swap %*%  
-  UB swap %*%  \ B
-  SQRTW SQRTW %x% SQRTX %x% SQRTY %x% SQRTY %x%
-  swap %*%
-  UC swap %*%  \ C
-  SQRTY SQRTX %x% SQRTW %x% SQRTX %x% SQRTX %x%
-  swap %*%
-  UD swap %*%  \ D
-  SQRTX SQRTW %x% SQRTY %x% SQRTY %x% SQRTW %x%
-  swap %*%
+  UA          √X √Y %x% √Y %x% √X %x% √X %x%  swap %*%  
+  UB swap %*% √W √W %x% √X %x% √Y %x% √Y %x%  swap %*%
+  UC swap %*% √Y √X %x% √W %x% √X %x% √X %x%  swap %*%
+  UD swap %*% √X √W %x% √Y %x% √Y %x% √W %x%  swap %*%
   U5RQC1 ->
 
-5 ket |out>
-U5RQC1 |in> %*% |out> ->
+5 ket |out>  U5RQC1 |in> %*% |out> ->
 \ |out> all-prob
 
 \ Random gate selection 
 
 3 integer array RQC_gates{
 RQC_gates{ 
-SQRTX over ! cell+
-SQRTY over ! cell+ 
-SQRTW swap ! 
+√X over ! cell+
+√Y over ! cell+ 
+√W swap ! 
 
 1e 3e f/ fconstant 1/3
 2e 3e f/ fconstant 2/3
