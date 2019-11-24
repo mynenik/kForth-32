@@ -46,10 +46,11 @@ z=sqrt-i z=1  SQRTW q!
 : √X SQRTX ;
 : √Y SQRTY ;
 : √W SQRTW ;
+: ⨂  %x% ;
 
 \ The input state to the random circuit cycle is defined below
 5 ket |in> 
-  √W  √X %x% √X %x% √W  %x% √Y %x%  |00000> %*% |in> ->
+  √W  √X ⨂  √X ⨂  √W ⨂  √Y ⨂  |00000> %*% |in> ->
 
 5 gate UA  2 3 5 U_isw  UA ->
 5 gate UB  2 1 5 U_isw  UB ->
@@ -76,10 +77,10 @@ z=sqrt-i z=1  SQRTW q!
 \ The gate for the above "random" circuit test case, starting
 \ at A is given below
 5 gate U5RQC1
-  UA          √X √Y %x% √Y %x% √X %x% √X %x%  swap %*%  
-  UB swap %*% √W √W %x% √X %x% √Y %x% √Y %x%  swap %*%
-  UC swap %*% √Y √X %x% √W %x% √X %x% √X %x%  swap %*%
-  UD swap %*% √X √W %x% √Y %x% √Y %x% √W %x%  swap %*%
+  UA          √X √Y ⨂  √Y ⨂  √X ⨂  √X ⨂  swap %*%  
+  UB swap %*% √W √W ⨂  √X ⨂  √Y ⨂  √Y ⨂  swap %*%
+  UC swap %*% √Y √X ⨂  √W ⨂  √X ⨂  √X ⨂  swap %*%
+  UD swap %*% √X √W ⨂  √Y ⨂  √Y ⨂  √W ⨂  swap %*%
   U5RQC1 ->
 
 5 ket |out>  U5RQC1 |in> %*% |out> ->
