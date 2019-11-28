@@ -936,7 +936,7 @@ L_j:
         xor %eax, %eax
         NEXT
 
-L_loop:
+L_rtloop:
         movl GlobalRtp, %ebx
         incl %ebx
         movb (%ebx), %al
@@ -952,19 +952,19 @@ L_loop:
         movl (%ebx), %eax
         incl %eax
 	cmpl %ecx, %eax	
-        jz L_unloop
-loop1:	
+        jz L_rtunloop
+# loop1:	
         movl %eax, (%ebx)	# set loop counter to next value
 	movl %edx, %ebp		# set instruction ptr to start of loop
         xorl %eax, %eax
         NEXT
 
-L_unloop:
+L_rtunloop:
 	UNLOOP
 	xorl %eax, %eax
         NEXT
 
-L_plusloop:
+L_rtplusloop:
 	pushl %ebp
 	movl GlobalRtp, %ebx
         incl %ebx
