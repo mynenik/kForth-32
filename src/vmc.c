@@ -643,10 +643,11 @@ int C_word ()
   return 0;
 }
 
-
+// PARSE  ( char "ccc<char>" -- c-addr u )
+// Parse text delimited by char; return string address and count.
+// Forth 2012 Core Extensions wordset 6.2.2008
 int C_parse ()
 {
-  /* stack: ( n -- a u | parse string delimited by char n ) */
   DROP
   char delim = TOS;
   char *dp = ParseBuf;
@@ -666,6 +667,23 @@ int C_parse ()
   PUSH_IVAL(count)
   return 0;
 }
+
+// PARSE-NAME  ( "<spaces>name<space>" -- c-addr u )
+// Skip leading spaces and parse name delimited by space;
+//   return string address and count.
+// Forth 2012 Core Extensions wordset 6.2.2020
+int C_parsename ()
+{
+  long int count = 0;
+  char *cp;
+  cp = ExtractName(pTIB, ParseBuf);
+  count = strlen(ParseBuf);
+  PUSH_ADDR((long int) pTIB)
+  PUSH_IVAL(count)
+  pTIB = cp;
+  return 0;
+}
+
 /*----------------------------------------------------------*/
 
 int C_trailing ()

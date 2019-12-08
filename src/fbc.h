@@ -328,11 +328,11 @@
 #define OP_SLASHSTRING          312
 #define OP_TRAILING             313
 #define OP_PARSE                314
-#define OP_DNE			315
-#define OP_DGT			316
-#define OP_DLE			317
-#define OP_DGE			318
-
+#define OP_PARSENAME            315
+#define OP_DNE			316
+#define OP_DGT			317
+#define OP_DLE			318
+#define OP_DGE			319
 #define OP_DLOPEN               320
 #define OP_DLERROR              321
 #define OP_DLSYM                322
