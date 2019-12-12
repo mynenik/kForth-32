@@ -25,7 +25,7 @@
 # Invoke "make debug" if you want to create an executable
 # that contains debugging information for the GNU debugger (gdb).
 
-VERSION = 2.1.1
+VERSION = 2.1.2
 DEF_DIR_VAR=KFORTH_DIR
 BUILD_DATE=`date +%F`
 DEBUG = 
@@ -70,7 +70,7 @@ kforth.o: kforth.cpp ForthVM.h ForthCompiler.h
 	${CPP} ${CPPFLAGS} ${DEBUG} -DVERSION=\"${VERSION}\" \
 	-DBUILD_DATE=\"${BUILD_DATE}\" kforth.cpp
 
-kforth-fast.o: kforth.cpp ForthVM.h ForthCompiler.h
+kforth-fast.o: kforth.cpp ForthVM.h ForthCompiler.h VMerrors.h
 	${CPP} ${CPPFLAGS} ${DEBUG} -DVERSION=\"${VERSION}\" \
 	-DBUILD_DATE=\"${BUILD_DATE}\" ${FAST} -o kforth-fast.o kforth.cpp
 
@@ -80,11 +80,11 @@ ForthCompiler.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h kfmacros.h
 ForthCompiler-fast.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h kfmacros.h
 	${CPP} ${CPPFLAGS} ${DEBUG} ${FAST} -o ForthCompiler-fast.o ForthCompiler.cpp
 
-ForthVM.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h kfmacros.h
+ForthVM.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} -DDIR_ENV_VAR=\"${DEF_DIR_VAR}\" \
         ${DEBUG} ForthVM.cpp
 
-ForthVM-fast.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h kfmacros.h
+ForthVM-fast.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} -DDIR_ENV_VAR=\"${DEF_DIR_VAR}\" \
         ${DEBUG} ${FAST} -o ForthVM-fast.o ForthVM.cpp
 

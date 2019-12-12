@@ -30,21 +30,16 @@ vmc.c
 #define _GNU_SOURCE
 #include <math.h>
 #include "fbc.h"
+#include "VMerrors.h"
 #include "kfmacros.h"
 
 #define WSIZE 4
 #define TRUE -1
 #define FALSE 0
-#define E_V_NOTADDR 1
-#define E_V_BADCODE 6
-#define E_V_STK_UNDERFLOW   7
-#define E_V_QUIT  8
-#define E_V_DBL_OVERFLOW   21
 
 #define byte unsigned char
 
-
-/*  Provided by ForthVM.cpp  */
+//  Provided by ForthVM.cpp
 extern long int* GlobalSp;
 extern byte* GlobalIp;
 extern long int* GlobalRp;
@@ -56,6 +51,8 @@ extern byte* GlobalRtp;
 extern byte* BottomOfTypeStack;
 extern byte* BottomOfReturnTypeStack;
 #endif
+
+// Provided by vmxx-common.s
 extern long int Base;
 extern long int State;
 extern char* pTIB;
@@ -65,7 +62,7 @@ extern char TIB[];
 extern char NumberBuf[];
 extern char ParseBuf[];
 
-/*  Provided by vm.s/vm-fast.s  */
+//  Provided by vmxx.s/vmxx-fast.s
 int L_dnegate();
 int L_dplus();
 int L_dminus();
@@ -1345,7 +1342,7 @@ int C_forth_signal ()
         PUSH_ADDR( (long int) oldxt )
     }
     else
-	return E_V_BADCODE;
+	return E_V_BAD_OPCODE;
 
     return 0;
 }

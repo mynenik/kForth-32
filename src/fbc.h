@@ -394,6 +394,13 @@
 #define OP_ZDIV                 379
 #define OP_ZABS                 380
 
+#define OP_XSIZE                390
+#define OP_XCSIZE               391
+#define OP_XCHARPLUS            392
+#define OP_XCFETCHPLUS          393  
+#define OP_XCSTOREPLUS          394
+#define OP_XCSTOREPLUSQUERY     395
+
 #define OP_DIV_FLOORED          400
 #define OP_MOD_FLOORED          401
 #define OP_SLASHMOD_FLOORED     402

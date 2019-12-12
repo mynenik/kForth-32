@@ -17,13 +17,13 @@
 .equ OP_RET,	238
 .equ SIGN_MASK,	0x80000000
 	
-// Error Codes
+// Error Codes (must be absolute value of those in VMerrors.h)
 
-.equ E_NOT_ADDR,	1
-.equ E_DIV_ZERO,	4
-.equ E_RET_STK_CORRUPT,	5
-.equ E_UNKNOWN_OP,	6
-.equ E_DIV_OVERFLOW,   20
+.equ E_NOT_ADDR,	-256
+.equ E_DIV_ZERO,	-10
+.equ E_RET_STK_CORRUPT,	-258
+.equ E_BAD_OPCODE,	-259
+.equ E_DIV_OVERFLOW,    -270
 	
 .data
 NDPcw: .long 0
@@ -125,6 +125,12 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
 	   .long L_nop, L_nop, C_fexpm1, C_flnp1	      # 364--367
 	   .long L_nop, L_nop, L_f2drop, L_f2dup	      # 368--371
+           .long L_nop, L_nop, L_nop, L_nop                 # 372--375
+           .long L_nop, L_nop, L_nop, L_nop                 # 376--379
+           .long L_nop, L_nop, L_nop, L_nop                 # 380--383
+           .long L_nop, L_nop, L_nop, L_nop                 # 384--387
+           .long L_nop, L_nop, L_nop, L_nop                 # 388--391
+           .long L_nop, L_nop, L_nop, L_nop                 # 392--395
 .text
 	.align WSIZE
 .global JumpTable
@@ -312,7 +318,7 @@ L_initfpu:
 	ret
 
 L_nop:
-        movl $E_UNKNOWN_OP, %eax   # unknown operation
+        movl $E_BAD_OPCODE, %eax   # unknown operation
         ret
 L_quit:
 	movl BottomOfReturnStack, %eax	# clear the return stacks
