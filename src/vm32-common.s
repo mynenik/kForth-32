@@ -17,10 +17,11 @@
 .equ OP_RET,	238
 .equ SIGN_MASK,	0x80000000
 	
-// Error Codes (must be absolute value of those in VMerrors.h)
+// Error Codes must be same as those in VMerrors.h
 
-.equ E_NOT_ADDR,	-256
 .equ E_DIV_ZERO,	-10
+.equ E_QUIT,            -56
+.equ E_NOT_ADDR,	-256
 .equ E_RET_STK_CORRUPT,	-258
 .equ E_BAD_OPCODE,	-259
 .equ E_DIV_OVERFLOW,    -270
@@ -328,7 +329,7 @@ L_quit:
 	movl BottomOfReturnTypeStack, %eax
 	movl %eax, GlobalRtp
   .endif
-	movl $8, %eax		# exit the virtual machine
+	movl $E_QUIT, %eax	# exit the virtual machine
 	ret
 L_abort:
 	movl BottomOfStack, %eax
