@@ -66,7 +66,7 @@ clean:
 debug:
 	make kforth32 "DEBUG = -g"
 
-kforth.o: kforth.cpp ForthVM.h ForthCompiler.h
+kforth.o: kforth.cpp ForthVM.h ForthCompiler.h VMerrors.h
 	${CPP} ${CPPFLAGS} ${DEBUG} -DVERSION=\"${VERSION}\" \
 	-DBUILD_DATE=\"${BUILD_DATE}\" kforth.cpp
 
@@ -74,10 +74,12 @@ kforth-fast.o: kforth.cpp ForthVM.h ForthCompiler.h VMerrors.h
 	${CPP} ${CPPFLAGS} ${DEBUG} -DVERSION=\"${VERSION}\" \
 	-DBUILD_DATE=\"${BUILD_DATE}\" ${FAST} -o kforth-fast.o kforth.cpp
 
-ForthCompiler.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h kfmacros.h
+ForthCompiler.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h \
+	VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} ${DEBUG} ForthCompiler.cpp
 
-ForthCompiler-fast.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h kfmacros.h
+ForthCompiler-fast.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h \
+	VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} ${DEBUG} ${FAST} -o ForthCompiler-fast.o ForthCompiler.cpp
 
 ForthVM.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
