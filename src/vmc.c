@@ -1448,7 +1448,6 @@ static void forth_signal_handler (int signum, siginfo_t* si, void* vcontext)
     e = vm((byte*) *xt);
     if (e == E_V_QUIT) {
       context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) L_quit;
-      return;
     }
 
     // Restore data stack and return stack pointers
