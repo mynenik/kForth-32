@@ -53,6 +53,6 @@ create serv_addr sockaddr_in% %size allot
     0< ABORT" ERROR reading from socket"
     cr ." SERVER>> " buffer swap type
    
-    sockfd close drop
+    sockfd close drop cr
 ;
 

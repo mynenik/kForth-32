@@ -4,7 +4,7 @@
 \
 \ !!! see WARNING below !!!  
 \
-\ Copyright (c) 2004--2010 Krishna Myneni,
+\ Copyright (c) 2004--2019 Krishna Myneni,
 \ Provided under the GNU General Public License
 \
 \ Notes:
@@ -53,12 +53,361 @@
 \       2012-01-27  fixed stack diagram for getcwd; mmap with 6 args
 \                   needs to use syscall 90 with 1 structure arg  KM
 \       2015-08-01  added MAP_ANONYMOUS  km
-
+\       2019-12-29  updated for use on both 64-bit and 32-bit systems  km
 BASE @
 DECIMAL
 
 Module: syscalls
 Begin-Module
+
+Public:
+: 64bit? 1 cells 8 = ;
+: 32bit? 1 cells 4 = ;
+
+64bit? [IF]
+
+\ From /usr/include/asm/unistd_64.h
+0 constant NR_read
+1 constant NR_write
+2 constant NR_open
+3 constant NR_close
+4 constant NR_stat
+5 constant NR_fstat
+6 constant NR_lstat
+7 constant NR_poll
+8 constant NR_lseek
+9 constant NR_mmap
+10 constant NR_mprotect
+11 constant NR_munmap
+12 constant NR_brk
+13 constant NR_rt_sigaction
+14 constant NR_rt_sigprocmask
+15 constant NR_rt_sigreturn
+16 constant NR_ioctl
+17 constant NR_pread64
+18 constant NR_pwrite64
+19 constant NR_readv
+20 constant NR_writev
+21 constant NR_access
+22 constant NR_pipe
+23 constant NR_select
+24 constant NR_sched_yield
+25 constant NR_mremap
+26 constant NR_msync
+27 constant NR_mincore
+28 constant NR_madvise
+29 constant NR_shmget
+30 constant NR_shmat
+31 constant NR_shmctl
+32 constant NR_dup
+33 constant NR_dup2
+34 constant NR_pause
+35 constant NR_nanosleep
+36 constant NR_getitimer
+37 constant NR_alarm
+38 constant NR_setitimer
+39 constant NR_getpid
+40 constant NR_sendfile
+41 constant NR_socket
+42 constant NR_connect
+43 constant NR_accept
+44 constant NR_sendto
+45 constant NR_recvfrom
+46 constant NR_sendmsg
+47 constant NR_recvmsg
+48 constant NR_shutdown
+49 constant NR_bind
+50 constant NR_listen
+51 constant NR_getsockname
+52 constant NR_getpeername
+53 constant NR_socketpair
+54 constant NR_setsockopt
+55 constant NR_getsockopt
+56 constant NR_clone
+57 constant NR_fork
+58 constant NR_vfork
+59 constant NR_execve
+60 constant NR_exit
+61 constant NR_wait4
+62 constant NR_kill
+63 constant NR_uname
+64 constant NR_semget
+65 constant NR_semop
+66 constant NR_semctl
+67 constant NR_shmdt
+68 constant NR_msgget
+69 constant NR_msgsnd
+70 constant NR_msgrcv
+71 constant NR_msgctl
+72 constant NR_fcntl
+73 constant NR_flock
+74 constant NR_fsync
+75 constant NR_fdatasync
+76 constant NR_truncate
+77 constant NR_ftruncate
+78 constant NR_getdents
+79 constant NR_getcwd
+80 constant NR_chdir
+81 constant NR_fchdir
+82 constant NR_rename
+83 constant NR_mkdir
+84 constant NR_rmdir
+85 constant NR_creat
+86 constant NR_link
+87 constant NR_unlink
+88 constant NR_symlink
+89 constant NR_readlink
+90 constant NR_chmod
+91 constant NR_fchmod
+92 constant NR_chown
+93 constant NR_fchown
+94 constant NR_lchown
+95 constant NR_umask
+96 constant NR_gettimeofday
+97 constant NR_getrlimit
+98 constant NR_getrusage
+99 constant NR_sysinfo
+100 constant NR_times
+101 constant NR_ptrace
+102 constant NR_getuid
+103 constant NR_syslog
+104 constant NR_getgid
+105 constant NR_setuid
+106 constant NR_setgid
+107 constant NR_geteuid
+108 constant NR_getegid
+109 constant NR_setpgid
+110 constant NR_getppid
+111 constant NR_getpgrp
+112 constant NR_setsid
+113 constant NR_setreuid
+114 constant NR_setregid
+115 constant NR_getgroups
+116 constant NR_setgroups
+117 constant NR_setresuid
+118 constant NR_getresuid
+119 constant NR_setresgid
+120 constant NR_getresgid
+121 constant NR_getpgid
+122 constant NR_setfsuid
+123 constant NR_setfsgid
+124 constant NR_getsid
+125 constant NR_capget
+126 constant NR_capset
+127 constant NR_rt_sigpending
+128 constant NR_rt_sigtimedwait
+129 constant NR_rt_sigqueueinfo
+130 constant NR_rt_sigsuspend
+131 constant NR_sigaltstack
+132 constant NR_utime
+133 constant NR_mknod
+134 constant NR_uselib
+135 constant NR_personality
+136 constant NR_ustat
+137 constant NR_statfs
+138 constant NR_fstatfs
+139 constant NR_sysfs
+140 constant NR_getpriority
+141 constant NR_setpriority
+142 constant NR_sched_setparam
+143 constant NR_sched_getparam
+144 constant NR_sched_setscheduler
+145 constant NR_sched_getscheduler
+146 constant NR_sched_get_priority_max
+147 constant NR_sched_get_priority_min
+148 constant NR_sched_rr_get_interval
+149 constant NR_mlock
+150 constant NR_munlock
+151 constant NR_mlockall
+152 constant NR_munlockall
+153 constant NR_vhangup
+154 constant NR_modify_ldt
+155 constant NR_pivot_root
+156 constant NR__sysctl
+157 constant NR_prctl
+158 constant NR_arch_prctl
+159 constant NR_adjtimex
+160 constant NR_setrlimit
+161 constant NR_chroot
+162 constant NR_sync
+163 constant NR_acct
+164 constant NR_settimeofday
+165 constant NR_mount
+166 constant NR_umount2
+167 constant NR_swapon
+168 constant NR_swapoff
+169 constant NR_reboot
+170 constant NR_sethostname
+171 constant NR_setdomainname
+172 constant NR_iopl
+173 constant NR_ioperm
+174 constant NR_create_module
+175 constant NR_init_module
+176 constant NR_delete_module
+177 constant NR_get_kernel_syms
+178 constant NR_query_module
+179 constant NR_quotactl
+180 constant NR_nfsservctl
+181 constant NR_getpmsg
+182 constant NR_putpmsg
+183 constant NR_afs_syscall
+184 constant NR_tuxcall
+185 constant NR_security
+186 constant NR_gettid
+187 constant NR_readahead
+188 constant NR_setxattr
+189 constant NR_lsetxattr
+190 constant NR_fsetxattr
+191 constant NR_getxattr
+192 constant NR_lgetxattr
+193 constant NR_fgetxattr
+194 constant NR_listxattr
+195 constant NR_llistxattr
+196 constant NR_flistxattr
+197 constant NR_removexattr
+198 constant NR_lremovexattr
+199 constant NR_fremovexattr
+200 constant NR_tkill
+201 constant NR_time
+202 constant NR_futex
+203 constant NR_sched_setaffinity
+204 constant NR_sched_getaffinity
+205 constant NR_set_thread_area
+206 constant NR_io_setup
+207 constant NR_io_destroy
+208 constant NR_io_getevents
+209 constant NR_io_submit
+210 constant NR_io_cancel
+211 constant NR_get_thread_area
+212 constant NR_lookup_dcookie
+213 constant NR_epoll_create
+214 constant NR_epoll_ctl_old
+215 constant NR_epoll_wait_old
+216 constant NR_remap_file_pages
+217 constant NR_getdents64
+218 constant NR_set_tid_address
+219 constant NR_restart_syscall
+220 constant NR_semtimedop
+221 constant NR_fadvise64
+222 constant NR_timer_create
+223 constant NR_timer_settime
+224 constant NR_timer_gettime
+225 constant NR_timer_getoverrun
+226 constant NR_timer_delete
+227 constant NR_clock_settime
+228 constant NR_clock_gettime
+229 constant NR_clock_getres
+230 constant NR_clock_nanosleep
+231 constant NR_exit_group
+232 constant NR_epoll_wait
+233 constant NR_epoll_ctl
+234 constant NR_tgkill
+235 constant NR_utimes
+236 constant NR_vserver
+237 constant NR_mbind
+238 constant NR_set_mempolicy
+239 constant NR_get_mempolicy
+240 constant NR_mq_open
+241 constant NR_mq_unlink
+242 constant NR_mq_timedsend
+243 constant NR_mq_timedreceive
+244 constant NR_mq_notify
+245 constant NR_mq_getsetattr
+246 constant NR_kexec_load
+247 constant NR_waitid
+248 constant NR_add_key
+249 constant NR_request_key
+250 constant NR_keyctl
+251 constant NR_ioprio_set
+252 constant NR_ioprio_get
+253 constant NR_inotify_init
+254 constant NR_inotify_add_watch
+255 constant NR_inotify_rm_watch
+256 constant NR_migrate_pages
+257 constant NR_openat
+258 constant NR_mkdirat
+259 constant NR_mknodat
+260 constant NR_fchownat
+261 constant NR_futimesat
+262 constant NR_newfstatat
+263 constant NR_unlinkat
+264 constant NR_renameat
+265 constant NR_linkat
+266 constant NR_symlinkat
+267 constant NR_readlinkat
+268 constant NR_fchmodat
+269 constant NR_faccessat
+270 constant NR_pselect6
+271 constant NR_ppoll
+272 constant NR_unshare
+273 constant NR_set_robust_list
+274 constant NR_get_robust_list
+275 constant NR_splice
+276 constant NR_tee
+277 constant NR_sync_file_range
+278 constant NR_vmsplice
+279 constant NR_move_pages
+280 constant NR_utimensat
+281 constant NR_epoll_pwait
+282 constant NR_signalfd
+283 constant NR_timerfd_create
+284 constant NR_eventfd
+285 constant NR_fallocate
+286 constant NR_timerfd_settime
+287 constant NR_timerfd_gettime
+288 constant NR_accept4
+289 constant NR_signalfd4
+290 constant NR_eventfd2
+291 constant NR_epoll_create1
+292 constant NR_dup3
+293 constant NR_pipe2
+294 constant NR_inotify_init1
+295 constant NR_preadv
+296 constant NR_pwritev
+297 constant NR_rt_tgsigqueueinfo
+298 constant NR_perf_event_open
+299 constant NR_recvmmsg
+300 constant NR_fanotify_init
+301 constant NR_fanotify_mark
+302 constant NR_prlimit64
+303 constant NR_name_to_handle_at
+304 constant NR_open_by_handle_at
+305 constant NR_clock_adjtime
+306 constant NR_syncfs
+307 constant NR_sendmmsg
+308 constant NR_setns
+309 constant NR_getcpu
+310 constant NR_process_vm_readv
+311 constant NR_process_vm_writev
+312 constant NR_kcmp
+313 constant NR_finit_module
+314 constant NR_sched_setattr
+315 constant NR_sched_getattr
+316 constant NR_renameat2
+317 constant NR_seccomp
+318 constant NR_getrandom
+319 constant NR_memfd_create
+320 constant NR_kexec_file_load
+321 constant NR_bpf
+322 constant NR_execveat
+323 constant NR_userfaultfd
+324 constant NR_membarrier
+325 constant NR_mlock2
+326 constant NR_copy_file_range
+327 constant NR_preadv2
+328 constant NR_pwritev2
+329 constant NR_pkey_mprotect
+330 constant NR_pkey_alloc
+331 constant NR_pkey_free
+332 constant NR_statx
+333 constant NR_io_pgetevents
+334 constant NR_rseq
+424 constant NR_pidfd_send_signal
+425 constant NR_io_uring_setup
+426 constant NR_io_uring_enter
+427 constant NR_io_uring_register
+
+[ELSE]
 
 \ From /usr/include/asm/unistd_32.h
   0  constant  NR_RESTART
@@ -254,7 +603,7 @@ Begin-Module
 190 constant  NR_VFORK
 191 constant  NR_UGETRLIMIT
 192 constant  NR_MMAP2
-
+[THEN]
 
 : syscall0 0 swap syscall ;
 : syscall1 1 swap syscall ;
@@ -282,12 +631,17 @@ Public:
 : setdomainname ( aname nlen -- n ) NR_SETDOMAINNAME syscall2 ;
 : syslog  ( ntype abufp nlen -- n ) NR_SYSLOG syscall3 ;
 : uselib  ( alibrary -- n )  NR_USELIB syscall1 ;
-: socketcall ( ncall aargs -- n )  NR_SOCKETCALL syscall2 ;
 
+32bit? [IF]
+: socketcall ( ncall aargs -- n )  NR_SOCKETCALL syscall2 ;
+[THEN]
 
 \ File system handling
 : mount   ( asrc atarget afilesystype umountflags adata -- n ) NR_MOUNT syscall5 ;
+
+32bit? [IF]
 : umount  ( atarget -- n ) NR_UMOUNT syscall1 ;
+[THEN]
 : umount2 ( atarget nflags -- n ) NR_UMOUNT2 syscall2 ;
 : ustat   ( ndev aubuf -- n ) NR_USTAT syscall2 ;
 : statfs  ( apath astatfsbuf -- n ) NR_STATFS syscall2 ;
@@ -297,7 +651,9 @@ Public:
  
 
 \ System time calls
+32bit? [IF]
 : stime        ( atime -- n ) NR_STIME syscall1 ;
+[THEN]
 : time         ( atime -- ntime ) NR_TIME syscall1 ;
 : nanosleep    ( areq arem -- n ) NR_NANOSLEEP syscall2 ;
 : gettimeofday ( atimeval atimezone -- n )  NR_GETTIMEOFDAY syscall2 ;
@@ -307,7 +663,9 @@ Public:
 \ Process handling
 : fork    ( -- pid ) NR_FORK syscall0 ;
 : getpid  ( -- u | get process id ) NR_GETPID syscall0 ;
+32bit? [IF]
 : waitpid ( pid astatus noptions -- pid ) NR_WAITPID syscall3 ;
+[THEN]
 : ptrace  ( nrequest pid addr adata -- n ) NR_PTRACE syscall4 ;
 : brk     ( addr -- n ) NR_BRK syscall1 ;
 : acct    ( afilename -- n ) NR_ACCT syscall1 ;
@@ -316,7 +674,11 @@ Public:
 : kill    ( npid nsig -- n ) NR_KILL syscall2 ;
 : chroot  ( apath -- n ) NR_CHROOT syscall1 ;
 : ioperm  ( ufrom unum nturnon -- n ) NR_IOPERM syscall3 ;
+
+32bit? [IF]
 : nice ( ninc -- n ) NR_NICE syscall1 ;
+[THEN]
+
 : getpriority ( nwhich nwho -- n ) NR_GETPRIORITY syscall2 ;
 : setpriority ( nwhich nwho nprio -- n ) NR_SETPRIORITY syscall3 ;
 : setuid   ( nuid -- n ) NR_SETUID syscall1 ;
@@ -371,7 +733,10 @@ Public:
     !    \ addr
     mmap_args NR_MMAP syscall1 ;
 
+32bit? [IF]
 : mmap2      ( addr  nlength  nprot  nflags  nfd  noffset -- n ) NR_MMAP2 syscall6 ;
+[THEN]
+
 : munmap     ( addr nlen -- n )  NR_MUNMAP syscall2 ;
 : msync      ( addr nlen nflags -- n )  NR_MSYNC syscall3 ;
 : mlock      ( addr nlen -- n )  NR_MLOCK syscall2 ;
@@ -430,7 +795,10 @@ O_SYNC constant  O_FSYNC
                   [ELSE] : close close ; [THEN]
 [undefined] lseek [IF] : lseek ( fd offs type -- offs ) NR_LSEEK syscall3 ; 
                   [ELSE] : lseek  lseek ; [THEN]
+
+32bit? [IF]
 : llseek ( fd offshigh offslow aresult nwhence -- n ) NR_LLSEEK syscall5 ;
+[THEN]
 
 [undefined] ioctl [IF] : ioctl ( fd  request argp -- error ) 
                             NR_IOCTL syscall3 ; 
@@ -488,11 +856,14 @@ O_SYNC constant  O_FSYNC
 \ Signal handling system calls
 : alarm       ( useconds -- u ) NR_ALARM syscall1 ;
 : pause       ( -- n ) NR_PAUSE syscall0 ;
+
+32bit? [IF]
 : signal      ( nsignum ahandler -- n ) NR_SIGNAL syscall2 ;
 : sigaction   ( nsignum asigact aoldact -- n ) NR_SIGACTION syscall3 ;
 : sigsuspend  ( amask -- n ) NR_SIGSUSPEND syscall1 ;
 : sigpending  ( aset -- n ) NR_SIGPENDING syscall1 ;
 : sigprocmask ( nhow aset aoldset -- n ) NR_SIGPROCMASK syscall3 ;
+[THEN]
 
 : setitimer   ( nwhich anewval aoldval -- n ) NR_SETITIMER syscall3 ;
 : getitimer   ( nwhich acurrval -- n ) NR_GETITIMER syscall2 ;

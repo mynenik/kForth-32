@@ -4,12 +4,24 @@
 \
 \ From: http://www.linuxhowtos.org/C_C++/socket.htm
 \
-\ kForth version
+\ On the server:
+\ 
+\   $ kforth server -e "<port> server bye"
+\ 
+\ On the client:
+\ 
+\   $ kforth client -e "<ipaddr> <port> client bye"  
+\ 
+\ To test on the same machine, use different terminal windows
+\ for the server and client, and use "localhost" as the 
+\ ipaddr argument for the client, e.g.
+\
+\   $ kforth client -e "localhost 5000 client bye"
 \
 \ Revisions:
 \   2010-05-11  km  created
 \   2016-06-02  km  include the modules interface
-
+\   2019-12-20  km  display port number in server message
 include ans-words
 include struct
 include struct-ext
@@ -44,7 +56,8 @@ create cli_addr  sockaddr_in% %allot drop
     0< ABORT" ERROR on binding"
 
     sockfd 5 listen ABORT" ERROR on listen"
-    cr ." Listening ..." cr
+    cr ." Listening on port " 
+    serv_addr sockaddr_in->sin_port w@ 65535 and ntohs . ." ..." cr
     sockfd cli_addr clilen sock_accept to newsockfd
     newsockfd 0< ABORT" ERROR on sock_accept"
 
@@ -57,6 +70,7 @@ create cli_addr  sockaddr_in% %allot drop
 
     newsockfd close drop 
     sockfd close drop
+    cr
 ;
 
  
