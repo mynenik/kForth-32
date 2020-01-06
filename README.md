@@ -23,8 +23,6 @@ its source package, on a GNU/Linux system:
     make
     readline
     readline-devel
-    ncurses
-    ncurses-devel
     patchutils
 
 Some or all of these packages may already be installed on your GNU/Linux 
@@ -71,6 +69,10 @@ different categories of Forth libraries or applications. These include:
 `libs/`            Forth interfaces to C and Fortran shared object libraries, such
                    as X11 and the GNU Multiprecision Library, gmp.
 
+'x11/'             A collection of X11 utilities providing a simple interfaces
+                   for plotting, bitmap font handling and text rendering, and
+                   a framework for X11 multi-page applications.
+
 `benchmarks/`      simple benchmarks to compare the relative speed of Forth systems
 
 
@@ -82,10 +84,13 @@ Important system-level files in the `forth-src/` subdirectory include,
 * `ansi.4th`        ANSI terminal control
 * `dump.4th`	    Forth `DUMP` utility
 * `asm-x86.4th`     32-bit x86 assembler ported to kForth-32
+* `modules.fs`      A framework for modular programming in Forth
+* `serial.4th`      Low-level serial port interface       
 * `syscalls.4th`    Operating System calls
-* `tester.4th`      Test harness used by much of the test code
+* `socket.4th`      Sockets interface
+* `lib-interface.4th` High-level interface to shared object libraries.
+* `ttester.4th`     Test harness used by automated test code
 
 ## Documentation
 
-Prior web-page documentation is the process of being packaged as a `pdf` file. The current
-version is located in `kForth-32-branch/doc/` 
+The current version of the kForth User's Guide is located in `kForth-32-branch/doc/` 
