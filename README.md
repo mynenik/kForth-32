@@ -1,7 +1,7 @@
 # kForth-32
 32-bit Forth System for x86-GNU/Linux
 
-Copyright &copy; 1998--2018 Krishna Myneni, <krishna.myneni@ccreweb.org>
+Copyright &copy; 1998--2019 Krishna Myneni, <krishna.myneni@ccreweb.org>
 
 ## LICENSE
 
@@ -59,7 +59,7 @@ libraries of Forth words and applications written in Forth. Within the
 different categories of Forth libraries or applications. These include:
 
 `system-test/`     A set of automated tests to validate the Forth system against
-                   the Forth-94 standard
+                   the Forth-2012 standard
 
 `fsl/`             modules from the Forth Scientific Library, including test code;
                    also note the subdirs, `fsl/extras/` and `fsl/demo/`
@@ -93,4 +93,5 @@ Important system-level files in the `forth-src/` subdirectory include,
 
 ## Documentation
 
-The current version of the kForth User's Guide is located in `kForth-32-branch/doc/` 
+The current version of the kForth User's Guide is located in `kForth-32-branch/doc/`. A copy of the Forth-2012 standards document is also provided here. Please note important differences between kForth and Forth-2012/ANS Forth, discussed in section 4 of the User's Guide.
+
