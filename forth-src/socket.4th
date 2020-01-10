@@ -7,7 +7,8 @@
 \   2010-05-11  km   created
 \   2010-05-13  km   added network byte order utils and dotted.quad
 \   2010-05-15  km   added SHUT_x constants; structure size checks
-
+\   2019-12-29  km   added direct syscalls for 64-bit systems.
+\
 \ From /usr/include/asm/sockios.h
 
 \ Socket-level I/O control calls.
@@ -80,40 +81,40 @@ end-struct sockaddr_in%
 
 
 struct
-  cell%  field  hostent->h_name        \ official name of host
-  cell%  field  hostent->h_aliases     \ alias list 
-  cell%  field  hostent->h_addrtype    \ host address type
-  cell%  field  hostent->h_length      \ length of address
-  cell%  field  hostent->h_addr_list   \ list of addresses from name server
+  ( cell%  field) int32:  hostent->h_name        \ official name of host
+  ( cell%  field) int32:  hostent->h_aliases     \ alias list 
+  ( cell%  field) int32:  hostent->h_addrtype    \ host address type
+  ( cell%  field) int32:  hostent->h_length      \ length of address
+  ( cell%  field) int32:  hostent->h_addr_list   \ list of addresses from name server
 end-struct hostent%
 
 
 struct
-  cell%  field  linger->l_onoff
-  cell%  field  linger->l_linger
+  ( cell%  field) int32:  linger->l_onoff
+  ( cell%  field) int32:  linger->l_linger
 end-struct linger%
 
 
 struct
-  cell%  field  msghdr->msg_name     \ socket name
-  cell%  field  msghdr->msg_namelen  \ length of name
-  cell%  field  msghdr->msg_iov      \ data blocks
-  cell%  field  msghdr->msg_iovlen   \ number of blocks
-  cell%  field  msghdr->msg_control    \ per protocol magic 
-  cell%  field  msghdr->msg_controllen  \ length of cmsg list
-  cell%  field  msghdr->msg_flags  
+  ( cell%  field) int32:  msghdr->msg_name     \ socket name
+  ( cell%  field) int32:  msghdr->msg_namelen  \ length of name
+  ( cell%  field) int32:  msghdr->msg_iov      \ data blocks
+  ( cell%  field) int32:  msghdr->msg_iovlen   \ number of blocks
+  ( cell%  field) int32:  msghdr->msg_control    \ per protocol magic 
+  ( cell%  field) int32:  msghdr->msg_controllen  \ length of cmsg list
+  ( cell%  field) int32:  msghdr->msg_flags  
 end-struct msghdr%
 
 
 struct
-  cell%  field  cmsghdr->cmsg_len
-  cell%  field  cmsghdr->cmsg_level
-  cell%  field  cmsghdr->cmsg_type  
+  ( cell%  field) int32:  cmsghdr->cmsg_len
+  ( cell%  field) int32:  cmsghdr->cmsg_level
+  ( cell%  field) int32:  cmsghdr->cmsg_type  
 end-struct cmsghdr%
 
 \ Verify structure sizes
-0 [IF]
-: check-struct-size ( n1 n2 nsize -- )  
+1 [IF]
+: check-struct-size ( n1 nsize -- )  
     >r %size r> <> ABORT" structure is incorrect size!"  ;
 
 sockaddr_in%  16  check-struct-size
@@ -337,6 +338,33 @@ endian C@ [IF]
 \  Socket words
 \ --------------------------------
 
+\ ior result is zero on success, -1 on error
+
+1 cells 8 = [IF]
+\ 64-bit system calls
+
+: socket ( ndomain ntype nprotocol -- sockfd ) NR_socket syscall3 ;
+: bind ( sockfd asock nlen -- ior ) NR_bind syscall3 ;
+: connect ( sockfd asock nlen -- ior ) NR_connect syscall3 ;
+: listen ( sockfd nbacklog -- ior ) NR_listen syscall2 ;
+: sock_accept ( sockfd asock alen -- sockfd ) NR_accept syscall3 ;
+: getsockname ( sockfd asock alen -- ior ) NR_getsockname syscall3 ;
+: getpeername ( sockfd asock alen -- ior ) NR_getpeername syscall3 ;
+: socketpair ( ndomain ntype nprotocol asv -- ior ) NR_socketpair syscall4 ;
+: send ( sockfd abuf nlen nflags -- n ) 0 0 NR_sendto syscall6 ;
+: sendto ( sockfd abuf nlen nflags adest nlen -- n ) NR_sendto syscall6 ;
+: recv ( sockfd abuf nlen nflags -- n ) 0 0 NR_recvfrom syscall6 ;
+: recvfrom ( sockfd abuf nlen nflags asrc alen -- n ) NR_recvfrom syscall6 ;
+: shutdown ( sockfd nhow -- ior ) NR_shutdown syscall2 ;
+: sendmsg ( sockfd amsg nflags -- n ) NR_sendmsg syscall3 ;
+: recvmsg ( sockfd amsg nflags -- n ) NR_recvmsg syscall3 ;
+: setsockopt ( sockfd nlevel noptname aoptval noptlen -- ior )
+   NR_setsockopt syscall5 ;
+: getsockopt ( sockfd nlevel noptname aoptval aoptlen -- ior )
+   NR_getsockopt syscall5 ;
+
+[ELSE]
+
 create socketcall-args 10 cells allot
 
 : set-socketcall-args ( n1 ... nm m -- )
@@ -347,8 +375,6 @@ create socketcall-args 10 cells allot
 
 : do-socketcall ( nargs ncall -- ior )
      >R set-socketcall-args R> socketcall-args socketcall ;
-
-\ ior result is zero on success, -1 on error
 
 : socket ( ndomain ntype nprotocol -- sockfd )  3 SYS_SOCKET do-socketcall ;
 : bind ( sockfd asock nlen -- ior )  3 SYS_BIND  do-socketcall ;
@@ -371,4 +397,5 @@ create socketcall-args 10 cells allot
 : getsockopt ( sockfd nlevel noptname aoptval aoptlen -- ior ) 
     5 SYS_GETSOCKOPT do-socketcall ;
 
+[THEN]
 

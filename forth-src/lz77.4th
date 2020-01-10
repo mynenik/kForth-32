@@ -216,56 +216,17 @@ Compressed with LZSS this becomes:
 
 "|" represents a format byte. "[]" represents a two-byte position
 and length.
-
-====== End of Intro by Wil Baden =====================================
-
-Under kForth, a test of the LZ77 algorithm may be performed as follows:
-
-    s" rm junk.lz junk" shell drop    \ delete previous files!!
-
-    s" green-eggs"  R/O  open-file    checked  in-file   !
-    s" junk.lz"     W/O  create-file  checked  out-file  !
-
-    encode
-
-    s" cat junk.lz" shell drop        \ type out junk.lz
-
-    s" junk.lz" R/O  open-file    checked  in-file   !
-    s" junk"    W/O  create-file  checked  out-file  !
-
-    decode
-
-    in-file @ closed    out-file @ closed
-
-    s" cat junk" shell drop          \ type out junk
-
-You may compare the decoded file to the original:
-
-    s" diff green-eggs  junk" shell drop
-
-Here, the file called "green-eggs" is assumed to exist and contain
-the text of the example.
 )
+\  End of Intro by Wil Baden 
 
-\ ========= Requirements for kForth ===============================
-( Comment out this section if not using kForth )
-
-include strings
-include files     \ include filesw for Windows 
-: CHARS ;
-: shell  \ c-addr u -- n | execute a shell command in kForth
-	strpck system ;  
-
-\ ========= End of kForth requirements ============================
+\ Requirements for kForth: ans-words.4th  strings.4th  files.4th
 
 \ =================================================================
 \        General Utilities
 \ =================================================================
 
-
-    \ : checked ABORT" File Access Error. " ;      ( ior -- )
+    : checked ABORT" File Access Error. " ;      ( ior -- )
     \ : Checked FILE-CHECK ;
-    : Checked DROP ;
 
     CREATE Single-Char-I/O-Buffer    3 CHARS ALLOT
 
@@ -450,7 +411,6 @@ VARIABLE Out-File
             ." Saved: " Textsize @  Codesize @ -  100 Textsize @ */
                   2 .R ." %" CR
       THEN
-      In-File @ Closed    Out-File @ Closed
       ;
 
 \ =================================================================

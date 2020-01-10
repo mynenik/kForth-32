@@ -23,28 +23,25 @@ ADAPTED     : for kForth, September 18, 2003, Krishna Myneni
 \
 
 
-	  \ ************************************************** 
-	  \							
-	  \		    N E U R A L - N E T			
-	  \							
-	  \		      BACK-PROPAGATION			
-	  \			    CODE			
-	  \							
-	  \  FC:	Dave Parker, DDJ October '89		
-	  \  LC:      Marcel Hendrix, November 18 1989		
-	  \  LC:      November 22nd, fixed scaling bug		
-	  \  LC:    November 25th, IT WORKS! Removed SFP	
-	  \  LC:      June 20th, 1991 for tForth, MHX		
-	  \							
-	  \ ************************************************** 
+\ ************************************************** 
+\							
+\		    N E U R A L - N E T			
+\							
+\		    BACK-PROPAGATION CODE			
+\							
+\  FC:	Dave Parker, DDJ October '89		
+\  LC:      Marcel Hendrix, November 18 1989		
+\  LC:      November 22nd, fixed scaling bug		
+\  LC:    November 25th, IT WORKS! Removed SFP	
+\  LC:      June 20th, 1991 for tForth, MHX		
+\							
+\ ************************************************** 
 
 
 \ -- Expects constants: Sensors, HiddenUnits and OutputUnits 
 
 
 CR .( Backpropagation     Version 2.15-2 ) 
-
-
 
 \ This program uses BACKPROPAGATION.
 \
@@ -101,9 +98,11 @@ CR .( Backpropagation     Version 2.15-2 )
 \   applies this number to the activation function SIGMOID.  The result is
 \   left on the stack to be stored into the kth field of HiddenOutputs.  (It is 
 \   useful to save the result in an output field as we will need it to compute 
-\   SIGMOID' on the backward pass).  The neuron also clears its error field. 
+\   SIGMOID' on the backward pass).  The neuron also clears its error field.
+\ 
 \ - If the HiddenOutputs vector (length k) is complete, it can be used as input
 \   to the output layer.
+\
 \ - An output neuron p has k weights, one for every component of HiddenOutputs,
 \   and an 'error' field.  When its time has come,  an output neuron multiplies
 \   HiddenOutputs with its WeightVector (dot product, remember) and applies
@@ -127,8 +126,10 @@ CR .( Backpropagation     Version 2.15-2 )
 \       hidden layer that is connected to the output layer neuron in question
 \       via weight Wab, has its ErrorField incremented by error*SIGMOID'*Wab. 
 \       This is the actual back propagation of error.
+\
 \    2] For all x: The weight 'x' of the output layer neuron p is incremented 
 \       by Error(p)*SIGMOID'(p)*LearningRate*HiddenOutputs[x]
+\
 \ - Hiddenlayer:
 \    ( Step 1] above is useless here )
 \    2] For all y: The weight 'y' of the hidden layer neuron h is incremented 
@@ -156,7 +157,7 @@ CR .( Backpropagation     Version 2.15-2 )
 \ -----------	-----------	    -------------    -----------   ------------
 \
 \	Weights	                             
-\	+--------\                     Bj              
+\       +--------\                     Bj              
 \  Ai   |  +------\-- Sum -> SIGMOID -----+ 
 \ ------*  |  +---/   	          	  |  Weights    
 \ ---*--|--*  |                           +---------\
@@ -171,20 +172,19 @@ CR .( Backpropagation     Version 2.15-2 )
 
 \ The above neural net shows 3 inputs, 2 hidden neurons, and 1 output.
 
-	  \ ************************************************** 
-	  \							
-	  \		    N E U R A L - N E T			
-	  \							
-	  \		      BACK-PROPAGATION			
-	  \			DATASTRUCTS			
-	  \							
-	  \  FC:	Dave Parker, DDJ October '89		
-	  \  LC:      Marcel Hendrix, November 18 1989		
-	  \  LC:      November 22nd, fixed scaling bug		
-	  \  LC:    November 25th, IT WORKS! Removed SFP	
-	  \  LC:      June 20th, 1991 for tForth, MHX		
-	  \							
-	  \ ************************************************** 
+\ ************************************************** 
+\							
+\		    N E U R A L - N E T			
+\							
+\		    BACK-PROPAGATION DATASTRUCTS
+\
+\  FC:	Dave Parker, DDJ October '89		
+\  LC:      Marcel Hendrix, November 18 1989		
+\  LC:      November 22nd, fixed scaling bug		
+\  LC:    November 25th, IT WORKS! Removed SFP	
+\  LC:      June 20th, 1991 for tForth, MHX		
+\							
+\ ************************************************** 
 
 \ -- General Utility *******************************************
 
@@ -296,7 +296,6 @@ MaxExp Zoom * 	constant +maxix		\ -- ABS(maximum index)
 
 \ SIGMOID
 \
-\
 \ If you have floating point, you can use it to build the sigmoid function
 
 
@@ -308,13 +307,12 @@ MaxExp Zoom * 	constant +maxix		\ -- ABS(maximum index)
 		"fone" F/ FEXP 1e F+ ( F1+) F/
 		FROUND>S ; 		\ 0.."1"
 
-: !table	+maxix  -maxix
-		  DO 
-		     I "1" Zoom /  M* FSIGMOID
-		     I -maxix MAX  +maxix MIN
-		       +maxix + CELLS sigval + 
-		     !
-		LOOP ; 
+: !table
+   +maxix -maxix DO 
+     I "1" Zoom /  M* FSIGMOID
+     I -maxix MAX  +maxix MIN
+     +maxix + CELLS sigval + !
+   LOOP ; 
 
 \ !table  ( no need to rebuild the table using FSIGMOID )
 
@@ -330,11 +328,10 @@ MaxExp Zoom * 	constant +maxix		\ -- ABS(maximum index)
 	M* DSCALE ;	
 
 
-
 \ SIGMOID' is the derivative of the Weber-Fechner activation function
 \ SIGMOID, or Opj, where Opj = 1 / ( 1 + exp(-Ei) ); 
 \
-\	 Ei = ä Wji Opi+j, => Opj'= Opj (1-Opj). 
+\	 Ei = Sum{ Wji Opi+j }, => Opj'= Opj (1-Opj). 
 \
 \ So if we know SIGMOID, we do NOT need SIGMOID'. 
 
@@ -376,9 +373,8 @@ One 0 'HiddenOutputs []CELL !	\ -- Initialize dummy
    40 VALUE LearningRate	\ -- Adjusts how fast the net learns.
  3000 VALUE Retries		\ -- Retry if learning fails to converge.
 
-: >BIT		( input -- bit )	
-	0> IF One ELSE Zero THEN ;
-
+: >BIT ( input -- bit ) 
+   0> IF One ELSE Zero THEN ;
 
 \ -- In case you forgot: 0 ROLL does nothing, 1 ROLL is SWAP, 
 \      2 ROLL is ROT etc.
@@ -427,7 +423,7 @@ Clean
 
 : FILL-inputs  	( 'inputpattern -- )
 	CELL+ 			
-	/inputs	0 ?DO  @+ POLLUTE I 'InputValues []CELL ! LOOP DROP ;
+	/inputs 0 ?DO  @+ POLLUTE I 'InputValues []CELL ! LOOP DROP ;
 
 
 : FILL-outputs	( 'outputpattern -- )
@@ -448,13 +444,11 @@ Clean
 : EXCITE      0 TO %action ;	\ -- Neuron fires
 : TRIMWEIGHTS 1 TO %action ;	\ -- Neuron adjusts its weights
 : ZEROWEIGHTS 2 TO %action ;	\ -- Neuron randomly fills its weights
-: DELTA	      3 TO %action ;	\ -- Neuron computes Wab*Opj'*error
+: DELTA	     3 TO %action ;	\ -- Neuron computes Wab*Opj'*error
 : NEWERROR    4 TO %action ;	\ -- Set a Neuron's error field
 : 'WEIGHTS    5 TO %action ;	\ -- Address of a Neuron's WeightArea
-: CELL	      6 TO %action ;	\ -- Neuron's pfa
+: CELL	     6 TO %action ;	\ -- Neuron's pfa
  
-
-
 2VARIABLE excitement
 VARIABLE S
 VARIABLE T
@@ -623,37 +617,42 @@ VARIABLE T
 
 CREATE	Items	256  2 CELLS  *  ALLOT
 
+: ClearLayers ( -- )
+    /outputs 0 ?DO  
+      ZEROWEIGHTS  I  Outputlayer  
+    LOOP
+    /hidden  1 ?DO
+      ZEROWEIGHTS  I  Hiddenlayer 
+    LOOP ;
 
-: CLEARLayers	/outputs 0 ?DO  ZEROWEIGHTS  I  Outputlayer  LOOP
-		/hidden  1 ?DO  ZEROWEIGHTS  I  Hiddenlayer  LOOP ;
+: NO-ASSOCIATIONS ( -- )
+   0 TO #Items
+   ClearLayers ;
 
-: NO-ASSOCIATIONS
-		0 TO #Items  CLEARLayers ;
+: Associate ( 'inputs 'outputs -- )
+    #Items 1+ 			\  <'inputs> <'outputs> --- <>
+    DUP 256 >= ABORT" Layer overflow"
+    TO #Items   			\ Increment #Items..
+    Items #Items 1- 2 CELLS * +  
+    2! ;				\ ..add pair to list
 
-
-: ASSOCIATE	#Items 1+ 			\  <'inputs> <'outputs> --- <>
-		DUP 256 >= ABORT" Layer overflow"
-		TO #Items   			\ Increment #Items..
-		Items #Items 1- 2 CELLS * +  
-		2! ;				\ ..add pair to list
-
-
-: REMEMBER?	0 TO |error|    		\ <> --- <true if ok>
-		#Items 0 ?DO 
-		    Items I 2 CELLS * + 
-		    DUP CELL+ a@ SWAP a@ SWAP
-		    Update(Forward)	
-		    Update(Backward)
-		    |error| DIFFERENCES + TO |error|
-		LOOP
-		|error| 0= ;
+: Remember?  ( -- b )
+    0 TO |error|
+    #Items 0 ?DO 
+      Items I 2 CELLS * + 
+      DUP CELL+ a@ SWAP a@ SWAP
+      Update(Forward)	
+      Update(Backward)
+      |error| DIFFERENCES + TO |error|
+    LOOP
+    |error| 0= ;
 
 
 		 ( * Formatting and Querying * ) 
 
 
 : .BIT					    	\ <n> --- <>		
-		"0.5" >= 1 AND [CHAR] 0 + EMIT ;
+    "0.5" >= 1 AND [CHAR] 0 + EMIT ;
 
 : .OUTPUTBIT	DUP				\ <n> --- <%error>
 		Zero Criteria + 
@@ -673,14 +672,14 @@ CREATE	Items	256  2 CELLS  *  ALLOT
 		#>  TYPE SPACE ;
 
 
-	  22 VALUE itMAX		
-	   0 VALUE itMIN
-	  10 VALUE ipMAX
-	   1 VALUE ipMIN
-	  10 VALUE opMAX
-	   0 VALUE opMIN
-	  10 VALUE hiMAX
-	   1 VALUE hiMIN
+22 VALUE itMAX		
+ 0 VALUE itMIN
+10 VALUE ipMAX
+ 1 VALUE ipMIN
+10 VALUE opMAX
+ 0 VALUE opMIN
+10 VALUE hiMAX
+ 1 VALUE hiMIN
 
 : ItemRANGE 	#Items   itMAX MIN  itMIN ;
 : InputRANGE	/inputs  ipMAX MIN  ipMIN ;
@@ -735,8 +734,7 @@ FALSE VALUE ?status
 		Update(Forward)		\ assume InputValues set.
 		SHOW-NET .PARAMETERS ;
 
-: REACT		WHATIF? ;		\ <'inputvector> --- <>
-
+: REACT WHATIF? ;		\ <'inputvector> --- <>
 
 : .HEADER	?display 0= IF EXIT THEN
 		PAGE ( HOME) 
@@ -746,48 +744,52 @@ FALSE VALUE ?status
 		  LearningRate 4 .R [CHAR] ) EMIT  
 		>INVERSE< CR CR ;
 
-: .WEIGHTS	CR ." --- Hidden Layer Weights ---" CR 
-		HiddenRANGE
-		  DO CR I 'WEIGHTS Hiddenlayer  
-		     InputRANGE  DO @+ PRINT LOOP DROP
-		     /inputs ipMAX > IF ."  ..." THEN
-		LOOP		 
-		CR
-		/hidden hiMAX > IF ."  :      :      :" THEN
-		CR ." --- Output Layer Weights ---" CR 
-		OutputRANGE
-		  DO CR I 'WEIGHTS Outputlayer  
-		     HiddenRANGE DO @+ PRINT LOOP DROP
-		     /hidden hiMAX > IF ."  ..." THEN
-		LOOP 
-		/outputs opMAX > IF  ."  :      :      :" THEN ;
+: .WEIGHTS ( -- )	
+    cr ." --- Hidden Layer Weights ---" cr 
+    HiddenRANGE DO
+      cr I 'WEIGHTS Hiddenlayer  
+      InputRANGE DO  @+ PRINT  LOOP drop
+      /inputs ipMAX > IF ."  ..." THEN
+    LOOP		 
+    cr
+	/hidden hiMAX > IF ."  :      :      :" THEN
+    cr ." --- Output Layer Weights ---" cr
+    OutputRANGE DO
+      cr I 'WEIGHTS Outputlayer  
+      HiddenRANGE DO  @+ PRINT  LOOP drop
+      /hidden hiMAX > IF ."  ..." THEN
+    LOOP 
+    /outputs opMAX > IF ."  :      :      :" THEN ;
 
 
-: .WEIGHTS?	?display ?status 0= AND 
-		?dot RefreshRate MOD 0= AND
-		?dot 1+ TO ?dot 
-		IF  .WEIGHTS  THEN ;
+: .WEIGHTS?  ( -- )
+    ?display ?status 0= AND 
+    ?dot RefreshRate MOD 0= AND
+    ?dot 1+ TO ?dot 
+    IF  .WEIGHTS  THEN ;
 
+: STOP-NET  ( -- )	
+    ?display IF 0 20 AT-XY THEN 
+    TRUE ABORT" user interrupt" ;
 
-: STOP-NET	?display IF 0 20 AT-XY THEN 
-		TRUE ABORT" user interrupt" ;
+: test-user ( -- )
+    BEGIN 
+      KEY?
+    WHILE
+      KEY
+      CASE 
+        ESC       OF STOP-NET			      ENDOF
+        [CHAR] +  OF LearningRate 2+ TO LearningRate      ENDOF
+        [CHAR] -  OF LearningRate 2- 0 MAX TO LearningRate  ENDOF
+        [CHAR] /  OF ?status  0= TO ?status PAGE CR       ENDOF
+        [CHAR] D  OF ?display 0= TO ?display  PAGE        ENDOF
+      ENDCASE
+    REPEAT ;
 
-: test-user	BEGIN KEY?
-		WHILE KEY
-		  CASE 
-		    ESC       OF STOP-NET			      ENDOF
-		    [CHAR] +  OF LearningRate 2+ TO LearningRate      ENDOF
-		    [CHAR] -  OF LearningRate 2- 0 MAX TO LearningRate  ENDOF
-		    [CHAR] /  OF ?status  0= TO ?status PAGE CR       ENDOF
-		    [CHAR] D  OF ?display 0= TO ?display  PAGE        ENDOF
-		  ENDCASE
-		REPEAT ;
-
-
-: display				\ <> --- <>	
-		TEST-USER	
-		.HEADER 
-		.STATUS? .WEIGHTS? ;
+: display  ( -- )
+    TEST-USER	
+    .HEADER 
+    .STATUS? .WEIGHTS? ;
 
 
 		 ( * Words to BUILD the net * )
@@ -795,40 +797,43 @@ FALSE VALUE ?status
 
 variable attempts
 
-: learned-all?		\ <> --- <boolean>; TRUE if successful
-		0 attempts !		
-		Retries 0 DO  
-		  display	\ Rehearse old pairs
-		  remember? IF LEAVE THEN
-		  1 attempts +!
-		  12 cur_left attempts @ DEC. ." pass.." 
-		LOOP
-		?display IF 0 L/SCR 5 - AT-XY 
-		ELSE CR THEN
-		attempts  @ Retries = IF ." Problems..." CR FALSE
-		ELSE TRUE THEN ;
+: learned-all?  ( -- b )  \ TRUE if successful
+    0 attempts !		
+    Retries 0 DO  
+      display	\ Rehearse old pairs
+      remember? IF LEAVE THEN
+      1 attempts +!
+      12 cur_left attempts @ DEC. ." pass.." 
+    LOOP
+    ?display IF  0 L/SCR 5 - AT-XY  ELSE  CR  THEN
+    attempts @ Retries = IF
+	  ." Problems..." CR FALSE
+	ELSE TRUE THEN ;
 
 
 
 0 VALUE ?converged
 
-: exam-ok?				\ <> --- <tf if ok>	
-		0 TO ?converged
-		4 0 DO learned-all?
-		        IF     ?converged 1+ TO ?converged
-			ELSE   0 TO ?converged LEAVE
-		        THEN
-		LOOP 
-		?converged 4 = ;
+: exam-ok?  ( -- b )	
+   0 TO ?converged
+   4 0 DO 
+     learned-all? IF
+       ?converged 1+ TO ?converged
+     ELSE   
+	    0 TO ?converged LEAVE
+     THEN
+   LOOP 
+   ?converged 4 = ;
 
 
-: drill			   		\ <> --- <>		
-		?display IF 
-		  PAGE  ELSE ." .. working .. " CR
-		THEN  
-		BEGIN	exam-ok? 0=
-		WHILE	ClearLayers
-		REPEAT	;
+: drill  ( -- )		
+   ?display IF  PAGE  
+   ELSE ." .. working .. " CR
+   THEN  
+   BEGIN
+     exam-ok? 0=
+	WHILE	ClearLayers
+	REPEAT	;
 
 	
-		( * End of Source * ) 
+( * End of Source * ) 

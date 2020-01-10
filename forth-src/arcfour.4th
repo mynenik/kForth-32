@@ -79,9 +79,8 @@ minimized.  There is no need to optimize `ARCFOUR-INIT`.
 \  return char xor temp
 
 \ Insignificant mods to Neil Bawd's code were made for 
-\   use under kForth -- Krishna Myneni, 2002-04-26
-
-: CHARS ;  \ km 2002-04-26
+\ use under kForth -- Krishna Myneni, 2002-04-26
+\ Requires ans-words.4th
 
 VARIABLE &I   VARIABLE &J
 CREATE &S  256 CHARS ALLOT
@@ -219,7 +218,7 @@ HEX
 61 8A 63 0D2 0FB  5 !KEY
 
 KEY: COUNT ARCFOUR-INIT
-
+TESTING ARCFOUR
 t{  0DC  ARCFOUR  ->  F1  }t
 t{  0EE  ARCFOUR  ->  38  }t
 t{  04C  ARCFOUR  ->  29  }t

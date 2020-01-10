@@ -14,10 +14,6 @@
 
 include tester
 
-\ ===== kForth requires =============
-: ptr CREATE 1 CELLS ?ALLOT ! DOES> a@ ;
-\ ===== end kForth requires =========
-
 TESTING CORE WORDS
 HEX
 
@@ -566,8 +562,8 @@ HERE 2 ,
 CONSTANT 2ND
 CONSTANT 1ST
 ********************************************************** )
-CREATE 1ST 2 ALLOT  1 1ST !
-1ST CELL+ ptr 2ND   2 2ND !
+CREATE 1ST 2 CELLS ALLOT  1 1ST !
+1ST CELL+ CONSTANT 2ND    2 2ND !
 
 { 1ST 2ND U< -> <TRUE> }		\ HERE MUST GROW WITH ALLOT
 { 1ST CELL+ -> 2ND }			\ ... BY ONE CELL
@@ -589,8 +585,8 @@ HERE 2 C,
 CONSTANT 2NDC
 CONSTANT 1STC
 ****************************************************** )
-CREATE 1STC 2 ALLOT  1 1STC C!
-1STC 1+ ptr 2NDC     2 2NDC C!
+CREATE 1STC 2 ALLOT     1 1STC C!
+1STC 1+ CONSTANT 2NDC   2 2NDC C!
 
 { 1STC 2NDC U< -> <TRUE> }		\ HERE MUST GROW WITH ALLOT
 { 1STC CHAR+ -> 2NDC }			\ ... BY ONE CHAR
@@ -663,8 +659,8 @@ HERE 3 C, CHAR G C, CHAR T C, CHAR 1 C, CONSTANT GT1STRING
 HERE 3 C, CHAR G C, CHAR T C, CHAR 2 C, CONSTANT GT2STRING
 ************************************************************* )
 
-c" GT1" ptr GT1STRING
-c" GT2" ptr GT2STRING
+c" GT1"  CONSTANT GT1STRING
+c" GT2"  CONSTANT GT2STRING
 
 { GT1STRING FIND -> ' GT1 -1 }
 { GT2STRING FIND -> ' GT2 1 }

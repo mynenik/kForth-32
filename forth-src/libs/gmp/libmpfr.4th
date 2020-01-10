@@ -33,7 +33,7 @@ vocabulary mpfr
 also mpfr definitions
 
 0 value hndl_MPFR
-s" libmpfr.so.4" open-lib
+s" libmpfr.so" open-lib
 dup 0= [IF] check-lib-error [THEN]
 to hndl_MPFR
 cr .( Opened the MPFR library )

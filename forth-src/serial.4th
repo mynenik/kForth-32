@@ -11,7 +11,7 @@
 \	strings.4th
 \       struct.4th
 \       struct-ext.4th
-\	modules.4th       v 0.3.4
+\	modules.4th       v 0.3.4 or later
 \
 \ Revisions:
 \
