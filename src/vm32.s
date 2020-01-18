@@ -1106,16 +1106,36 @@ L_fval:
 L_and:
 	_AND
 	NEXT
+
 L_or:
 	_OR
 	NEXT
+
 L_not:
 	LDSP
 	_NOT
-	NEXT
+        NEXT
+
 L_xor:
 	_XOR
 	NEXT
+
+L_bool_not:
+        LDSP
+        _NOT
+	jmp check_bool
+
+L_bool_and:
+        _AND
+        jmp check_bool
+
+L_bool_or:
+        _OR
+        jmp check_bool
+
+L_bool_xor:
+        _XOR
+        jmp check_bool
 
 L_eq:
 	REL_DYADIC sete
