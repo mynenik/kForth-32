@@ -2,7 +2,7 @@
 //
 // The assembler portion of kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2018 Krishna Myneni,
+// Copyright (c) 1998--2020 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -1112,7 +1112,7 @@ L_or:
 	NEXT
 
 L_not:
-	LDSP
+        LDSP
 	_NOT
         NEXT
 
@@ -1127,14 +1127,17 @@ L_bool_not:
 
 L_bool_and:
         _AND
+        LDSP
         jmp check_bool
 
 L_bool_or:
         _OR
+        LDSP
         jmp check_bool
 
 L_bool_xor:
         _XOR
+        LDSP
         jmp check_bool
 
 L_eq:
