@@ -3,7 +3,7 @@
 // A compiler to generate kForth Byte Code (FBC) from expressions
 //   or programs
 //
-// Copyright (c) 1998--2018 Krishna Myneni, 
+// Copyright (c) 1998--2020 Krishna Myneni, 
 // <krishna.myneni@ccreweb.org>
 //
 // Contributors:
@@ -360,7 +360,7 @@ int ForthCompiler (vector<byte>* pOpCodes, int* pLc)
 
 		    case EXECUTE_CURRENT_ONLY:
 		      i = ((d.WordCode == OP_DEFINITION) || (d.WordCode == OP_IVAL) || 
-			   (d.WordCode >> 8)) ? 5 : 1;
+                           (d.WordCode == OP_ADDR) || (d.WordCode >> 8)) ? WSIZE+1 : 1; 
 		      ib1 = pOpCodes->end() - i;
 		      for (j = 0; j < i; j++) SingleOp.push_back(*(ib1+j));
 		      SingleOp.push_back(OP_RET);
