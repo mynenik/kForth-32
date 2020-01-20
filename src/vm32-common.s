@@ -136,6 +136,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_nop, L_nop, L_nop, L_nop                 # 392--395
            .long L_nop, L_nop, L_nop, L_nop                 # 396--399
            .long L_bool_not, L_bool_and, L_bool_or, L_bool_xor  # 400--403   
+           .long L_boolean_query, L_nop, L_nop, L_nop       # 404--407
 .text
 	.align WSIZE
 .global JumpTable
@@ -312,20 +313,9 @@ E_arg_type_mismatch:
 	movl $E_ARG_TYPE_MISMATCH, %eax
 	ret
 
-// Tests
-check_bool:               # ebx is positioned above TOS
-	movl WSIZE(%ebx), %eax
-        cmpl $FALSE, %eax
-	jnz check_bool_1
-	NEXT
-check_bool_1:
-	cmpl $TRUE, %eax
-	jnz E_arg_type_mismatch
-	xorl %eax, %eax
-	NEXT
-
 L_cputest:
 	ret
+
 
 # set kForth's default fpu settings
 L_initfpu:
@@ -439,7 +429,7 @@ L_setprecision:
 
 L_false:
 	LDSP
-	movl $0, (%ebx)
+	movl $FALSE, (%ebx)
 	DEC_DSP
 	STSP
 	STD_IVAL
@@ -447,7 +437,7 @@ L_false:
 
 L_true:
 	LDSP
-	movl $-1, (%ebx)
+	movl $TRUE, (%ebx)
 	DEC_DSP
 	STSP
 	STD_IVAL

@@ -265,6 +265,7 @@ WordTemplate ForthWords[] =
     { "XOR",       OP_XOR,          0 },
     { "NOT",       OP_NOT,          0 },
     { "INVERT",    OP_NOT,          0 },
+    { "BOOLEAN?",  OP_BOOLEAN_QUERY, 0 },
     { ".NOT.",     OP_BOOL_NOT,     0 },
     { ".AND.",     OP_BOOL_AND,     0 },
     { ".OR.",      OP_BOOL_OR,      0 },

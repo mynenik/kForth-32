@@ -407,6 +407,7 @@
 #define OP_BOOL_AND             401
 #define OP_BOOL_OR              402
 #define OP_BOOL_XOR             403
+#define OP_BOOLEAN_QUERY        404
 
 #define OP_DIV_FLOORED          410
 #define OP_MOD_FLOORED          411

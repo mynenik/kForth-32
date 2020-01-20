@@ -301,6 +301,38 @@
 	xor %eax, %eax	
 .endm
 
+.macro BOOLEAN_QUERY
+        DUP
+        REL_ZERO setz
+        SWAP
+        LDSP
+        movl $TRUE, (%ebx)
+        DEC_DSP
+        DEC_DTSP
+        STSP
+        REL_DYADIC sete
+        _OR
+.endm
+
+.macro TWO_BOOLEANS
+        OVER
+        OVER
+        LDSP
+        BOOLEAN_QUERY
+        SWAP
+        LDSP
+        BOOLEAN_QUERY
+        _AND
+.endm
+
+.macro  CHECK_BOOLEAN
+        LDSP
+        DROP
+        cmpl $TRUE, (%ebx)
+        jnz E_arg_type_mismatch
+.endm
+
+
 // VIRTUAL MACHINE 
 					
 .global vm
@@ -818,21 +850,34 @@ L_xor:
 	_XOR
 	NEXT
 
+L_boolean_query:
+        BOOLEAN_QUERY
+        NEXT
+
 L_bool_not:
+        DUP
+        BOOLEAN_QUERY
+        CHECK_BOOLEAN
         _NOT
-        jmp check_bool
+        NEXT
 
 L_bool_and:
+        TWO_BOOLEANS
+        CHECK_BOOLEAN
         _AND
-        jmp check_bool
+        NEXT
 
 L_bool_or:
+        TWO_BOOLEANS
+        CHECK_BOOLEAN
         _OR
-        jmp check_bool
+        NEXT
 
 L_bool_xor:
+        TWO_BOOLEANS
+        CHECK_BOOLEAN
         _XOR
-        jmp check_bool
+        NEXT
 
 L_eq:
 	REL_DYADIC sete
