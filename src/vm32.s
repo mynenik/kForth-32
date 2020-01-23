@@ -191,16 +191,14 @@
 .endm
 	
 // Dyadic Logic operators 
-	
+// Uses: eax, ebx; In/Out: none	
 .macro LOGIC_DYADIC op
 	LDSP
-	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+	movl $WSIZE, %eax
+	addl %eax, %ebx
 	STSP
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	\op (%ebx), %eax
-	movl %eax, (%ebx)
+        \op %eax, WSIZE(%ebx)
 	movl GlobalTp, %eax
 	incl %eax
 	movl %eax, GlobalTp

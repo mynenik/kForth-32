@@ -110,7 +110,7 @@
 	xor %eax, %eax
 .endm
 
-.macro FETCH
+.macro FETCH        
 	movl %ebx, %edx	
 	addl $WSIZE, %edx
         movl (%edx), %eax	
@@ -118,9 +118,10 @@
 	movl %eax, (%edx)
 	xor %eax, %eax
 .endm
-	
-.macro STORE
-	movl $WSIZE, %eax
+
+// USES: eax, ebx, ecx, edx; IN/OUT: ebx = TOS-1
+.macro STORE        	
+        movl $WSIZE, %eax
         addl %eax, %ebx
         movl (%ebx), %ecx	# address to store to in ecx
 	addl %eax, %ebx
@@ -130,15 +131,13 @@
 .endm
 
 // Dyadic Logic operators 
-	
-.macro LOGIC_DYADIC op
-	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+
+// USES: eax, ebx; IN/OUT: ebx = TOS-1 
+.macro LOGIC_DYADIC op  
+	movl $WSIZE, %eax
+	addl %eax, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	\op (%ebx), %eax
-	movl %eax, (%ebx)
-	subl %ecx, %ebx
+	\op %eax, WSIZE(%ebx)
 	xorl %eax, %eax 
 .endm
 	
@@ -156,9 +155,9 @@
 
 
 // use algorithm from DNW's vm-osxppc.s
-.macro _ABS	
-	INC_DSP
-	movl (%ebx), %ecx
+// USES: eax, ebx, ecx, edx; IN/OUT: ebx = TOS-1 
+.macro _ABS     
+        movl WSIZE(%ebx), %ecx	
 	xorl %eax, %eax
 	cmpl %eax, %ecx
 	setl %al
@@ -166,24 +165,21 @@
 	movl %eax, %edx
 	xorl %ecx, %edx
 	subl %eax, %edx
-	movl %edx, (%ebx)
-	DEC_DSP
+	movl %edx, WSIZE(%ebx)
 	xorl %eax, %eax
 .endm
 
 // Dyadic relational operators (single length numbers) 
-	
-.macro REL_DYADIC setx
+//  USES: eax, ebx, ecx; IN/OUT: ebx = TOS-1 	
+.macro REL_DYADIC setx  
 	movl $WSIZE, %ecx
 	addl %ecx, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	cmpl %eax, (%ebx)
+	cmpl %eax, WSIZE(%ebx)
 	movl $0, %eax
 	\setx %al
 	negl %eax
-	movl %eax, (%ebx)
-	subl %ecx, %ebx
+	movl %eax, WSIZE(%ebx)
 	xorl %eax, %eax
 .endm
 
