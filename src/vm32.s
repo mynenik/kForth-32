@@ -20,6 +20,9 @@
 	.comm BottomOfTypeStack,4,4
 	.comm BottomOfReturnTypeStack,4,4
 
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0
 .macro FETCH op
 	movl GlobalTp, %ebx
 	incl %ebx
@@ -35,6 +38,9 @@
 	xor %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro SWAP
         LDSP
         INC_DSP
@@ -53,6 +59,9 @@
         xor %eax, %eax
 .endm
 
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0
 .macro OVER
         LDSP
         movl 2*WSIZE(%ebx), %eax
@@ -66,6 +75,9 @@
         xor %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro FDUP
 	LDSP
 	movl %ebx, %ecx
@@ -88,7 +100,10 @@
 	movl %ebx, GlobalTp
 	xor %eax, %eax
 .endm
-	
+
+// Regs: eax
+// In: none
+// Out: eax = 0
 .macro FDROP
 	movl $2*WSIZE, %eax
 	addl %eax, GlobalSp
@@ -96,6 +111,9 @@
 	xor %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro FSWAP
 	LDSP
 	movl $WSIZE, %ecx
@@ -121,7 +139,10 @@
 	movw %ax, (%ebx)
 	xor %eax, %eax
 .endm
-		
+
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro FOVER
 	LDSP
 	movl %ebx, %ecx
@@ -146,7 +167,10 @@
 	movl %ebx, GlobalTp
 	xor %eax, %eax	
 .endm
-	
+
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro PUSH_R
 	LDSP
 	movl $WSIZE, %eax
@@ -168,7 +192,9 @@
         xor %eax, %eax
 .endm
 
-	
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro POP_R
 	movl $WSIZE, %eax
 	movl GlobalRp, %ebx
@@ -190,8 +216,10 @@
 	xor %eax, %eax
 .endm
 	
-// Dyadic Logic operators 
-// Uses: eax, ebx; In/Out: none	
+// Dyadic Logic operators
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0	
 .macro LOGIC_DYADIC op
 	LDSP
 	movl $WSIZE, %eax
@@ -220,6 +248,9 @@
 	
 
 // use algorithm from DNW's vm-osxppc.s
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro _ABS	
 	LDSP
 	INC_DSP
@@ -236,7 +267,9 @@
 .endm
 	
 // Dyadic relational operators (single length numbers) 
-	
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro REL_DYADIC setx
 	LDSP
 	movl $WSIZE, %ecx
@@ -257,7 +290,9 @@
 .endm
 
 // Relational operators for zero (single length numbers)
-	
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0
 .macro REL_ZERO setx
 	LDSP
 	INC_DSP
@@ -272,6 +307,9 @@
 	xorl %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro FREL_DYADIC logic arg set
 	LDSP
 	movl $WSIZE, %ecx
@@ -296,7 +334,10 @@
 	xorl %eax, %eax
 .endm
 				
-	# b = (d1.hi < d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u< d2.lo))
+# b = (d1.hi < d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u< d2.lo))
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro DLT
 	LDSP
 	movl $WSIZE, %ecx
@@ -327,7 +368,10 @@
 	xorl %eax, %eax
 .endm
 
-	# b = (d1.hi > d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u> d2.lo))
+# b = (d1.hi > d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u> d2.lo))
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro DGT
 	LDSP
 	movl $WSIZE, %ecx
@@ -357,7 +401,10 @@
 	movl %eax, GlobalTp	
 	xorl %eax, %eax
 .endm
-			
+
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro DNEGATE
 	LDSP
 	INC_DSP
@@ -375,7 +422,10 @@
 	movl %eax, (%ebx)
 	xor %eax, %eax	
 .endm
-	
+
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0
 .macro STARSLASH
 	movl $2*WSIZE, %eax
         addl %eax, GlobalSp
@@ -388,7 +438,9 @@
 	xor %eax, %eax
 .endm
 	
-
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0
 .macro TNEG
 	LDSP
 	movl $WSIZE, %eax
@@ -414,6 +466,9 @@
 	xor %eax, %eax	
 .endm
 
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0
 .macro BOOLEAN_QUERY
         DUP
         REL_ZERO setz
@@ -427,6 +482,9 @@
         _OR
 .endm
 
+// Regs: eax, ebx, ecx
+// In: none
+// Out: eax = 0
 .macro TWO_BOOLEANS
         OVER
 	OVER
@@ -438,6 +496,9 @@
         _AND
 .endm
 
+// Regs: ebx
+// In: none
+// Out: ebx = DSP
 .macro  CHECK_BOOLEAN
         LDSP
         DROP

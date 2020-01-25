@@ -3,7 +3,7 @@
 // The assembler portion of the kForth 32-bit Virtual Machine
 // (fast version)
 //
-// Copyright (c) 1998--2018 Krishna Myneni,
+// Copyright (c) 1998--2020 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -18,6 +18,9 @@
 .set __FAST__, -1
 .include "vm32-common.s"
 
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro SWAP
 	movl %ebx, %eax
         addl $WSIZE, %eax
@@ -30,13 +33,26 @@
 	xorl %eax, %eax
 .endm
 
-
+// Regs: ebx, ecx
+// In: ebx = DSP
+// Out: ebx = DSP
 .macro OVER
         movl 2*WSIZE(%ebx), %ecx
         movl %ecx, (%ebx)
 	DEC_DSP
 .endm
-	
+
+// Regs: ebx, ecx
+// In: ebx = DSP
+// Out: ebx = DSP
+.macro TWO_DUP
+        OVER
+        OVER
+.endm
+
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FDUP
 	movl %ebx, %ecx
 	INC_DSP
@@ -50,11 +66,17 @@
 	DEC_DSP
 	xor %eax, %eax
 .endm
-	
+
+// Regs: ebx
+// In: ebx = DSP
+// Out: ebx = DSP
 .macro FDROP
 	INC2_DSP
 .endm
-	
+
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FSWAP
 	movl $WSIZE, %ecx
 	addl %ecx, %ebx
@@ -73,7 +95,10 @@
 	subl %ecx, %ebx
 	xorl %eax, %eax
 .endm
-		
+
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FOVER
 	movl %ebx, %ecx
 	addl $3*WSIZE, %ebx
@@ -87,7 +112,10 @@
 	DEC_DSP
 	xor %eax, %eax
 .endm
-	
+
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro PUSH_R
 	movl $WSIZE, %eax
 	addl %eax, %ebx	
@@ -99,6 +127,9 @@
         xor %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro POP_R
 	movl $WSIZE, %eax
 	movl GlobalRp, %edx
@@ -110,6 +141,9 @@
 	xor %eax, %eax
 .endm
 
+// Regs: eax, ebx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FETCH        
 	movl %ebx, %edx	
 	addl $WSIZE, %edx
@@ -119,7 +153,9 @@
 	xor %eax, %eax
 .endm
 
-// USES: eax, ebx, ecx, edx; IN/OUT: ebx = TOS-1
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro STORE        	
         movl $WSIZE, %eax
         addl %eax, %ebx
@@ -131,8 +167,9 @@
 .endm
 
 // Dyadic Logic operators 
-
-// USES: eax, ebx; IN/OUT: ebx = TOS-1 
+// Regs: eax, ebx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro LOGIC_DYADIC op  
 	movl $WSIZE, %eax
 	addl %eax, %ebx
@@ -155,7 +192,9 @@
 
 
 // use algorithm from DNW's vm-osxppc.s
-// USES: eax, ebx, ecx, edx; IN/OUT: ebx = TOS-1 
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro _ABS     
         movl WSIZE(%ebx), %ecx	
 	xorl %eax, %eax
@@ -170,7 +209,9 @@
 .endm
 
 // Dyadic relational operators (single length numbers) 
-//  USES: eax, ebx, ecx; IN/OUT: ebx = TOS-1 	
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro REL_DYADIC setx  
 	movl $WSIZE, %ecx
 	addl %ecx, %ebx
@@ -185,7 +226,9 @@
 
 	
 // Relational operators for zero (single length numbers)
-	
+// Regs: eax, ebx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro REL_ZERO setx
 	INC_DSP
 	movl (%ebx), %eax
@@ -198,6 +241,9 @@
 	xorl %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FREL_DYADIC logic arg set
 	movl $WSIZE, %ecx
 	addl %ecx, %ebx
@@ -217,7 +263,10 @@
 	xorl %eax, %eax
 .endm
 
-	# b = (d1.hi < d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u< d2.lo))
+# b = (d1.hi < d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u< d2.lo))
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro DLT
 	movl $WSIZE, %ecx
 	xorl %edx, %edx
@@ -242,7 +291,9 @@
 	xorl %eax, %eax
 .endm
 
-		
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro DNEGATE
 	INC_DSP
 	movl %ebx, %ecx
@@ -261,7 +312,9 @@
 	xor %eax, %eax
 .endm
 
-
+// Regs: eax, ebx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro STARSLASH
 	movl $2*WSIZE, %eax
         addl %eax, %ebx
@@ -272,6 +325,9 @@
 	xor %eax, %eax
 .endm
 
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro TNEG
 	movl $WSIZE, %eax
 	addl %eax, %ebx
@@ -297,32 +353,34 @@
 	xor %eax, %eax	
 .endm
 
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro BOOLEAN_QUERY
         DUP
         REL_ZERO setz
         SWAP
-        LDSP
         movl $TRUE, (%ebx)
         DEC_DSP
-        DEC_DTSP
-        STSP
         REL_DYADIC sete
         _OR
 .endm
 
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro TWO_BOOLEANS
-        OVER
-        OVER
-        LDSP
+        TWO_DUP
         BOOLEAN_QUERY
         SWAP
-        LDSP
         BOOLEAN_QUERY
         _AND
 .endm
 
+// Regs: ebx, 
+// In: ebx = DSP
+// Out: ebx = DSP
 .macro  CHECK_BOOLEAN
-        LDSP
         DROP
         cmpl $TRUE, (%ebx)
         jnz E_arg_type_mismatch

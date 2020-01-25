@@ -144,48 +144,67 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 .global L_dabs, L_dplus, L_dminus, L_dnegate
 .global L_mstarslash, L_udmstar, L_utmslash
 
-.macro LDSP                      # load stack ptr into ebx reg
+// Regs: ebx
+// In: none
+// Out: ebx = DSP
+.macro LDSP
   .ifndef __FAST__
         movl GlobalSp, %ebx
   .endif
 .endm
 
+// Regs: ebx
+// In/Out: ebx = DSP
 .macro STSP
   .ifndef __FAST__
 	movl %ebx, GlobalSp
   .endif
 .endm
 
+// Regs: ebx
+// In/Out: ebx = DSP
 .macro INC_DSP
 	addl $WSIZE, %ebx
 .endm
 
-.macro DEC_DSP            # decrement DSP by 1 cell; assume DSP in ebx reg
+// Regs: ebx
+// In/Out: ebx = DSP
+.macro DEC_DSP            # decrement DSP by 1 cell
 	subl $WSIZE, %ebx
 .endm
 
-.macro INC2_DSP           # increment DSP by 2 cells; assume DSP in ebx reg
+// Regs: ebx
+// In/Out: ebx = DSP
+.macro INC2_DSP           # increment DSP by 2 cells
 	addl $2*WSIZE, %ebx
 .endm
 
+// Regs: none
+// In/Out: none
 .macro INC_DTSP
   .ifndef __FAST__
        incl GlobalTp
   .endif
 .endm
 
+// Regs: none
+// In/Out: none
 .macro DEC_DTSP
   .ifndef __FAST__
 	decl GlobalTp
   .endif
 .endm
 
+// Regs: none
+// In/Out: none
 .macro INC2_DTSP
   .ifndef __FAST__
 	addl $2, GlobalTp
   .endif
 .endm
 
+// Regs: edx
+// In/Out: none
 .macro STD_IVAL
   .ifndef __FAST__
 	movl GlobalTp, %edx
@@ -194,6 +213,8 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
   .endif
 .endm
 
+// Regs: edx
+// In/Out: none
 .macro STD_ADDR
   .ifndef __FAST__
 	movl GlobalTp, %edx
@@ -202,6 +223,8 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
   .endif
 .endm
 
+// Regs: none
+// In/Out: none
 .macro UNLOOP
 	addl $3*WSIZE, GlobalRp  # terminal count reached, discard top 3 items
   .ifndef __FAST__
@@ -209,11 +232,14 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
   .endif
 .endm
 
+// Regs: eax, ebx, ecx, ebp
+// In: eax = 0; ebx = DSP, ebp = Ip
+// Out: eax = 0, ebx = DSP, ecx = next word address, ebp = Ip;
 .macro NEXT                      # eax reg assumed to be 0
 	incl %ebp		 # increment the Forth instruction ptr
 	movl %ebp, GlobalIp
-  .ifdef  __FAST__
-	movl %ebx, GlobalSp
+  .ifdef __FAST__
+        movl %ebx, GlobalSp
   .endif
 	movb (%ebp), %al         # get the opcode
 	movl JumpTable(,%eax,4), %ecx	# machine code address of word
@@ -221,15 +247,17 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	jmpl *%ecx		# jump to next word
 .endm
 
-
-.macro DROP                     # increment DSP by 1 cell; assume DSP in ebx reg
+// Regs: ebx
+// In/Out: ebx = DSP
+.macro DROP                     # increment DSP by 1 cell
         INC_DSP
 	STSP
 	INC_DTSP
 .endm
 
-
-.macro DUP                      # assume DSP in ebx reg
+// Regs: eax, ebx, ecx
+// In/Out: ebx = DSP
+.macro DUP                      
         movl WSIZE(%ebx), %ecx
         movl %ecx, (%ebx)
 	DEC_DSP
@@ -243,12 +271,15 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
         DEC_DTSP
 .endm
 
-
-.macro _NOT                   # assume DSP in ebx reg
+// Regs: none
+// In/Out: ebx = DSP
+.macro _NOT
 	notl WSIZE(%ebx)
 .endm
 
-
+// Regs: eax, ebx, ecx, edx
+// In: none
+// Out: eax = 0, ebx = DSP
 .macro STOD
 	LDSP
 	movl $WSIZE, %ecx
@@ -261,7 +292,9 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	xorl %eax, %eax
 .endm
 
-
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0, ebx = DSP
 .macro DPLUS
 	LDSP
 	INC2_DSP
@@ -277,6 +310,9 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	xor %eax, %eax
 .endm
 
+// Regs: eax, ebx
+// In: none
+// Out: eax = 0, ebx = DSP
 .macro DMINUS
 	LDSP
 	INC2_DSP
