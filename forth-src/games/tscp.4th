@@ -91,8 +91,21 @@ ply      nodes  time score  pv
 \ 2006-03-28  modified ".PIECE" to use @ instead of C@ to 
 \               avoid ENDIAN dependence.  km
 \ 2009-12-12  added definition of NOOP  km
+\ 2020-01-25  removed definitions of [UNDEFINED] , [DEFINED],
+\               CHARS and SPACE ; program found to have a dependency 
+\               on 32-bit system; will not run properly on 64-bit
+\               systems.
+\
+\ Requires:
+\   ans-words.4th      
 \ =================================================
 
+1 cells 4 = constant 32bit?
+
+32bit? invert [IF]
+  cr .( This program currently runs only on 32-bit systems! ) cr
+  quit
+[THEN]
 
 \ ============= ANS Forth definitions =============
 \ uncomment this section for use with ANS Forth
@@ -101,12 +114,6 @@ ply      nodes  time score  pv
 : ?allot HERE SWAP ALLOT ;
 )
 \ ============= end ANS Forth definitions =========
-
-\ ============= kForth definitions ================
-\ comment this section out if not using kForth
-: CHARS ;
-: SPACE  BL EMIT ;
-\ ============= end kForth definitions ============
 
 : table ( v1 ... vn n -- )
 	CREATE DUP CELLS ?allot OVER 1- CELLS + SWAP
@@ -257,8 +264,6 @@ VARIABLE fifty          \ fifty move draw count
   CHAR R   CHAR Q   CHAR K   CHAR # 
 8 table symbols
 
-: [DEFINED] ( "word" -- nz ) BL WORD FIND NIP ;
-: [UNDEFINED] ( "word" -- tf ) [DEFINED] 0= ;
 
 \ [UNDEFINED] tolower [IF]
 : tolower ( C -- c ) 20 OR ;   \ standard function?
@@ -347,13 +352,13 @@ No We + CONSTANT NW
 DECIMAL
 0  0  0  -1  -1  -1   0   7 table slides?
 0  0  1  10  15  20  20   7 table offsets
-HEX
  
   0 No NE +  Ea NE +  Ea SE +  So SE + 
  So SW +  We SW +  We NW +  No NW +  0 
  NE  SE  SW  NW  0 
  No  Ea  So  We  0 
  No  NE  Ea  SE  So  SW  We  NW  0 
+HEX
 1D table offset
 
 : pieceSlides? ( piece -- piece tf )
