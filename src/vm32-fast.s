@@ -132,13 +132,10 @@
 // Dyadic Logic operators 
 	
 .macro LOGIC_DYADIC op
-	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+	movl $WSIZE, %eax
+	addl %eax, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	\op (%ebx), %eax
-	movl %eax, (%ebx)
-	subl %ecx, %ebx
+	\op  %eax, WSIZE(%ebx)
 	xorl %eax, %eax 
 .endm
 	
@@ -157,8 +154,7 @@
 
 // use algorithm from DNW's vm-osxppc.s
 .macro _ABS	
-	INC_DSP
-	movl (%ebx), %ecx
+	movl WSIZE(%ebx), %ecx
 	xorl %eax, %eax
 	cmpl %eax, %ecx
 	setl %al
@@ -166,8 +162,7 @@
 	movl %eax, %edx
 	xorl %ecx, %edx
 	subl %eax, %edx
-	movl %edx, (%ebx)
-	DEC_DSP
+	movl %edx, WSIZE(%ebx)
 	xorl %eax, %eax
 .endm
 
@@ -177,13 +172,11 @@
 	movl $WSIZE, %ecx
 	addl %ecx, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	cmpl %eax, (%ebx)
+	cmpl %eax, WSIZE(%ebx)
 	movl $0, %eax
 	\setx %al
 	negl %eax
-	movl %eax, (%ebx)
-	subl %ecx, %ebx
+	movl %eax, WSIZE(%ebx)
 	xorl %eax, %eax
 .endm
 
