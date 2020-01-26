@@ -91,28 +91,17 @@ ply      nodes  time score  pv
 \ 2006-03-28  modified ".PIECE" to use @ instead of C@ to 
 \               avoid ENDIAN dependence.  km
 \ 2009-12-12  added definition of NOOP  km
-\ 2020-01-25  removed definitions of [UNDEFINED] , [DEFINED],
-\               CHARS and SPACE ; program found to have a dependency 
-\               on 32-bit system; will not run properly on 64-bit
-\               systems.
-\
+\ 2020-01-26  removed definitions of [UNDEFINED] , [DEFINED],
+\               CHARS and SPACE ; used fix for 64-bit
+\               systems from more recent fcp.f
+\ 
 \ Requires:
 \   ans-words.4th      
 \ =================================================
 
-1 cells 4 = constant 32bit?
-
-32bit? invert [IF]
-  cr .( This program currently runs only on 32-bit systems! ) cr
-  quit
-[THEN]
-
 \ ============= ANS Forth definitions =============
-\ uncomment this section for use with ANS Forth
-(
-: a@ @ ;
-: ?allot HERE SWAP ALLOT ;
-)
+[UNDEFINED] A@ [IF] synonym a@ @ [THEN]
+[UNDEFINED] ?ALLOT [IF] : ?allot HERE SWAP ALLOT ; [THEN]
 \ ============= end ANS Forth definitions =========
 
 : table ( v1 ... vn n -- )
@@ -265,9 +254,9 @@ VARIABLE fifty          \ fifty move draw count
 8 table symbols
 
 
-\ [UNDEFINED] tolower [IF]
+[UNDEFINED] tolower [IF]
 : tolower ( C -- c ) 20 OR ;   \ standard function?
-\ [THEN]
+[THEN]
 
 : .piece ( piece[+color] -- )
   DUP piece CELLS symbols + @      \ symbol for piece
@@ -439,7 +428,7 @@ VARIABLE lkSq   VARIABLE dkSq
 
 \ *** Move Type ***
 
-4 CONSTANT moveSize
+1 CELLS CONSTANT moveSize
 
  1 CONSTANT captureBit
  2 CONSTANT castleBit
@@ -771,9 +760,9 @@ hist_dat HIST_STACK histSize* + ptr histMax
   fifty @ 18 LSHIFT OR          \ fifty move count (7 bits)
   OVER ! CELL+ histTop ! ;
 
-\ [UNDEFINED] CELL- [IF]
+[UNDEFINED] CELL- [IF]
 : CELL- 1 CELLS - ;
-\ [THEN]
+[THEN]
 
 : histPop ( -- capt mv )
   histTop a@
@@ -1382,21 +1371,19 @@ VARIABLE lastScore
 \ More accurate is GetTickCount
 \ Define as appropriate for your Forth dialect
 
-(
+
 [UNDEFINED] ms@ [IF]
   [DEFINED] ?MS [IF]
   : ms@ ?MS ;           \ iForth
   [ELSE]
   [DEFINED] utime [IF]
-  : ms@ utime DROP ;    \ gforth
+  : ms@ utime 1000 um/mod nip ;  \ gforth
   [ELSE]
   5 CONSTANT npms
   : ms@  nodes @ npms / ;
   [THEN] [THEN]
 [THEN]
-)
 
-\ : ms@ ( -- n ) time&date 2drop drop 3600 * swap 60 * + + 1000 * ;
 
 : .searchHeader ." ply    nodes    time score pv" CR ;
 
