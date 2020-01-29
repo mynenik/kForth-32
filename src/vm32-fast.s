@@ -1243,10 +1243,13 @@ L_question:
 	call CPP_dot	
 	ret
 
+L_ulfetch:
+L_slfetch:
 L_fetch:
 	FETCH
 	NEXT
 
+L_lstore:
 L_store:
 	STORE
 	NEXT
@@ -1275,10 +1278,17 @@ L_cstore:
 	xorl %eax, %eax
 	NEXT
 
-L_wfetch:
+L_swfetch:
 	movl WSIZE(%ebx), %ecx
 	movw (%ecx), %ax
 	cwde
+	movl %eax, WSIZE(%ebx)
+	xorl %eax, %eax
+        NEXT
+
+L_uwfetch:
+	movl WSIZE(%ebx), %ecx
+	movw (%ecx), %ax
 	movl %eax, WSIZE(%ebx)
 	xorl %eax, %eax
         NEXT

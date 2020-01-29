@@ -1637,12 +1637,15 @@ L_2rot:
 L_question:
 	FETCH $OP_IVAL
 	call CPP_dot	
-	ret	
-
+	ret
+	
+L_ulfetch:
+L_slfetch:
 L_fetch:
 	FETCH $OP_IVAL
 	NEXT
 
+L_lstore:
 L_store:
         movl GlobalTp, %ebx
 	incl %ebx
@@ -1699,17 +1702,29 @@ L_cstore:
 	xor %eax, %eax
 	NEXT	
 
-L_wfetch:
+L_swfetch:
 	movl GlobalTp, %ecx
 	movb 1(%ecx), %al
 	cmpb $OP_ADDR, %al
 	jnz E_not_addr
 	movb $OP_IVAL, 1(%ecx)
 	LDSP
-	movl WSIZE(%ebx), %ebx
-	movw (%ebx), %ax
+	movl WSIZE(%ebx), %ecx
+	movw (%ecx), %ax
 	cwde
+	movl %eax, WSIZE(%ebx)
+	xor %eax, %eax
+        NEXT
+
+L_uwfetch:
+	movl GlobalTp, %ecx
+	movb 1(%ecx), %al
+	cmpb $OP_ADDR, %al
+	jnz E_not_addr
+	movb $OP_IVAL, 1(%ecx)
 	LDSP
+	movl WSIZE(%ebx), %ecx
+	movw (%ecx), %ax
 	movl %eax, WSIZE(%ebx)
 	xor %eax, %eax
         NEXT
