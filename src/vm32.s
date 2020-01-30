@@ -20,21 +20,18 @@
 	.comm BottomOfTypeStack,4,4
 	.comm BottomOfReturnTypeStack,4,4
 
-// Regs: eax, ebx
-// In: none
-// Out: eax = 0
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FETCH op
-	movl GlobalTp, %ebx
-	incl %ebx
-        movb (%ebx), %al
+	movl GlobalTp, %ecx
+        movb 1(%ecx), %al
         cmpb $OP_ADDR, %al
         jnz E_not_addr
-        movb \op, (%ebx)
-	LDSP
-	INC_DSP
-        movl (%ebx), %eax	
+        movb \op, 1(%ecx)
+        movl WSIZE(%ebx), %eax	
         movl (%eax), %eax
-	movl %eax, (%ebx)
+	movl %eax, WSIZE(%ebx)
 	xor %eax, %eax
 .endm
 
@@ -1635,6 +1632,7 @@ L_2rot:
         NEXT
 
 L_question:
+        LDSP
 	FETCH $OP_IVAL
 	call CPP_dot	
 	ret
@@ -1642,16 +1640,17 @@ L_question:
 L_ulfetch:
 L_slfetch:
 L_fetch:
+        LDSP
 	FETCH $OP_IVAL
 	NEXT
 
 L_lstore:
 L_store:
-        movl GlobalTp, %ebx
-	incl %ebx
-        movb (%ebx), %al
+        movl GlobalTp, %ecx
+        movb 1(%ecx), %al
         cmpb $OP_ADDR, %al
         jnz E_not_addr
+        INC2_DTSP
 	movl $WSIZE, %eax
 	LDSP
         addl %eax, %ebx
@@ -1660,27 +1659,24 @@ L_store:
 	movl (%ebx), %edx	# value to store in edx
 	STSP
 	movl %edx, (%ecx)
-	INC2_DTSP
 	xor %eax, %eax
 	NEXT
 
 L_afetch:
+        LDSP
 	FETCH $OP_ADDR
 	NEXT
 
 L_cfetch:
-	movl GlobalTp, %ebx
-	incl %ebx
-	movb (%ebx), %al
+	movl GlobalTp, %ecx
+	movb 1(%ecx), %al
 	cmpb $OP_ADDR, %al
 	jnz E_not_addr
-	movb $OP_IVAL, (%ebx)
-	xor %eax, %eax
+	movb $OP_IVAL, 1(%ecx)
 	LDSP
-	INC_DSP
-	movl (%ebx), %ecx
+	movl WSIZE(%ebx), %ecx
 	movb (%ecx), %al
-	movl %eax, (%ebx)
+	movl %eax, WSIZE(%ebx)
 	xor %eax, %eax
         NEXT
 
@@ -1851,42 +1847,38 @@ L_abs:
         NEXT
 
 L_max:
-	movl $WSIZE, %eax
-	addl %eax, GlobalSp
 	LDSP
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        STSP
+        INC_DTSP
 	movl (%ebx), %eax
-	movl WSIZE(%ebx), %ebx
-	cmpl %eax, %ebx
+	movl WSIZE(%ebx), %ecx
+	cmpl %eax, %ecx
 	jl max1
-	movl %ebx, %eax
-	LDSP
-	movl %eax, WSIZE(%ebx)
-	jmp maxexit
+	movl %ecx, WSIZE(%ebx)
+        xor %eax, %eax
+        NEXT
 max1:
-	LDSP
 	movl %eax, WSIZE(%ebx)
-maxexit:
-	INC_DTSP
 	xor %eax, %eax
         NEXT
 
 L_min:
-	movl $WSIZE, %eax
-	addl %eax, GlobalSp
 	LDSP
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        STSP
+        INC_DTSP
 	movl (%ebx), %eax
-	movl WSIZE(%ebx), %ebx
-	cmpl %eax, %ebx
+	movl WSIZE(%ebx), %ecx
+	cmpl %eax, %ecx
 	jg min1
-	movl %ebx, %eax
-	LDSP
-	movl %eax, WSIZE(%ebx)
-	jmp minexit
+	movl %ecx, WSIZE(%ebx)
+	xor %eax, %eax
+        NEXT
 min1:
-	LDSP
 	movl %eax, WSIZE(%ebx)
-minexit:
-	INC_DTSP
 	xor %eax, %eax
         NEXT
 
@@ -2029,18 +2021,22 @@ L_plusstore:
 	cmpb $OP_ADDR, %al
 	jnz  E_not_addr
 	LDSP
-	push %ebx
-	push %ebx
-	push %ebx
+#	push %ebx
+#	push %ebx
+#	push %ebx
+        movl %ebx, %ecx
 	movl WSIZE(%ebx), %ebx
 	movl (%ebx), %eax
-	pop %ebx
+#	pop %ebx
+        movl %ecx, %ebx
 	movl 2*WSIZE(%ebx), %ebx
 	addl %ebx, %eax
-	pop %ebx
+#	pop %ebx
+        movl %ecx, %ebx
 	movl WSIZE(%ebx), %ebx
 	movl %eax, (%ebx)
-	pop %ebx
+#	pop %ebx
+        movl %ecx, %ebx
 	movl $WSIZE, %eax
 	sall $1, %eax
 	addl %eax, %ebx
