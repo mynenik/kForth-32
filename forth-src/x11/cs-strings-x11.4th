@@ -116,31 +116,31 @@ nControls 8 $table $controls
 \ output text is to be drawn, and caddr1 u1 is the string
 \ following the corresponding control code.
 
-: noname bold    change-font-weight ;     ' noname   \ 0
-: noname medium  change-font-weight ;     ' noname   \ 1
-: noname italic  change-font-slant  ;     ' noname   \ 2
-: noname regular change-font-slant  ;     ' noname   \ 3
-: noname oblique change-font-slant  ;     ' noname   \ 4
-: noname 100     change-font-pointsize ;  ' noname   \ 5
-: noname 120     change-font-pointsize ;  ' noname   \ 6
-: noname 140     change-font-pointsize ;  ' noname   \ 7
-: noname 180     change-font-pointsize ;  ' noname   \ 8
-: noname 240     change-font-pointsize ;  ' noname   \ 9
-: noname parse_token strpck find 
+:noname bold    change-font-weight ;        \ 0
+:noname medium  change-font-weight ;        \ 1
+:noname italic  change-font-slant  ;        \ 2
+:noname regular change-font-slant  ;        \ 3
+:noname oblique change-font-slant  ;        \ 4
+:noname 100     change-font-pointsize ;     \ 5
+:noname 120     change-font-pointsize ;     \ 6
+:noname 140     change-font-pointsize ;     \ 7
+:noname 180     change-font-pointsize ;     \ 8
+:noname 240     change-font-pointsize ;     \ 9
+:noname parse_token strpck find 
          IF >body @ foreground
-         ELSE drop THEN ;                  ' noname   \ 10
-: noname parse_token strpck find
+         ELSE drop THEN ;                  \ 10
+:noname parse_token strpck find
          IF >body font-spec@ select-font
-         ELSE drop THEN ;                  ' noname   \ 11
-: noname parse_token strpck find 
+         ELSE drop THEN ;                  \ 11
+:noname parse_token strpck find 
          IF >body change-font-table
-         ELSE drop THEN ;                  ' noname   \ 12
-: noname 2>r s" \" draw-text-xytrack 2r> ; ' noname   \ 13
-: noname 2>r s"  " draw-text-xytrack 2r> ; ' noname   \ 14
-: noname ;   ' noname                                 \ 15
-: noname ;   ' noname                                 \ 16
-: noname 2>r current-font-height + >r 
-         drop x0 @ r> 2r> ;                ' noname   \ 17
+         ELSE drop THEN ;                  \ 12
+:noname 2>r s" \" draw-text-xytrack 2r> ;  \ 13
+:noname 2>r s"  " draw-text-xytrack 2r> ;  \ 14
+:noname ;                                  \ 15
+:noname ;                                  \ 16
+:noname 2>r current-font-height + >r 
+         drop x0 @ r> 2r> ;                \ 17
 nControls table cs_actions
 
 \ For the given control sequence string, lookup the specified

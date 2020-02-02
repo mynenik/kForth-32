@@ -36,13 +36,13 @@ set-exact
 decimal
 variable #errors   0 #errors !
 
-: noname  ( c-addr u -- )
+:noname  ( c-addr u -- )
 (
 Display an error message followed by the line that had the
 error.
 )
   1 #errors +! error1 ; 
-' noname error-xt !
+error-xt !
 
 bits/cell 32 = [IF] true [ELSE] false [THEN] constant 32BITS?
 
@@ -54,9 +54,9 @@ cr .( An address unit is ) bits/au . .( bits.)
 cr .( There are ) bits/cell . .( bits/cell.)
 cr .( There are ) bits/float . .( bits/float.)
 
-: noname  ( -- fp.separate? )
+:noname  ( -- fp.separate? )
   depth >r 1e depth >r fdrop 2r> = ; 
-' noname execute
+execute
 cr .( Floating-point stack is )
 [IF] .( *separate*) [ELSE] .( *not separate*) [THEN]
 .(  from the data stack.)

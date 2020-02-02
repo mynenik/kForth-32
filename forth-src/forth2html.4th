@@ -528,20 +528,20 @@ variable indexing
 \ types. ":" makes a label and saves the name for later use by ";" which makes
 \ a hyperlink or a hyperlink defining word.
 
-: NONAME                                         \ normal : definition
+:NONAME                                         \ normal : definition
    ulast @ if                                   \ ending a : definition?
       uname COUNT ['] userwords defx 2DROP  0 token !
    then
-; ( CONSTANT normal_def ) ' NONAME ptr normal_def
+; CONSTANT normal_def
 
-: NONAME
+:NONAME
    newindex >R
    uname COUNT 2DUP hcreate 
    \ HERE ['] userwords , R@ CELL+ ! R> , ,$ ofn ,$
    512 ?allot ['] userwords OVER ! DUP R@ CELL+ ! CELL+ R> OVER ! CELL+ $!+
    ofn ROT pack
    DOES> deflink defdef
-; ( CONSTANT defining_def )  ' NONAME ptr defining_def
+;  CONSTANT defining_def
 
 \ ULAST points to a data structure containing the hyperlink to the word being
 \ defined. It is used when building the index because it can't wait until ;

@@ -52,7 +52,7 @@ TEST
 s" ttester" included
 
 variable #errors    0 #errors !
-: noname  ( c-addr u -- ) 1 #errors +! error1 ; ' noname error-xt !
+:noname  ( c-addr u -- ) 1 #errors +! error1 ; error-xt !
 : ?.errors  ( -- )  verbose @ IF ." #ERRORS: " #errors @ . THEN ;
 : ?.cr  ( -- )  verbose @ IF cr THEN ;
 true verbose !

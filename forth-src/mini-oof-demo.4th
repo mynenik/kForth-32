@@ -33,11 +33,11 @@ end-class button
 
 \ Define the methods of the button class
 
-: noname ( o -- )  >r r@ x @ r@ y @ at-xy r@ text a@ r> len @ type ;
-' noname button defines draw
+:noname ( o -- )  >r r@ x @ r@ y @ at-xy r@ text a@ r> len @ type ;
+button defines draw
 
-: noname ( addr u o -- ) >r 0 r@ x ! 0 r@ y ! r@ len ! r> text ! ;
-' noname button defines init
+:noname ( addr u o -- ) >r 0 r@ x ! 0 r@ y ! r@ len ! r> text ! ;
+button defines init
 
 \ Now that we have defined the class and the methods, we can
 \   create an object of the button class and perform some initialization.
@@ -58,8 +58,8 @@ end-class bold-button	\  No new variables or methods in derived class
 : bold	  text_bold ; 
 : normal  text_normal ;
 
-: noname  bold  [ button :: draw ] literal execute  normal ;
-' noname bold-button defines draw  \ override method 'draw'
+:noname  bold  [ button :: draw ] literal execute  normal ;
+bold-button defines draw  \ override method 'draw'
 
 bold-button new bar drop	\ create object 'bar' of class 'bold-button'
 s" fat bar" bar init
