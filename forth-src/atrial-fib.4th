@@ -26,7 +26,7 @@
 \ show the onset of AF, followed by a return to normal
 \ heartbeat.
 \
-\ Copyright (c) 2015--2019 Krishna Myneni
+\ Copyright (c) 2015--2020 Krishna Myneni
 \
 \ This code may be used for any purpose, as long as the copyright
 \ notice above is preserved.
@@ -55,12 +55,8 @@ include fsl/fsl-util
 
 \ === Memory utility words
 hex
-[UNDEFINED] w@ [IF]
+[UNDEFINED] uw@ [IF]
 : uw@ ( a -- u ) dup 1+ >r c@ r> c@ 8 lshift or ;
-: uw! ( u a -- ) >r dup ff and r@ c! 8 rshift r> 1+ c! ;
-[ELSE]
-: uw@ w@ ffff and ;
-: uw! w! ;
 [THEN]
 
 \ === Simple random number generator
@@ -244,7 +240,7 @@ MAX_HC INTEGER ARRAY moments{
 
 \ Return the cell's info at the specified row and column
 : @CellInfo ( row col -- cellinfo ) 2>r CellInfo{{ 2r> }} uw@ ;
-: !CellInfo ( cellinfo row col -- ) 2>r CellInfo{{ 2r> }} uw! ;
+: !CellInfo ( cellinfo row col -- ) 2>r CellInfo{{ 2r> }}  w! ;
 
 \ Make a randomly selected set of NDYS cells (DELTA percent
 \ of all cells) dysfunctional.
@@ -297,7 +293,7 @@ MAX_HC INTEGER ARRAY moments{
 : all-cells ( cellinfo -- )
     L 0 DO
 	L 0 DO
-	  dup CellInfo{{ J I }} uw!
+	  dup CellInfo{{ J I }} w!
         LOOP
     LOOP
     drop 
@@ -363,7 +359,7 @@ MAX_HC INTEGER ARRAY moments{
 
 : set-pacemakers ( EXCITED|RESTING -- )
     dup EXCITED = IF 1 nbeats +! THEN
-    L 0 DO dup CellInfoNew{{ I 0 }} uw! LOOP drop
+    L 0 DO dup CellInfoNew{{ I 0 }} w! LOOP drop
 ;
 
 : display-beat ( -- )
@@ -424,7 +420,7 @@ true value display?
       \ Compute new cell states for non-pacemaker cells
       L 0 DO  
         L 1 DO
-           J I new-cell-info  CellInfoNew{{ J I }} uw!
+           J I new-cell-info  CellInfoNew{{ J I }} w!
         LOOP
       LOOP
 

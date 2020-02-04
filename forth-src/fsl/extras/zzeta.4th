@@ -64,7 +64,7 @@ fvariable z
 zvariable zx 
 0e 0e zx z!
 
-: NONAME ( -- )
+:NONAME ( -- )
     1.0e x f!
     1.0e y f!
     1.0e z f!
@@ -74,7 +74,7 @@ zvariable zx
        I 2* 1+ s>f  I 2* 2+ s>f f*  z f@ f* fdup z f!
        ( y z ) f/ x f@ f+ x f!
     LOOP ;
-noname
+execute
 
 Public:
 
