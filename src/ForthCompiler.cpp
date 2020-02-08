@@ -355,7 +355,8 @@ int ForthCompiler (vector<byte>* pOpCodes, int* pLc)
 		      if (debug) OutputForthByteCode (pOpCodes);
 		      ecode = ForthVM (pOpCodes, &sp, &tp);
 		      pOpCodes->erase(pOpCodes->begin(), pOpCodes->end());
-		      if (ecode) goto endcompile; 
+		      if (ecode) goto endcompile;
+		      pOpCodes = pCurrentOps;
 		      break;
 
 		    case EXECUTE_CURRENT_ONLY:

@@ -2188,15 +2188,9 @@ int CPP_lbracket()
 
 int CPP_rbracket()
 {
-  pCurrentOps->push_back(OP_RET);
-  if (debug) OutputForthByteCode(pCurrentOps);
-  byte* pIp = GlobalIp;
-  int e = vm((byte*) &(*pCurrentOps)[0]);
-  pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
-  GlobalIp = pIp;
   State = TRUE;
   pCurrentOps = pPreviousOps;
-  return e;
+  return 0;
 }
 //-------------------------------------------------------------------
 

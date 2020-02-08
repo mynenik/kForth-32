@@ -12,6 +12,7 @@
 \               per Jabari's instructions so that MD5Test and
 \               HMAC-TESTS will produce correct output on big
 \		endian systems (e.g. kForth ppc-osx port).  km
+\   2020-02-06  fixed defn of ]L for ANS-Forth compatibility.  km
 \
 \ ============== kForth requirements =========================
 \ Requires kForth 1.2.2 or later
@@ -29,10 +30,7 @@ include macro.4th
   VARIABLE MD5len           \ Holds message length
   CREATE buf[]  64 ALLOT    \ Holds message block
 
-\ The following macro def of ]L does not work in kForth at present.
-\ An equivalent definition that will work in all ANS Forths is given. km 
-\ : ]L  S" ] LITERAL " EVALUATE ; IMMEDIATE
-: ]L POSTPONE ] POSTPONE LITERAL ; IMMEDIATE
+: ]L ] POSTPONE LITERAL ; IMMEDIATE
 
 : bytes>< ( m -- w )  \ Reverse bytes of cell on stack
   [ HEX ]  DUP >R  18 LSHIFT  R@  FF00 AND  8 LSHIFT  OR
