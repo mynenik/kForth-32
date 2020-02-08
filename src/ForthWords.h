@@ -2,7 +2,7 @@
 //
 // The intrinsic Forth word list for kForth
 //
-// Copyright (c) 2008--2018 Krishna Myneni,
+// Copyright (c) 2008--2020 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org> 
 //
 // This software is provided under the terms of the GNU
@@ -41,7 +41,6 @@ WordTemplate ForthWords[] =
     { "[DEFINED]", OP_DEFINED,      IMMEDIATE | NONDEFERRED },
     { "[UNDEFINED]", OP_UNDEFINED,  IMMEDIATE | NONDEFERRED },
     { "COMPILE,",  OP_COMPILECOMMA, NONDEFERRED },
-//    { "[COMPILE]", OP_BRACKETCOMPILE, IMMEDIATE },
     { "POSTPONE",  OP_POSTPONE,     IMMEDIATE },
     { "[",         OP_LBRACKET,     IMMEDIATE },
     { "]",         OP_RBRACKET,     IMMEDIATE },
@@ -93,8 +92,13 @@ WordTemplate ForthWords[] =
     { "A@",        OP_AFETCH,       0 },
     { "C@",        OP_CFETCH,       0 },
     { "C!",        OP_CSTORE,       0 },
-    { "W@",        OP_WFETCH,       0 },
+    { "W@",        OP_SWFETCH,      0 },
+    { "SW@",       OP_SWFETCH,      0 },
+    { "UW@",       OP_UWFETCH,      0 },
     { "W!",        OP_WSTORE,       0 },
+    { "SL@",       OP_SLFETCH,      0 },
+    { "UL@",       OP_ULFETCH,      0 },
+    { "L!",        OP_LSTORE,       0 },
     { "F@",        OP_DFFETCH,      0 },
     { "F!",        OP_DFSTORE,      0 },
     { "DF@",       OP_DFFETCH,      0 },

@@ -1,7 +1,7 @@
 # kForth-32
 32-bit Forth System for x86-GNU/Linux
 
-Copyright &copy; 1998--2018 Krishna Myneni, <krishna.myneni@ccreweb.org>
+Copyright &copy; 1998--2020 Krishna Myneni, <krishna.myneni@ccreweb.org>
 
 ## LICENSE
 
@@ -23,8 +23,6 @@ its source package, on a GNU/Linux system:
     make
     readline
     readline-devel
-    ncurses
-    ncurses-devel
     patchutils
 
 Some or all of these packages may already be installed on your GNU/Linux 

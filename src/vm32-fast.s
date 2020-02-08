@@ -3,7 +3,7 @@
 // The assembler portion of the kForth 32-bit Virtual Machine
 // (fast version)
 //
-// Copyright (c) 1998--2018 Krishna Myneni,
+// Copyright (c) 1998--2020 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -1104,10 +1104,13 @@ L_question:
 	call CPP_dot	
 	ret
 
+L_ulfetch:
+L_slfetch:
 L_fetch:
 	FETCH
 	NEXT
 
+L_lstore:
 L_store:
 	STORE
 	NEXT
@@ -1136,12 +1139,19 @@ L_cstore:
 	xorl %eax, %eax
 	NEXT
 
-L_wfetch:
+L_swfetch:
 	movl WSIZE(%ebx), %ecx
 	movw (%ecx), %ax
 	cwde
 	movl %eax, WSIZE(%ebx)
 	xorl %eax, %eax
+        NEXT
+
+L_uwfetch:
+        movl WSIZE(%ebx), %ecx
+        movw (%ecx), %ax
+        movl %eax, WSIZE(%ebx)
+        xorl %eax, %eax
         NEXT
 
 L_wstore:
