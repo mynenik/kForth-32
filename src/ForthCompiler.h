@@ -86,7 +86,7 @@ public:
 
 
 bool IsForthWord (char*, WordListEntry*);
-int  ForthCompiler (vector<byte>*, int*);
+int  ForthCompiler (vector<byte>*, long int*);
 void CompileWord (WordListEntry);
 void OutputForthByteCode (vector<byte>*);
 void SetForthInputStream (istream&);

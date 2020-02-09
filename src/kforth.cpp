@@ -59,9 +59,9 @@ extern "C" {
 extern vector<WordList> Dictionary;
 extern char* C_ErrorMessages[];
 
-extern "C" int* JumpTable;
-extern "C" int* BottomOfStack;
-extern "C" int* BottomOfReturnStack;
+extern "C" long int* JumpTable;
+extern "C" long int* BottomOfStack;
+extern "C" long int* BottomOfReturnStack;
 extern "C" char TIB[];
 extern "C" {
     void echo_on(void);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     }
 
     SetForthOutputStream (cout);
-    int line_num = 0, ec = 0;
+    long int line_num = 0, ec = 0;
     vector<byte> op;
 
     if (pSS) {

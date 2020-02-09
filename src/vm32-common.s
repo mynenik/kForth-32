@@ -108,7 +108,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long C_falog, L_dzerolt, L_dmax, L_dmin    # 288--291
 	   .long L_dtwostar, L_dtwodiv, CPP_uddot, L_within  # 292--295
 	   .long CPP_twoliteral, C_tonumber, C_numberquery, CPP_sliteral   # 296--299
-           .long L_nop, L_nop, L_nop, L_nop            # 300--303
+           .long CPP_fliteral, CPP_twovariable, CPP_twoconstant, L_nop     # 300--303
            .long L_nop, L_nop, L_nop, L_nop            # 304--307
            .long L_nop, L_nop, L_nop, L_blank          # 308--311
            .long L_slashstring, C_trailing, C_parse, L_nop  # 312--315

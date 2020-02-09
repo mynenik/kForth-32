@@ -49,11 +49,12 @@ extern bool debug;
 extern vector<char*> StringTable;
 extern SearchList SearchOrder;
 void ClearControlStacks();
-void OpsCopyInt (int, int);
-void OpsPushInt (int);
+void OpsCopyInt (long int, long int);
+void OpsPushInt (long int);
+void OpsPushTwoInt (long int, long int);
 void OpsPushDouble (double);
 void PrintVM_Error (int);
-int ForthVM (vector<byte>*, int**, byte**);
+int ForthVM (vector<byte>*, long int**, byte**);
 void RemoveLastWord();
 
 extern "C" {
@@ -70,20 +71,20 @@ extern "C" {
   void strupr (char*);
   char* ExtractName(char*, char*);
   int   IsFloat(char*, double*);
-  int   IsInt(char*, int*);
+  int   IsInt(char*, long int*);
 
 }
   
 // Provided by ForthVM.cpp
-extern "C"  int* GlobalSp;
-extern "C"  int* GlobalRp;
-extern "C"  int Base;
-extern "C"  int State;  // TRUE = compile, FALSE = interpret
+extern "C"  long int* GlobalSp;
+extern "C"  long int* GlobalRp;
+extern "C"  long int Base;
+extern "C"  long int State;  // TRUE = compile, FALSE = interpret
 extern "C"  char* pTIB; 
 extern "C"  char TIB[];  // contains current line of input
 
 // Provided by vm-common.s
-extern "C"  int JumpTable[];
+extern "C"  long int JumpTable[];
 
 
 // stacks for keeping track of nested control structures
@@ -98,7 +99,7 @@ vector<int> recursestack; // stack for recursion
 vector<int> casestack;  // stack for case jumps
 vector<int> ofstack;   // stack for of...endof constructs
 
-int linecount;
+long int linecount;
 
 // The global input and output streams
 
@@ -191,20 +192,20 @@ void CompileWord (WordListEntry d)
     {
     case OP_CALLADDR:
       bp = (byte*) d.Cfa;
-      OpsPushInt(*((int*)(bp+1)));
+      OpsPushInt(*((long int*)(bp+1)));
       break;
 
     case OP_PTR:
     case OP_ADDR:
-      OpsPushInt((int) d.Pfa);
+      OpsPushInt((long int) d.Pfa);
       break;
 	  
     case OP_DEFINITION:
-      OpsPushInt((int) d.Cfa);
+      OpsPushInt((long int) d.Cfa);
       break;
 
     case OP_IVAL:
-      OpsPushInt(*((int*)d.Pfa));			
+      OpsPushInt(*((long int*)d.Pfa));			
       break;
 
     case OP_FVAL:
@@ -217,7 +218,7 @@ void CompileWord (WordListEntry d)
 }
 //----------------------------------------------------------------
 
-int ForthCompiler (vector<byte>* pOpCodes, int* pLc)
+int ForthCompiler (vector<byte>* pOpCodes, long int* pLc)
 {
 // The FORTH Compiler
 //
@@ -232,7 +233,8 @@ int ForthCompiler (vector<byte>* pOpCodes, int* pLc)
   int ecode = 0;
   char WordToken[256];
   double fval;
-  int i, j, ival, *sp;
+  int i, j;
+  long int ival, *sp;
   vector<byte>::iterator ib1, ib2;
   WordListEntry d;
   byte opval, *ip, *tp;

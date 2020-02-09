@@ -312,17 +312,21 @@
 #define OP_TONUMBER             297
 #define OP_NUMBERQUERY          298
 #define OP_SLITERAL             299
+#define OP_FLITERAL             300
+#define OP_2VARIABLE            301
+#define OP_2CONSTANT            302
 
+#define OP_NONAME               309
 #define OP_SPACE                310
 #define OP_BLANK                311
 #define OP_SLASHSTRING          312
 #define OP_TRAILING             313
 #define OP_PARSE                314
-#define OP_DNE			315
-#define OP_DGT			316
-#define OP_DLE			317
-#define OP_DGE			318
 
+#define OP_DNE			316
+#define OP_DGT			317
+#define OP_DLE			318
+#define OP_DGE			319
 #define OP_DLOPEN               320
 #define OP_DLERROR              321
 #define OP_DLSYM                322
