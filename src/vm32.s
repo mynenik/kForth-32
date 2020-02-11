@@ -1053,6 +1053,7 @@ L_ptr:
 	xorl %eax, %eax
 	NEXT
 
+L_2val:
 L_fval:
         movl %ebp, %ebx
         incl %ebx
@@ -1646,6 +1647,7 @@ L_sfstore:
 	xor %eax, %eax
         NEXT
 
+L_2fetch:
 L_dffetch:	
         movl GlobalTp, %ebx
 	incl %ebx
@@ -1671,6 +1673,7 @@ L_dffetch:
 	xor %eax, %eax
 	NEXT
 
+L_2store:
 L_dfstore:
         movl GlobalTp, %ebx
 	incl %ebx

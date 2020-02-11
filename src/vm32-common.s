@@ -60,10 +60,10 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long CPP_queryallot, CPP_allot, L_binary, L_count # 96 -- 99
            .long L_decimal, CPP_emit, CPP_fdot, CPP_cold # 100 -- 103
            .long L_hex, L_i, L_j, CPP_brackettick         # 104 -- 107
-           .long CPP_fvariable, C_timeanddate, CPP_find, CPP_constant # 108 -- 111
+           .long CPP_fvariable, L_2store, CPP_find, CPP_constant # 108 -- 111
            .long CPP_immediate, CPP_fconstant, CPP_create, CPP_dotquote  # 112 -- 115
            .long CPP_type, CPP_udot, CPP_variable, CPP_words # 116 -- 119
-           .long CPP_does, C_system, C_chdir, C_search   # 120 -- 123
+           .long CPP_does, L_2val, L_2fetch, C_search   # 120 -- 123
            .long L_or, C_compare, L_not, L_move    # 124 -- 127
            .long L_fsin, L_fcos, C_ftan, C_fasin   # 128 -- 131
            .long C_facos, C_fatan, C_fexp, C_fln   # 132 -- 135
@@ -114,8 +114,8 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_slashstring, C_trailing, C_parse, L_nop  # 312--315
 	   .long L_nop, L_nop, L_nop, L_nop            # 316--319
            .long C_dlopen, C_dlerror, C_dlsym, C_dlclose # 320--323
-	   .long C_usec, CPP_alias, L_nop, L_nop       # 324--327
-           .long L_nop, L_nop, CPP_wordlist, CPP_forthwordlist               # 328--331
+	   .long C_usec, CPP_alias, C_system, C_chdir    # 324--327
+           .long C_timeanddate, L_nop, CPP_wordlist, CPP_forthwordlist  # 328--331
            .long CPP_getcurrent, CPP_setcurrent, CPP_getorder, CPP_setorder  # 332--335
            .long CPP_searchwordlist, CPP_definitions, CPP_vocabulary, L_nop  # 336--339
            .long CPP_only, CPP_also, CPP_order, CPP_previous                 # 340--343

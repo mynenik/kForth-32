@@ -208,6 +208,11 @@ void CompileWord (WordListEntry d)
       OpsPushInt(*((long int*)d.Pfa));			
       break;
 
+    case OP_2VAL:
+      OpsPushInt(*((long int*)d.Pfa));
+      OpsPushInt(*((long int*)d.Pfa + 1));
+      break;
+
     case OP_FVAL:
       OpsPushDouble(*((double*) d.Pfa));
       break;

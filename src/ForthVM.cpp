@@ -3,7 +3,7 @@
 // The C++ portion of the kForth Virtual Machine to 
 // execute Forth byte code.
 //
-// Copyright (c) 1996--2018 Krishna Myneni,
+// Copyright (c) 1996--2020 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -1544,17 +1544,17 @@ int CPP_twoconstant ()
   // stack: ( n1 n2 -- )
   if (CPP_create()) return E_V_CREATE;
   WordIndex id = pCompilationWL->end() - 1;
-  id->WordCode = OP_FVAL;
+  id->WordCode = OP_2VAL;
   id->Pfa = new long int[2];
   DROP
-  *((long int*) (id->Pfa)) = TOS;
+  *((long int*) id->Pfa) = TOS;
   DROP
-  *((long int*) (id->Pfa + 1)) = TOS;
+  *((long int*) id->Pfa + 1) = TOS;
   byte *bp = new byte[WSIZE+3];
   id->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) id->Pfa;
-  bp[WSIZE+1] = OP_DFFETCH;
+  bp[WSIZE+1] = OP_2FETCH;
   bp[WSIZE+2] = OP_RET;
   return 0;
 }

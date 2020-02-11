@@ -121,7 +121,7 @@
 #define OP_J                    106
 #define OP_BRACKETTICK          107
 #define OP_FVARIABLE            108
-#define OP_TIMEANDDATE          109
+#define OP_2STORE               109
 #define OP_FIND                 110
 #define OP_CONSTANT             111
 #define OP_IMMEDIATE            112
@@ -133,8 +133,8 @@
 #define OP_VARIABLE             118
 #define OP_WORDS                119
 #define OP_DOES                 120
-#define OP_SYSTEM               121
-#define OP_CHDIR                122
+#define OP_2VAL                 121
+#define OP_2FETCH               122
 #define OP_SEARCH               123
 #define OP_OR                   124
 #define OP_COMPARE              125
@@ -333,6 +333,9 @@
 #define OP_DLCLOSE              323
 #define OP_US                   324
 #define OP_ALIAS                325
+#define OP_SYSTEM               326
+#define OP_CHDIR                327
+#define OP_TIMEANDDATE          328
 
 #define OP_WORDLIST             330
 #define OP_FORTHWORDLIST        331
