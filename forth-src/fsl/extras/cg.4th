@@ -35,6 +35,7 @@
 \                 range of arguments to 3j, and reduces loss of precision
 \                 (see new cg-test.4th) km
 \   2009-08-12 km  fixed error in Note 2b).
+\   2020-02-13 km  fix GCD for both symmetric and floored division.
 \
 \ Notes:
 \
@@ -154,7 +155,7 @@
 ;
 
 : gcd ( n1 n2 -- gcd | find greatest common divisor)
-    ?DUP IF SWAP OVER MOD RECURSE THEN ;
+    ?DUP IF SWAP OVER MOD RECURSE THEN ABS ;
 
 : simplify-fraction ( num denom -- num' denom' | simplify)
     2DUP gcd DUP >R / SWAP R> / SWAP ;    
