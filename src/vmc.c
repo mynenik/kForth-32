@@ -293,12 +293,11 @@ int C_write ()
 // word, FLUSH-FILE (Forth 94/Forth 2012)
 int C_fsync ()
 {
-   /* stack: ( fd -- ior )  */
-   int fd;
-   DROP
-   fd = TOS;
-   PUSH_IVAL( fsync(fd) )
-   return 0;
+  int fd;
+  DROP
+  fd = TOS;
+  PUSH_IVAL( fsync(fd) )
+  return 0;
 }
  
 int C_ioctl ()
@@ -1172,7 +1171,11 @@ int C_us2fetch ()
      (tv.tv_usec - ForthStartTime.tv_usec);
   TOS = *((long int*)&usec);
   DEC_DSP
+#if WSIZE == 4
   TOS = *((long int*)&usec + 1);
+#else
+  TOS = 0;
+#endif
   DEC_DSP
   STD_IVAL
   STD_IVAL
