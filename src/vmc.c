@@ -3,13 +3,15 @@ vmc.c
 
   C portion of the kForth Virtual Machine
 
-  Copyright (c) 1998--2018 Krishna Myneni, 
+  Copyright (c) 1998--2020 Krishna Myneni, 
   <krishna.myneni@ccreweb.org>
 
   This software is provided under the terms of the GNU
   Affero General Public License (AGPL), v3.0 or later.
 
 */
+
+#define _GNU_SOURCE
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -27,7 +29,6 @@ vmc.c
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#define _GNU_SOURCE
 #include <math.h>
 #include "fbc.h"
 #include "kfmacros.h"
@@ -56,21 +57,27 @@ extern byte* GlobalRtp;
 extern byte* BottomOfTypeStack;
 extern byte* BottomOfReturnTypeStack;
 #endif
+extern int CPP_bye();
+
+// Provided by vmxx-common.s
 extern int Base;
 extern int State;
 extern char* pTIB;
 extern int NumberCount;
+extern int  JumpTable[];
 extern char WordBuf[];
 extern char TIB[];
 extern char NumberBuf[];
 extern char ParseBuf[];
 
-/*  Provided by vm.s/vm-fast.s  */
+/*  Provided by vmxx.s/vmxx-fast.s  */
 int L_dnegate();
 int L_dplus();
 int L_dminus();
 int L_udmstar();
 int L_utmslash();
+int L_quit();
+int L_abort();
 int vm(byte*);
 
 struct timeval ForthStartTime;
@@ -118,7 +125,7 @@ void* signal_xtmap [32] =
     NULL
 };
 
-static void forth_signal_handler (int); 
+static void forth_signal_handler (int, siginfo_t*, void*); 
 
 // powA  is copied from the source of the function pow() in paranoia.c,
 //   at  http://www.math.utah.edu/~beebe/software/ieee/ 
@@ -1297,6 +1304,7 @@ int C_forth_signal ()
        stack: ( xt n -- oldxt )  */
 
     int signum;
+    struct sigaction action;
     void *xt, *oldxt;
 
     DROP
@@ -1305,23 +1313,28 @@ int C_forth_signal ()
     {
 	DROP
 	oldxt = signal_xtmap[signum-1];
+        memset( &action, 0, sizeof(struct sigaction));
+        action.sa_flags = SA_SIGINFO;
 	xt = (void *) TOS;
 	switch ((int) xt)
 	{
 	    case (int) SIG_DFL:
 		// Reset the default signal handler if xt = 0
-		signal (signum, SIG_DFL);
+                action.sa_sigaction = (void*) SIG_DFL;
+                sigaction( signum, &action, NULL );
 		xt = 0;
 		break;
 	    case (int) SIG_IGN:
 		// Ignore the signal if xt = 1
-		signal (signum, SIG_IGN);
+                action.sa_sigaction = (void*) SIG_IGN;
+                sigaction( signum, &action, NULL );
 		xt = 0;
 		break;
 	    default:
 		// All other xt s must be valid addresses to opcodes
 		CHK_ADDR
-		signal (signum, forth_signal_handler);
+                action.sa_sigaction = forth_signal_handler;
+                sigaction( signum, &action, NULL );
 		break;
 	}
         signal_xtmap[signum-1] = xt;
@@ -1334,7 +1347,7 @@ int C_forth_signal ()
 }
 /*-----------------------------------------------------*/
 
-static void forth_signal_handler (int signum)
+static void forth_signal_handler (int signum, siginfo_t* si, void* vcontext)
 {
     /* Take the required action for the signal by looking up 
        and executing the appropriate Forth word which has been 
@@ -1351,36 +1364,83 @@ static void forth_signal_handler (int signum)
 #ifndef __FAST__ 
     unsigned char* tp = GlobalTp, *rtp = GlobalRtp;
 #endif
+    byte opcode;
+    void* pCode;
+    char* msg;
+    ucontext_t* context = (ucontext_t*) vcontext;
 
     // Lookup the execution token of Forth word for this signal.
     void* xt = signal_xtmap[signum-1];
+    if (xt == 0) return;
 
-    if (xt)
-    {
-      // We must also offset the stack pointers so the handler will not
-      //   overwrite intermediate stack values in the primary vm(). An offset 
-      //   of 16 elements should be safe (worst case is L_utmslash, which
-      //   uses about 12 elements above the current stack position for 
-      //   intermediate calculations).
-      GlobalSp -= 16;
-      GlobalRp -= 16;
-#ifndef __FAST__ 
-      GlobalTp -= 16;
-      GlobalRtp -= 16;
-#endif
-      STD_IVAL
-      *GlobalSp-- = signum;
-      e = vm((byte*) xt);
-      // printf ("\nvm returns %d", e);
-      // if (e == E_V_QUIT) we need to do a longjmp
-
-      // Restore the stack pointers
-      GlobalSp = sp;
-      GlobalRp = rp;
-#ifndef __FAST__ 
-      GlobalTp = tp;
-      GlobalRtp = rtp;
-#endif
+    opcode = *((byte*) xt);
+    if ((opcode == OP_QUIT) || (opcode == OP_ABORT) || (opcode == OP_BYE)) {
+      // Handle special signals requiring immediate exit from the VM,
+      // without execution of Forth handler, e.g. SIGSEGV
+      pCode = (void*) JumpTable[opcode];
+      switch (signum) {
+        case SIGSEGV:
+          msg = "Segmentation fault\n";
+          write(1, msg, 19);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        case SIGINT:
+          msg = "Interrupted by user\n";
+          write(1, msg, 20);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        case SIGFPE:
+          msg = "Floating point exception\n";
+          write(1, msg, 25);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        case SIGBUS:
+          msg = "Bus error\n";
+          write(1, msg, 10);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        case SIGILL:
+          msg = "Illegal instruction\n";
+          write(1, msg, 20);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        case SIGQUIT:
+          msg = "SIGQUIT\n";
+          write(1, msg, 8);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        case SIGABRT:
+          msg = "SIGABRT\n";
+          write(1, msg, 8);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+        default:
+          msg = "Signal received\n";
+          write(1, msg, 16);
+          context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) pCode;
+          return;
+          break;
+       }
     }
 
+    // We must also offset the stack pointers so the handler will not
+    //   overwrite intermediate stack values in the primary vm(). An offset 
+    //   of 16 elements should be safe (worst case is L_utmslash, which
+    //   uses about 12 elements above the current stack position for 
+    //   intermediate calculations).
+    GlobalSp -= 16; GlobalRp -= 16;
+#ifndef __FAST__ 
+    GlobalTp -= 16; GlobalRtp -= 16;
+#endif
+    PUSH_IVAL(signum);
+    e = vm((byte*) xt);
+    if (e == E_V_QUIT) {
+      context->uc_mcontext.gregs[REG_EIP] = (unsigned long int) L_quit;
+    }
+
+    // Restore data stack and return stack pointers
+    GlobalSp = sp; GlobalRp = rp;
+#ifndef __FAST__ 
+    GlobalTp = tp; GlobalRtp = rtp;
+#endif
 }
