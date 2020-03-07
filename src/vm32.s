@@ -246,12 +246,10 @@
 
 // use algorithm from DNW's vm-osxppc.s
 // Regs: eax, ebx, ecx, edx
-// In: none
-// Out: eax = 0
-.macro _ABS	
-	LDSP
-	INC_DSP
-	movl (%ebx), %ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro _ABS
+	movl WSIZE(%ebx), %ecx
 	xorl %eax, %eax
 	cmpl %eax, %ecx
 	setl %al
@@ -259,7 +257,7 @@
 	movl %eax, %edx
 	xorl %ecx, %edx
 	subl %eax, %edx
-	movl %edx, (%ebx)
+	movl %edx, WSIZE(%ebx)
 	xorl %eax, %eax
 .endm
 	
@@ -1474,9 +1472,17 @@ L_minusrot:
 	NEXT
 
 L_nip:
-        SWAP
-        addl $WSIZE, GlobalSp
-        INC_DTSP
+        LDSP
+        INC_DSP
+        movl (%ebx), %eax
+        movl %eax, WSIZE(%ebx)
+        STSP
+        movl GlobalTp, %ebx
+        incl %ebx
+        movb (%ebx), %al
+        movb %al, 1(%ebx)
+        movl %ebx, GlobalTp
+        xor %eax, %eax
         NEXT
 
 L_tuck:
@@ -1843,6 +1849,7 @@ L_dfstore:
 	NEXT
 
 L_abs:
+        LDSP
 	_ABS
         NEXT
 
@@ -2111,8 +2118,8 @@ L_dsstar:
 	xorb %ah, %al      # sign of result
 	andl $1, %eax
 	pushl %eax
+        LDSP
 	_ABS
-	LDSP
 	INC_DSP
 	STSP
 	INC_DTSP
@@ -2290,6 +2297,8 @@ L_stsslashrem:
 # rule for symmetric division.
 	LDSP
 	INC_DSP
+        INC_DTSP
+	STSP
 	movl (%ebx), %ecx		# divisor in ecx
 	cmpl $0, %ecx
 	jz   E_div_zero
@@ -2306,9 +2315,11 @@ L_stsslashrem:
 	negl %eax
 	xorl %eax, %edx			# sign of quotient
 	pushl %edx
-	STSP
 	call L_tabs
-	subl $WSIZE, GlobalSp
+        LDSP
+	DEC_DSP
+	DEC_DTSP
+	STSP
 	_ABS
 	call L_utsslashmod
 	popl %edx
@@ -2423,8 +2434,7 @@ utmslash6:
 
 L_mstarslash:
 	LDSP
-	INC_DSP
-	INC_DSP
+	INC2_DSP
 	movl (%ebx), %eax
 	INC_DSP
 	xorl (%ebx), %eax
@@ -2432,10 +2442,8 @@ L_mstarslash:
 	pushl %eax	# keep sign of result -- negative is nonzero
 	LDSP
 	INC_DSP
-	STSP
 	INC_DTSP
 	_ABS
-	LDSP
 	INC_DSP
 	STSP
 	INC_DTSP

@@ -1124,9 +1124,11 @@ L_minusrot:
 	NEXT
 
 L_nip:
-        SWAP
-        addl $WSIZE, %ebx
-        NEXT
+         INC_DSP
+         movl (%ebx), %eax
+         movl %eax, WSIZE(%ebx)
+         xor %eax, %eax
+         NEXT
 
 L_tuck:
         SWAP
