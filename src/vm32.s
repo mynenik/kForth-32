@@ -260,7 +260,7 @@
 	movl %edx, WSIZE(%ebx)
 	xorl %eax, %eax
 .endm
-	
+
 // Dyadic relational operators (single length numbers) 
 // Regs: eax, ebx, ecx
 // In: none
@@ -2055,15 +2055,15 @@ L_plusstore:
 L_dabs:
 	LDSP
 	INC_DSP
-	movl (%ebx), %ecx
+	movl (%ebx), %ecx  # high dword
 	movl %ecx, %eax
 	cmpl $0, %eax
 	jl dabs_go
 	xor %eax, %eax
 	ret
 dabs_go:
-	INC_DSP
-	movl (%ebx), %eax
+        INC_DSP
+        movl (%ebx), %eax  # low dword
 	clc
 	subl $1, %eax
 	notl %eax
@@ -2434,22 +2434,26 @@ utmslash6:
 
 L_mstarslash:
 	LDSP
-	INC2_DSP
-	movl (%ebx), %eax
-	INC_DSP
-	xorl (%ebx), %eax
-	shrl $31, %eax
-	pushl %eax	# keep sign of result -- negative is nonzero
-	LDSP
-	INC_DSP
+	INC_DSP            
+        movl (%ebx), %eax  # eax = +n2
+        cmpl $0, %eax
+        jz E_div_zero
+        INC_DSP            
+	movl (%ebx), %eax  # eax = n1
+	INC_DSP            
+	xorl (%ebx), %eax  
+	shrl $31, %eax     # eax = sign(n1) xor sign(d1)
+	pushl %eax	   # keep sign of result -- negative is nonzero
+	subl $2*WSIZE, %ebx
 	INC_DTSP
-	_ABS
-	INC_DSP
-	STSP
+	_ABS               # abs(n1)
+        STSP
+	INC_DSP           
+	STSP               
 	INC_DTSP
 	call L_dabs
 	LDSP
-	DEC_DSP
+	DEC_DSP            # TOS = +n2
 	STSP
 	DEC_DTSP
 	call L_udmstar
@@ -2457,7 +2461,7 @@ L_mstarslash:
 	DEC_DSP
 	STSP
 	DEC_DTSP
-	call L_utmslash	
+	call L_utmslash
 	popl %eax
 	cmpl $0, %eax
 	jnz mstarslash_neg
