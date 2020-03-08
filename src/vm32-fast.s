@@ -329,6 +329,7 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro TNEG
+        pushl %ebx
 	movl $WSIZE, %eax
 	addl %eax, %ebx
 	movl (%ebx), %edx
@@ -349,7 +350,7 @@
 	movl %ecx, (%ebx)
 	subl %eax, %ebx
 	movl %edx, (%ebx)
-	movl GlobalSp, %ebx
+	popl %ebx
 	xor %eax, %eax	
 .endm
 
@@ -1553,7 +1554,6 @@ L_dnegate:
 	movl GlobalSp, %ebx
 	DNEGATE
 #	NEXT
-	movl %ebx, GlobalSp
 	ret
 
 L_dplus:
@@ -1787,6 +1787,7 @@ L_stsslashrem:
 	_ABS
 	movl %ebx, GlobalSp
 	call L_utsslashmod
+        movl GlobalSp, %ebx
 	popl %edx
 	cmpl $0, %edx
 	jz stsslashrem1
@@ -1910,7 +1911,6 @@ L_mstarslash:
 	pushl %eax	# keep sign of result -- negative is nonzero
 	movl GlobalSp, %ebx
 	INC_DSP
-	movl %ebx, GlobalSp
 	_ABS
 	INC_DSP
 	movl %ebx, GlobalSp
@@ -1931,7 +1931,6 @@ L_mstarslash:
 	ret
 mstarslash_neg:
 	DNEGATE
-	movl %ebx, GlobalSp
 	xorl %eax, %eax
 	ret
 	

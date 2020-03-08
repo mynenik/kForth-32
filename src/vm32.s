@@ -398,10 +398,9 @@
 .endm
 
 // Regs: eax, ebx, ecx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro DNEGATE
-	LDSP
 	INC_DSP
 	movl %ebx, %ecx
 	INC_DSP
@@ -415,6 +414,7 @@
 	notl %eax
 	adcl $0, %eax
 	movl %eax, (%ebx)
+        DEC_DSP
 	xor %eax, %eax	
 .endm
 
@@ -434,10 +434,10 @@
 .endm
 	
 // Regs: eax, ebx, ecx, edx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro TNEG
-	LDSP
+        pushl %ebx
 	movl $WSIZE, %eax
 	addl %eax, %ebx
 	movl (%ebx), %edx
@@ -458,6 +458,7 @@
 	movl %ecx, (%ebx)
 	subl %eax, %ebx
 	movl %edx, (%ebx)
+        popl %ebx
 	xor %eax, %eax	
 .endm
 
@@ -2076,6 +2077,7 @@ dabs_go:
 	ret
 
 L_dnegate:
+        LDSP
 	DNEGATE
 #	NEXT	
 	ret
@@ -2129,6 +2131,7 @@ L_dsstar:
 	STSP
 	DEC_DTSP
 	call L_udmstar
+        LDSP
 	popl %eax
 	cmpl $0, %eax
 	jne dsstar1
@@ -2322,6 +2325,7 @@ L_stsslashrem:
 	STSP
 	_ABS
 	call L_utsslashmod
+        LDSP
 	popl %edx
 	cmpl $0, %edx
 	jz stsslashrem1
@@ -2330,7 +2334,6 @@ stsslashrem1:
 	popl %eax
 	cmpl $0, %eax
 	jz stsslashrem2
-	LDSP
 	addl $4*WSIZE, %ebx
 	negl (%ebx)	
 stsslashrem2:
