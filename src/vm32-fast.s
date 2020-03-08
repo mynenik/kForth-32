@@ -1898,9 +1898,13 @@ utmslash6:
 
 L_mstarslash:
 	movl GlobalSp, %ebx
-	INC2_DSP
-	movl (%ebx), %eax
 	INC_DSP
+	movl (%ebx), %eax
+        cmpl $0, %eax
+        jz E_div_zero
+	INC_DSP
+        movl (%ebx), %eax
+        INC_DSP
 	xorl (%ebx), %eax
 	shrl $31, %eax
 	pushl %eax	# keep sign of result -- negative is nonzero
