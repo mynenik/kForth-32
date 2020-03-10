@@ -190,24 +190,6 @@
 	LOGIC_DYADIC xorl
 .endm
 
-
-// use algorithm from DNW's vm-osxppc.s
-// Regs: eax, ebx, ecx, edx
-// In: ebx = DSP
-// Out: eax = 0, ebx = DSP
-.macro _ABS     
-        movl WSIZE(%ebx), %ecx	
-	xorl %eax, %eax
-	cmpl %eax, %ecx
-	setl %al
-	negl %eax
-	movl %eax, %edx
-	xorl %ecx, %edx
-	subl %eax, %edx
-	movl %edx, WSIZE(%ebx)
-	xorl %eax, %eax
-.endm
-
 // Dyadic relational operators (single length numbers) 
 // Regs: eax, ebx, ecx
 // In: ebx = DSP
@@ -224,7 +206,6 @@
 	xorl %eax, %eax
 .endm
 
-	
 // Relational operators for zero (single length numbers)
 // Regs: eax, ebx
 // In: ebx = DSP
@@ -289,69 +270,6 @@
 	movl %eax, (%ebx)
 	subl %ecx, %ebx	
 	xorl %eax, %eax
-.endm
-
-// Regs: eax, ebx, ecx
-// In: ebx = DSP
-// Out: eax = 0, ebx = DSP
-.macro DNEGATE
-	INC_DSP
-	movl %ebx, %ecx
-	INC_DSP
-	movl (%ebx), %eax
-	notl %eax
-	clc
-	addl $1, %eax
-	movl %eax, (%ebx)
-	movl %ecx, %ebx
-	movl (%ebx), %eax
-	notl %eax
-	adcl $0, %eax
-	movl %eax, (%ebx)
-	DEC_DSP
-	xor %eax, %eax
-.endm
-
-// Regs: eax, ebx
-// In: ebx = DSP
-// Out: eax = 0, ebx = DSP
-.macro STARSLASH
-	movl $2*WSIZE, %eax
-        addl %eax, %ebx
-        movl WSIZE(%ebx), %eax
-        imull (%ebx)
-	idivl -WSIZE(%ebx)
-	movl %eax, WSIZE(%ebx)
-	xor %eax, %eax
-.endm
-
-// Regs: eax, ebx, ecx, edx
-// In: ebx = DSP
-// Out: eax = 0, ebx = DSP
-.macro TNEG
-        pushl %ebx
-	movl $WSIZE, %eax
-	addl %eax, %ebx
-	movl (%ebx), %edx
-	addl %eax, %ebx
-	movl (%ebx), %ecx
-	addl %eax, %ebx
-	movl (%ebx), %eax
-	notl %eax
-	notl %ecx
-	notl %edx
-	clc
-	addl $1, %eax
-	adcl $0, %ecx
-	adcl $0, %edx
-	movl %eax, (%ebx)
-	movl $WSIZE, %eax
-	subl %eax, %ebx
-	movl %ecx, (%ebx)
-	subl %eax, %ebx
-	movl %edx, (%ebx)
-	popl %ebx
-	xor %eax, %eax	
 .endm
 
 // Regs: eax, ebx, ecx, edx

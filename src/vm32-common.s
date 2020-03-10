@@ -278,6 +278,23 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	notl WSIZE(%ebx)
 .endm
 
+// use algorithm from DNW's vm-osxppc.s
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro _ABS
+        movl WSIZE(%ebx), %ecx
+        xorl %eax, %eax
+        cmpl %eax, %ecx
+        setl %al
+        negl %eax
+        movl %eax, %edx
+        xorl %ecx, %edx
+        subl %eax, %edx
+        movl %edx, WSIZE(%ebx)
+        xorl %eax, %eax
+.endm
+
 // Regs: eax, ebx, ecx, edx
 // In: none
 // Out: eax = 0, ebx = DSP
@@ -327,6 +344,71 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	STSP
 	INC2_DTSP
 	xor %eax, %eax
+.endm
+
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro DNEGATE
+        INC_DSP
+        movl %ebx, %ecx
+        INC_DSP
+        movl (%ebx), %eax
+        notl %eax
+        clc
+        addl $1, %eax
+        movl %eax, (%ebx)
+        movl %ecx, %ebx
+        movl (%ebx), %eax
+        notl %eax
+        adcl $0, %eax
+        movl %eax, (%ebx)
+        DEC_DSP
+        xor %eax, %eax
+.endm
+
+// Regs: eax, ebx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro STARSLASH
+        cmpl $0, WSIZE(%ebx)
+        jz E_div_zero
+        INC2_DSP
+        movl WSIZE(%ebx), %eax
+        imull (%ebx)
+        idivl -WSIZE(%ebx)
+        movl %eax, WSIZE(%ebx)
+        INC2_DTSP
+        xor %eax, %eax
+.endm
+
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro TNEG
+        pushl %ebx
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        movl (%ebx), %edx
+        addl %eax, %ebx
+        movl (%ebx), %ecx
+        addl %eax, %ebx
+        movl (%ebx), %eax
+        notl %eax
+        notl %ecx
+        notl %edx
+        clc
+        addl $1, %eax
+        adcl $0, %ecx
+        adcl $0, %edx
+        movl %eax, (%ebx)
+        movl $WSIZE, %eax
+        subl %eax, %ebx
+        movl %ecx, (%ebx)
+        subl %eax, %ebx
+        movl %edx, (%ebx)
+        popl %ebx
+        xor %eax, %eax
 .endm
 
 // Error jumps
