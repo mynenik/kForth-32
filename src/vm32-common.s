@@ -91,7 +91,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_push_r, L_pop_r, L_puship, L_rfetch # 220 -- 223
            .long L_rpfetch, L_afetch, CPP_do, CPP_leave # 224 -- 227
            .long CPP_querydo, CPP_abortquote, L_jz, L_jnz  # 228 -- 231
-           .long L_jmp, L_loop, L_plusloop, L_unloop  # 232 -- 235
+           .long L_jmp, L_rtloop, L_rtplusloop, L_rtunloop  # 232 -- 235
            .long L_execute, CPP_recurse, L_ret, L_abort  # 236 -- 239
            .long L_quit, L_ge, L_le, L_ne          # 240 -- 243
            .long L_zeroeq, L_zerone, L_zerolt, L_zerogt # 244 -- 247
@@ -109,8 +109,8 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long L_dtwostar, L_dtwodiv, CPP_uddot, L_within  # 292--295
 	   .long CPP_twoliteral, C_tonumber, C_numberquery, CPP_sliteral   # 296--299
            .long CPP_fliteral, CPP_twovariable, CPP_twoconstant, L_nop     # 300--303
-           .long CPP_tofile, CPP_console, L_nop, L_nop            # 304--307
-           .long L_nop, L_nop, L_nop, L_blank          # 308--311
+           .long CPP_tofile, CPP_console, CPP_loop, CPP_plusloop           # 304--307
+           .long CPP_unloop, L_nop, L_nop, L_blank          # 308--311
            .long L_slashstring, C_trailing, C_parse, L_nop  # 312--315
 	   .long L_nop, L_nop, L_nop, L_nop            # 316--319
            .long C_dlopen, C_dlerror, C_dlsym, C_dlclose # 320--323
