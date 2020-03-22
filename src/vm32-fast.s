@@ -431,23 +431,19 @@ L_blank:
 	ret
 
 L_move:
-	movl $WSIZE, %eax
-	addl %eax, %ebx
-	movl (%ebx), %ecx
-	pushl %ecx
-	SWAP
-	movl $WSIZE, %eax
-	addl %eax, %ebx
-	movl (%ebx), %ecx
-	pushl %ecx
-	addl %eax, %ebx
-	movl (%ebx), %ecx
-	pushl %ecx
-	movl %ebx, GlobalSp
-	call memmove
-	addl $12, %esp
-	xorl %eax, %eax				
-	ret
+        INC_DSP
+        movl (%ebx), %eax
+        pushl %eax
+        INC_DSP
+        movl WSIZE(%ebx), %eax
+        pushl %eax
+        movl (%ebx), %eax
+        pushl %eax
+        DROP
+        call memmove
+        addl $3*WSIZE, %esp
+        xorl %eax, %eax
+        NEXT
 
 L_cmove:
 	movl $WSIZE, %eax

@@ -543,6 +543,7 @@ fill2:	LDSP
 	xor %eax, %eax
 fillexit:	
 	ret
+
 L_erase:
 	LDSP
 	movl $0, (%ebx)
@@ -551,6 +552,7 @@ L_erase:
 	DEC_DTSP
 	call L_fill
 	ret
+
 L_blank:
 	LDSP
 	movl $32, (%ebx)
@@ -558,46 +560,42 @@ L_blank:
 	STSP
 	DEC_DTSP
 	call L_fill
-	ret	
+	ret
+
 L_move:
-	movl $WSIZE, %eax
-	addl %eax, GlobalSp
+        LDSP
+        INC_DSP
+        INC_DTSP
+        movl (%ebx), %eax
+        pushl %eax
+	INC_DSP
 	INC_DTSP
-	LDSP
-	movl (%ebx), %ebx
-	pushl %ebx
-	SWAP
-	movl $WSIZE, %eax
-	addl %eax, GlobalSp
-	INC_DTSP
-	movl GlobalTp, %ebx
-	movb (%ebx), %al
-	cmpb $OP_ADDR, %al
-	jz move2
-	popl %ebx
-	movl $E_NOT_ADDR, %eax
-	ret
-move2:	LDSP
-	movl (%ebx), %ebx
-	pushl %ebx
-	movl $WSIZE, %eax
-	addl %eax, GlobalSp
-	INC_DTSP
-	movl GlobalTp, %ebx
-	movb (%ebx), %al
-	cmpb $OP_ADDR, %al
-	jz move3
-	popl %ebx
-	popl %ebx
-	movl $E_NOT_ADDR, %eax
-	ret
-move3:	LDSP
-	movl (%ebx), %ebx
-	pushl %ebx
+        movl GlobalTp, %edx
+        movb 1(%edx), %al
+        cmpb $OP_ADDR, %al
+        jz move2
+        STSP
+        addl $WSIZE, %esp
+        movl $E_NOT_ADDR, %eax
+        jmp E_not_addr        
+move2:
+        movl WSIZE(%ebx), %eax
+        pushl %eax
+        movb (%edx), %al
+        cmpb $OP_ADDR, %al
+        jz move3
+        addl $2*WSIZE, %esp
+        movl $E_NOT_ADDR, %eax
+        jmp E_not_addr
+move3:
+	movl (%ebx), %eax
+	pushl %eax
 	call memmove
-	addl $12, %esp
-	xor %eax, %eax				
-	ret
+	addl $3*WSIZE, %esp
+        DROP
+	xor %eax, %eax
+	NEXT
+
 L_cmove:
 	LDSP
 	movl $WSIZE, %eax
@@ -641,6 +639,7 @@ cmoveloop: movb (%ebx), %al
 	loop cmoveloop
 	xor %eax, %eax				
 	NEXT				
+
 L_cmovefrom:
 	movl $WSIZE, %eax
 	addl %eax, GlobalSp
