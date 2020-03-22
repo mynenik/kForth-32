@@ -37,8 +37,8 @@
 #define OP_CMOVEFROM             22
 #define OP_DOTPAREN              23
 #define OP_BRACKETSHARP          24
-#define OP_TOFILE                25
-#define OP_CONSOLE               26
+
+#define OP_FSYNC                 26
 #define OP_SHARPBRACKET          27
 #define OP_SHARPS                28
 #define OP_SQUOTE                29
@@ -315,6 +315,9 @@
 #define OP_FLITERAL             300
 #define OP_2VARIABLE            301
 #define OP_2CONSTANT            302
+
+#define OP_TOFILE               304
+#define OP_CONSOLE              305
 
 #define OP_NONAME               309
 #define OP_SPACE                310

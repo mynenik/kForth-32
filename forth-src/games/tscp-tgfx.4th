@@ -17,9 +17,11 @@
 \   2007-11-12  km; added help command
 \   2007-11-14  km; revised handling of move output and status info;
 \                   factored out unfinished code.
+\   2020-11-12  km; include ans-words.4th
 
-include tscp
-include chessboard
+include ans-words
+include games/tscp
+include games/chessboard
 
 0 value square
 

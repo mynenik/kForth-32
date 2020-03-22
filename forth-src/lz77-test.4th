@@ -10,14 +10,6 @@ include lz77.4th
 \ Execute a shell command in kForth
 : shell  ( c-addr u -- n ) strpck system ;
 
-\ Parse string containing the EOF text.
-\ Begin reading lines from the input stream and write
-\ each line to the output file identified by fid,
-\ until the EOF text is encountered.
-: << ( fid "eof-text" -- )
-
-;
- 
 \ Write a line to the output file
 : w ( caddr u -- ) out-file @ write-line drop ;
 

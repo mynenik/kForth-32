@@ -53,6 +53,8 @@
 \                   Also fixed bug in R output code, and revised
 \                   R-OUTPUT and PLOT to work on modern Linux
 \                   systems.
+\   2020-03-14  km; added code to validate the pde solution by
+\                   computing the Laplacian in the grid.
 
 include ans-words
 
@@ -171,7 +173,7 @@ defer inside?
 
 
 fvariable tol	\ tolerance for solution
-1e-3 tol f!
+1e-6 tol f!
 
 : converged? ( -- flag | test for convergence between current and last grid)
     GRIDSIZE 0 DO
@@ -224,6 +226,41 @@ fvariable temp
 	f2drop
 ;
 
+\ Compute and return the two terms in the Laplacian 
+\ at row, col, returning 2nd partial derivative w.r.t. x,
+\ and 2nd partial w.r.t. y. Uses 2nd order central 
+\ derivative approximation:
+\ https://en.wikipedia.org/wiki/Finite_difference
+: Del^2 ( row col -- p2col p2row ) 
+    2>r
+    \ 2nd partial along columns
+    grid[[ 2r@ 1+ ]]f@ grid[[ 2r@ ]]f@ 2e f* f-
+    grid[[ 2r@ 1- ]]f@ f+  
+    2r> swap 2>r
+    \ 2nd partial along rows
+    grid[[ 2r@ 1+ swap ]]f@ grid[[ 2r@ swap ]]f@ 2e f* f-
+    grid[[ 2r@ 1- swap ]]f@ f+ 
+    2r> 2drop ;
+
+48 constant INNER_GRIDSIZE
+GRIDSIZE INNER_GRIDSIZE - 2/ 1- constant RC_OFFSET
+fvariable max_partial2_x
+fvariable max_partial2_y
+\ Check validity of solution by computing max abs value of the Laplacian 
+: validate ( -- r )
+    0e fdup max_partial2_x f! max_partial2_y f!
+
+    0e
+    INNER_GRIDSIZE 0 DO
+      INNER_GRIDSIZE 0 DO
+        J RC_OFFSET + I RC_OFFSET + Del^2 
+        f2dup
+        fabs max_partial2_y f@ fmax max_partial2_y f!
+        fabs max_partial2_x f@ fmax max_partial2_x f!
+        f+
+        fabs fmax
+      LOOP
+    LOOP ;
 
 \ Optional script code for generating a contour plot with "R"  
 \ (see www.r-project.org). Also requires a postscript file

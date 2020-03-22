@@ -11,8 +11,8 @@
 \
 \ Notes:
 \
-\  0) The syscalls, "fork", "mmap", and "munmap" are implemented
-\     in syscalls.4th.
+\  0) The syscalls, "fork", "mmap", "munmap", and "waitpid" 
+\     are implemented in syscalls.4th.
 \
 \  1) It is assumed that on a multi-core CPU, the child process is
 \     forked by the OS to use a different core. On a 4-core machine,
@@ -35,14 +35,21 @@
 \                   and parallel process calculations in separate arrays
 \                   for comparison. The code is generalized for an 
 \                   arbitrary number of rows for matrix A{{ .
+\   2017-05-22  km  updated to use the generic matrix multiplication 
+\                   module fsl/extras/mmul.4th; execution speed improved
+\                   from previous version by a factor of 5 with 
+\                   kforth-fast.
 
 include ans-words
 include strings
+include asm-x86
 include modules
 include syscalls
 include fsl/fsl-util
 include fsl/horner
 include fsl/extras/noise
+\ include fsl/extras/mmul
+include fsl/extras/mmul_x86
 
 Also syscalls
 
@@ -80,39 +87,35 @@ NROWS FLOAT ARRAY P{          \ result from parallel processes
 	NCOLS 0 DO  NROWS 0 DO  ran0 A{{ I J }} F!  LOOP  LOOP
 	NCOLS 0 DO  ran0  B{ I } F!  LOOP ;
 
-0 value row
-: mul-row ( nrow -- r )
-        to row
-        0e  NCOLS 0 DO  A{{ row I }} F@ B{ I } F@ F* F+  LOOP ;
-
-\ Use a single process to perform the multiplication one row at a time
+\ Use a single process to perform the multiplication
 : single-process ( -- )
-     NROWS 0 ?DO
-       I mul-row S{ I } f!
-     LOOP
+     \ a1 a2 a3 nr1 nc1 nc2
+     A{{ 0 0 }} B{ 0 } S{ 0 } NROWS NCOLS 1 df_mmul
 ;
 
+2 DFLOATS constant DFL2
+
 : parallel-process ( -- )
-     \ ms@ cr ." Start of parent: " .
+     A{{ 0 0 }} B{ 0 } shared_mem a@ NROWS NCOLS 1 set_mmul_params
+     \ ashared nr1
      fork  dup cpid !
      0< ABORT" Unable to fork!"  
      cpid @ 0= IF
 	\ child  handles multiplication of odd rows of A{{
-        NROWS 1 ?DO
-          \ I 2 mod IF 
-            I mul-row  
-            shared_mem a@ I floats + f!
-          \ THEN
+        swap dfloat+ swap
+        1 ?DO
+          I 0 df_mul_r1c2 2 pick f!
+          DFL2 + 
 	2 +LOOP
+        drop
         bye    
      ELSE
  	\ parent handles multiplication of even rows of A{{ 
-        NROWS 0 ?DO
-          \ I 2 mod 0= IF
-	    I mul-row 
-            shared_mem a@ I floats + f!
-          \ THEN
+        0 ?DO
+	  I 0 df_mul_r1c2 2 pick f!
+          DFL2 +
         2 +LOOP
+        drop
      THEN
 ;
 
@@ -124,7 +127,7 @@ cr .( Initializing the matrices ... )
 init-matrices
 cr .( The matrix A is ) NROWS . .( x ) NCOLS . 
 
-cr cr .( Performing singe process calcualtion. )
+cr cr .( Performing single process calculation. )
 ms@ single-process ms@ swap -
 cr .( Elapsed [ms]: ) .
 
@@ -145,7 +148,7 @@ cpid @ status 0 waitpid cpid @ <>
 cr .( Child process did not terminate properly! )
 [ELSE]
 \ Transfer shared memory to array P{
-shared_mem a@ P{ 0 } NROWS floats move  
+shared_mem a@ P{ 0 } NROWS dfloats move  
 ms@ swap - 
 cr .( Elapsed [ms]: ) . 
 [THEN]
@@ -157,7 +160,7 @@ shared_mem a@ SHARED_LEN free-shared
 [THEN]
 
 \ Compare parallel and serial results
-P{ 0 } S{ 0 } NROWS floats tuck compare
+P{ 0 } S{ 0 } NROWS dfloats tuck compare
 cr .( Parallel result is ) [IF] .( NOT ) [THEN]
 .( equal to single process result. ) cr
 

@@ -462,7 +462,7 @@ void PrintVM_Error (int ec)
     const char *pMsg;
     char elabel[12];
     
-    if ((ei >= 0) * (ei < imax))
+    if ((ei >= 0) && (ei < imax))
     {
 	pMsg = (ec >> 8) ? C_ErrorMessages[ei] : V_ErrorMessages[ei];
 	if (ec >> 8)  strcpy(elabel, "Compiler"); 

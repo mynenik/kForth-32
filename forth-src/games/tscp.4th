@@ -91,22 +91,18 @@ ply      nodes  time score  pv
 \ 2006-03-28  modified ".PIECE" to use @ instead of C@ to 
 \               avoid ENDIAN dependence.  km
 \ 2009-12-12  added definition of NOOP  km
+\ 2020-01-26  removed definitions of [UNDEFINED] , [DEFINED],
+\               CHARS and SPACE ; used fix for 64-bit
+\               systems from more recent fcp.f
+\ 
+\ Requires:
+\   ans-words.4th      
 \ =================================================
 
-
 \ ============= ANS Forth definitions =============
-\ uncomment this section for use with ANS Forth
-(
-: a@ @ ;
-: ?allot HERE SWAP ALLOT ;
-)
+[UNDEFINED] A@ [IF] synonym a@ @ [THEN]
+[UNDEFINED] ?ALLOT [IF] : ?allot HERE SWAP ALLOT ; [THEN]
 \ ============= end ANS Forth definitions =========
-
-\ ============= kForth definitions ================
-\ comment this section out if not using kForth
-: CHARS ;
-: SPACE  BL EMIT ;
-\ ============= end kForth definitions ============
 
 : table ( v1 ... vn n -- )
 	CREATE DUP CELLS ?allot OVER 1- CELLS + SWAP
@@ -257,12 +253,10 @@ VARIABLE fifty          \ fifty move draw count
   CHAR R   CHAR Q   CHAR K   CHAR # 
 8 table symbols
 
-: [DEFINED] ( "word" -- nz ) BL WORD FIND NIP ;
-: [UNDEFINED] ( "word" -- tf ) [DEFINED] 0= ;
 
-\ [UNDEFINED] tolower [IF]
+[UNDEFINED] tolower [IF]
 : tolower ( C -- c ) 20 OR ;   \ standard function?
-\ [THEN]
+[THEN]
 
 : .piece ( piece[+color] -- )
   DUP piece CELLS symbols + @      \ symbol for piece
@@ -347,13 +341,13 @@ No We + CONSTANT NW
 DECIMAL
 0  0  0  -1  -1  -1   0   7 table slides?
 0  0  1  10  15  20  20   7 table offsets
-HEX
  
   0 No NE +  Ea NE +  Ea SE +  So SE + 
  So SW +  We SW +  We NW +  No NW +  0 
  NE  SE  SW  NW  0 
  No  Ea  So  We  0 
  No  NE  Ea  SE  So  SW  We  NW  0 
+HEX
 1D table offset
 
 : pieceSlides? ( piece -- piece tf )
@@ -434,7 +428,7 @@ VARIABLE lkSq   VARIABLE dkSq
 
 \ *** Move Type ***
 
-4 CONSTANT moveSize
+1 CELLS CONSTANT moveSize
 
  1 CONSTANT captureBit
  2 CONSTANT castleBit
@@ -766,9 +760,9 @@ hist_dat HIST_STACK histSize* + ptr histMax
   fifty @ 18 LSHIFT OR          \ fifty move count (7 bits)
   OVER ! CELL+ histTop ! ;
 
-\ [UNDEFINED] CELL- [IF]
+[UNDEFINED] CELL- [IF]
 : CELL- 1 CELLS - ;
-\ [THEN]
+[THEN]
 
 : histPop ( -- capt mv )
   histTop a@
@@ -1377,21 +1371,19 @@ VARIABLE lastScore
 \ More accurate is GetTickCount
 \ Define as appropriate for your Forth dialect
 
-(
+
 [UNDEFINED] ms@ [IF]
   [DEFINED] ?MS [IF]
   : ms@ ?MS ;           \ iForth
   [ELSE]
   [DEFINED] utime [IF]
-  : ms@ utime DROP ;    \ gforth
+  : ms@ utime 1000 um/mod nip ;  \ gforth
   [ELSE]
   5 CONSTANT npms
   : ms@  nodes @ npms / ;
   [THEN] [THEN]
 [THEN]
-)
 
-\ : ms@ ( -- n ) time&date 2drop drop 3600 * swap 60 * + + 1000 * ;
 
 : .searchHeader ." ply    nodes    time score pv" CR ;
 
