@@ -930,7 +930,7 @@ int CPP_dotr ()
   if (nfield <= 0) return 0;  // don't print anything if field with <= 0
 
   n = TOS;
-  u = abs(n);
+  u = labs(n);
   ndig = 1;
   uscale = 1;
   utemp = u;
@@ -944,9 +944,7 @@ int CPP_dotr ()
     }
 
   if (n < 0) *pOutStream << '-';
-  TOS = u;
-  DEC_DSP
-  DEC_DTSP
+  PUSH_IVAL( u );
 
   i = CPP_udot0();
   pOutStream->flush();
@@ -957,19 +955,14 @@ int CPP_dotr ()
 int CPP_udotr ()
 {
   // stack: ( u n -- | print unsigned in field width n )
-
+  if ((GlobalSp+2) > BottomOfStack) return E_V_STK_UNDERFLOW;
   DROP
-  if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
-  
   long int i, ndig, nfield;
-  unsigned long int u, utemp, uscale;
-
   nfield = TOS;
   DROP
-  if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
+  if (nfield <= 0) return 0;  // don't print anything if field width <= 0
 
-  if (nfield <= 0) return 0;  // don't print anything if field with <= 0
-
+  unsigned long int u, utemp, uscale;
   u = TOS;
   ndig = 1;
   uscale = 1;
@@ -981,9 +974,7 @@ int CPP_udotr ()
     {
       for (i = 0; i < (nfield - ndig); i++) *pOutStream << ' ';
     }
-  TOS = u;
-  DEC_DSP
-  DEC_DTSP
+  PUSH_IVAL( u )
 
   i = CPP_udot0();
   pOutStream->flush();
@@ -1042,9 +1033,7 @@ int CPP_uddot ()
 
   if ((GlobalSp + 2) > BottomOfStack) return E_V_STK_UNDERFLOW;
   
-  unsigned long int u1;
-
-  u1 = *(GlobalSp + 1);
+  unsigned long int u1 = *(GlobalSp + 1);
   if (u1 == 0)
     {
       DROP
@@ -1059,7 +1048,23 @@ int CPP_uddot ()
       *pOutStream << ' ';
       pOutStream->flush();
     }
-  
+  return 0;
+}
+//---------------------------------------------------------------
+
+int CPP_uddotr ()
+{
+  if ((GlobalSp + 3) > BottomOfStack) return E_V_STK_UNDERFLOW;
+  DROP
+  long int nfield = TOS;
+  C_bracketsharp();
+  C_sharps();
+  C_sharpbracket();  // ( -- caddr ndig )
+  int ndig = *(GlobalSp + 1);
+  if (ndig <= nfield)
+    for (int i = 0; i < (nfield - ndig); i++) *pOutStream << ' ';
+  CPP_type();
+  pOutStream->flush();
   return 0;
 }
 //---------------------------------------------------------------
@@ -1080,6 +1085,29 @@ int CPP_ddot ()
 	}
       return CPP_uddot();
     }
+  return 0;
+}
+//---------------------------------------------------------------
+
+int CPP_ddotr ()
+{
+  if ((GlobalSp + 3) > BottomOfStack) return E_V_STK_UNDERFLOW;
+  DROP
+  int nfield = TOS;
+  if (nfield <= 0) return 0;  // don't print anything if field width <= 0
+  long int n = *(GlobalSp+1);
+  L_dabs();
+  C_bracketsharp();
+  C_sharps();
+  C_sharpbracket();  // ( -- caddr ndig )
+  int ndig, ntot;
+  ndig = *(GlobalSp + 1);
+  ntot = (n < 0) ? ndig + 1 : ndig;
+  if (ntot <= nfield)
+      for (int i = 0; i < (nfield - ntot); i++) *pOutStream << ' ';
+  if (n < 0) *pOutStream << '-';
+  CPP_type();
+  pOutStream->flush();
   return 0;
 }
 //---------------------------------------------------------------

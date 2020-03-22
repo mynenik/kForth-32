@@ -125,7 +125,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_nop, L_nop, L_nop, L_nop            # 356--359
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
 	   .long L_nop, L_nop, C_fexpm1, C_flnp1      # 364--367
-	   .long L_nop, L_nop, L_f2drop, L_f2dup      # 368--371
+	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup  # 368--371
            .long L_nop, L_nop, L_nop, L_nop           # 372--375
            .long L_nop, L_nop, L_nop, L_nop           # 376--379
            .long L_nop, L_nop, L_nop, L_nop           # 380--383
