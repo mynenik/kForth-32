@@ -14,9 +14,9 @@
 \   K. Myneni, 19 March 2003
 \
 include ans-words
-include fsl-util
-include dynmem
-include runge4
+include fsl/fsl-util
+include fsl/dynmem
+include fsl/runge4
 
 \ With the following constants, the Lorenz equations produce
 \ chaos. A three-dimensional plot of x(t), y(t), z(t) will
