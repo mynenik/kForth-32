@@ -1339,7 +1339,7 @@ L_tuck:
 
 L_pick:
 	LDSP
-	addl $WSIZE, %ebx
+	INC_DSP
 	movl %ebx, %edx
 	movl (%ebx), %eax
 	incl %eax
