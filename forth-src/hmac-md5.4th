@@ -15,11 +15,11 @@
 \   2020-02-06  fixed defn of ]L for ANS-Forth compatibility.  km
 \
 \ ============== kForth requirements =========================
-\ Requires kForth 1.2.2 or later
-include ans-words.4th
-include strings.4th
-include files.4th
-include macro.4th
+\ Requires kForth 1.2.2 or later, and the following libraries:
+\   ans-words.4th
+\   strings.4th
+\   files.4th
+\   macro.4th
 \ ============== end of kForth requirements ===================
 
 \ Code for MACROs has been moved to macro.4th so that it
@@ -337,7 +337,7 @@ a C@ [IF] \ little ENDIAN
 
 : InputFileName  ( -- ior)
   CR  CR  ." Filename: "  PAD  DUP  80  ACCEPT ( adr #)
-  R/O  OPEN-FILE  SWAP  rfileid !  ( ior)
+  R/O BIN OPEN-FILE  SWAP  rfileid !  ( ior)
 ;
 
 : TryAgain?  ( -- ?)
@@ -368,7 +368,7 @@ MACRO MD5trans  " buf[]  MD5  "
     WHILE  TryAgain? IF  EXIT  THEN       \ Not valid, try (not) again
     REPEAT
   ELSE
-    R/O  OPEN-FILE  SWAP  rfileid !
+    R/O BIN OPEN-FILE  SWAP  rfileid !
     ABORT" Invalid input file."
   THEN    
   MD5int				\ Valid file, init transform
