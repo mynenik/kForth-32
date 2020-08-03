@@ -59,7 +59,7 @@ extern "C" {
   void  set_start_time(void);
   void  save_term(void);
   void  restore_term(void);
-  void  strupr (char*);
+  char* strupr (char*);
   char* ExtractName(char*, char*);
   int   IsFloat(char*, double*);
   int   IsInt(char*, int*);

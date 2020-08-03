@@ -68,7 +68,7 @@ extern "C" {
   int CPP_refill();
 
   // Provided by vmc.c
-  void strupr (char*);
+  char* strupr (char*);
   char* ExtractName(char*, char*);
   int   IsFloat(char*, double*);
   int   IsInt(char*, long int*);
