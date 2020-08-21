@@ -864,10 +864,12 @@ F1 DE: FDIVRP,   \  ( -- | Intel Style:  1 = 0 / 1, pop )
 : FSTENV,  ( mem -- | save environment )    FWAIT, FNSTENV, ;
 : FLDENV,  ( mem -- | load environment )    D9 db, 20 OR modDISP, ASM-RESET ;
 
-: FNSTSW,  ( reg/mem -- | save status word) dup AX = IF 20 DF 
+: FNSTSW,  ( reg/mem -- | save status word ) AX = IF 20 DF 
                                 ELSE 3D DD THEN  db, modDISP, ASM-RESET ;
 
-: FSTSW,   ( reg/mem -- | save status word) FWAIT, FNSTSW, ;
+: FSTSW,   ( reg/mem -- | save status word ) FWAIT, FNSTSW, ;
+: FNENI,   ( -- | enable fpu interrupts )  E0 DB db, db, ASM-RESET ;
+: FNDISI,  ( -- | disable fpu interrupts ) E1 DB db, db, ASM-RESET ;
 
 : FLD,     ( st/mem -- ) st? 0= IF    C7 AND D9 db, db, 
                                 ELSE  D9 fsize @ OR db, modDISP, 
