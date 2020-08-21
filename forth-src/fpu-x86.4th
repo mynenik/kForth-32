@@ -56,6 +56,7 @@ HEX
 
 \ --------------------------------------------------------
 variable fpu-control
+variable fpu-status
 
 \ The following CODE words are in kForth's asm-x86 style
 \   Modify as needed for your Forth system.
@@ -66,7 +67,24 @@ END-CODE
 
 CODE setFPUStateX86
        fpu-control #@ fldcw,
-END-CODE 
+END-CODE
+
+CODE getFPUstatusX86
+      fpu-status #@ fnstsw,
+END-CODE
+
+CODE clearFPUexceptionsX86
+      fnclex,
+END-CODE
+
+CODE enableFPUinterruptsX86
+      fneni,
+END-CODE
+
+CODE disableFPUinterruptsX86
+      fndisi,
+END-CODE
+
 \ --------------------------------------------------------
 
 \ Modify the control bits of a given setting, e.g.
