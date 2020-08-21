@@ -864,7 +864,7 @@ F1 DE: FDIVRP,   \  ( -- | Intel Style:  1 = 0 / 1, pop )
 : FSTENV,  ( mem -- | save environment )    FWAIT, FNSTENV, ;
 : FLDENV,  ( mem -- | load environment )    D9 db, 20 OR modDISP, ASM-RESET ;
 
-: FNSTSW,  ( reg/mem -- | save status word) dup AX = IF 20 DF 
+: FNSTSW,  ( reg/mem -- | save status word) AX = IF 20 DF 
                                 ELSE 3D DD THEN  db, modDISP, ASM-RESET ;
 
 : FSTSW,   ( reg/mem -- | save status word) FWAIT, FNSTSW, ;
