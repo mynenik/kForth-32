@@ -41,7 +41,7 @@ fvariable Yn
 
 : integrate ( F: y0 tfinal theta -- y[tfinal] ) ( xt -- flag )
     to Q
-    clearFPUexceptionsX86  
+    CLEAR-ALL-FFLAGS  
     fdup theta f!
     f/ fround>s >r
     Yn f!  
