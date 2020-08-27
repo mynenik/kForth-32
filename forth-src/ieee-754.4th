@@ -1,11 +1,67 @@
 \ ieee-754.4th
 \ 
 \ Provides additional definitions for IEEE 754 double-precision
-\ floating point arithmetic on x87 FPU
+\ floating point arithmetic on x87 FPU.
+\
+\ GLOSSARY:
+\
+\ Generic construction of a double-precision float from its
+\ binary fields:
+\
+\   MAKE-IEEE-DFLOAT ( signbit udfraction uexp -- r nerror )
+\
+\ Binary fields of IEEE 754 floating point values
+\
+\   FSIGNBIT    ( r -- minus? )
+\   FEXPONENT   ( r -- uexp )
+\   FFRACTION   ( r -- udfraction )
+\
+\   FINITE?     ( r -- flag )
+\   FNORMAL?    ( r -- flag )
+\   FSUBNORMAL? ( r -- flag )
+\   FINFINITE?  ( r -- flag )
+\   FNAN?       ( r -- flag )
+\
+\ Exception flag words
+\
+\   GET-FFLAGS  ( excpts -- flags )
+\   CLEAR-ALL-FFLAGS  ( -- )
+\
+\ IEEE 754 special values:
+\
+\   +INF        ( -- r )
+\   -INF        ( -- r )
+\   +NAN        ( -- r )
+\   -NAN        ( -- r )
+\
+\ To be implemented:
+\
+\   FCOPYSIGN     ( r1 r2 -- r3 )
+\   FNEARBYINT    ( r1 -- r2 )
+\   FNEXTUP       ( r1 -- r2 )
+\   FNEXTDOWN     ( r1 -- r2 )
+\   FSCALBN       ( r n -- r*2^n )
+\   FLOGB         ( r -- e )    
+\   FREMAINDER    ( x y -- r q )
+\   CLEAR-FFLAGS  ( excepts -- )
+\   SET-FFLAGS    ( excepts -- )
+\   FENABLE       ( excepts -- )
+\   FDISABLE      ( excepts -- )
+\   
+\
+\ These words are based on the Optional IEEE 754 Binary Floating
+\ Point word set(s) proposed by David N. Williams [1]. A few of 
+\ the words provided here are additional convenience words which
+\ are not part of the proposals in Ref. 1.
 \
 \ K. Myneni, 2020-08-20
 \ Rev. 2020-08-27
-
+\
+\ References:
+\ 1. David N. Williams, Proposal Drafts for Optional IEEE 754
+\    Binary Floating Point Word Set, 27 August 2020.
+\    http://www-personal.umich.edu/~williams/archive/forth/ieeefp-drafts/
+\
 BASE @
 DECIMAL
 0e fconstant F=ZERO
@@ -80,6 +136,8 @@ constant ALL-FEXCEPTS
 : FDISABLE ( excepts -- )
 ;
 
+: FCOPYSIGN ( r1 r2 -- r3 )
+;
 
 : FNEARBYINT ( r1 -- r2 )
 ;
