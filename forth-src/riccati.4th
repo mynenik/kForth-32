@@ -21,6 +21,10 @@
 \    https://people.eecs.berkeley.edu/~wkahan/ieee754status/IEEE754.PDF
 
 include ans-words
+include asm-x86
+include fpu-x86
+include ieee-754
+
 [UNDEFINED] ptr [IF] : ptr create 1 cells ?allot ! does> a@ ; [THEN]
 
 [UNDEFINED] fsquare  [IF] : fsquare fdup f* ;      [THEN]
@@ -35,8 +39,9 @@ include ans-words
 fvariable theta
 fvariable Yn
 
-: integrate ( F: y0 tfinal theta -- y[tfinal] ) ( xt -- )
-    to Q  
+: integrate ( F: y0 tfinal theta -- y[tfinal] ) ( xt -- flag )
+    to Q
+    clearFPUexceptionsX86  
     fdup theta f!
     f/ fround>s >r
     Yn f!  
@@ -45,7 +50,10 @@ fvariable Yn
       fdup I s>f f* 
       Yn f@ Q execute Yn f!
     LOOP 
-    Yn f@ ;
+    Yn f@ 
+    FDIVBYZERO GET-FFLAGS 0<> dup IF
+      ." WARNING: Possible reduced accuracy due to +/-INF!" cr
+    THEN ;
 
 
 \ Heun's second-order Runge-Kutta update formula. In this
@@ -90,13 +98,25 @@ fvariable ry2
    THEN
 ;
 
+1e 0e f/ fconstant +Inf
+: Q3 ( F: theta t Y -- Y[t+theta] )
+    fdup +Inf f= IF fover fs. 2 spaces fdup f. cr THEN
+    ry f! rt f!
+    ry f@ 1e6 f>  ry f@ +Inf f<  and IF
+      fdrop 1e ry f@ fabs f/    \ replace theta with 1/Y
+    THEN
+    rt f@ ry f@ Q2 ;
+
 cr .( Integrate the Riccati equation: ) cr
 cr .(    dy/dt = t + y^2 ; t >= 0; y0 = 0 ) cr
 cr .( Compute y at t = 10. ) cr
 cr .( Integrating with conventional update formula... ) cr
-0e 10e DEF_THETA ' Q_Heun integrate
-.( Result = ) fs. cr
+0e 10e DEF_THETA ' Q_Heun integrate drop
+.( Result = ) fs. cr 
 cr .( Integrating with unconventional update formula... ) cr
-0e 10e DEF_THETA ' Q2 integrate
+0e 10e DEF_THETA ' Q2 integrate drop
+.( Result = ) fs. cr
+cr .( Integrating with infinities in iterates.... ) cr
+0e 10e DEF_THETA ' Q3 integrate drop
 .( Result = ) fs. cr
 
