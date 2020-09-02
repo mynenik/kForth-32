@@ -58,6 +58,7 @@ WordTemplate ForthWords[] =
     { "RESIZE",    OP_RESIZE,       0 },
     { "ALLOT",     OP_ALLOT,        NONDEFERRED },
     { "?ALLOT",    OP_QUERYALLOT,   NONDEFERRED },
+    { "ALLOT?",    OP_QUERYALLOT,   NONDEFERRED },
     { "LITERAL",   OP_LITERAL,      IMMEDIATE },
     { "2LITERAL",  OP_2LITERAL,     IMMEDIATE },
     { "SLITERAL",  OP_SLITERAL,     IMMEDIATE },
