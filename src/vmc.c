@@ -29,6 +29,7 @@ vmc.c
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <malloc.h>
 #include <math.h>
 #include "fbc.h"
 #include "VMerrors.h"
@@ -77,6 +78,7 @@ int vm(byte*);
 
 struct timeval ForthStartTime;
 struct termios tios0;
+struct mallinfo ForthStartMem;
 double* pf;
 double f;
 char temp_str[256];
@@ -1145,6 +1147,25 @@ void set_start_time ()
      used by the initialization routine on startup     */
 
   gettimeofday (&ForthStartTime, NULL);
+}
+
+void set_start_mem ()
+{
+  /* initialize starting memory usage */
+  ForthStartMem = mallinfo();
+}
+
+int C_used ()
+{
+  /* stack: ( -- u | return bytes used since start of Forth ) */
+  unsigned long u0, u1;
+  struct mallinfo mi = mallinfo();
+  u0 = ForthStartMem.uordblks;
+  u1 = mi.uordblks;
+  TOS = (u1 - u0);
+  DEC_DSP
+  STD_IVAL
+  return 0;
 }
 
 int C_msfetch ()

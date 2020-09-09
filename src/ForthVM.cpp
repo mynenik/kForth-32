@@ -59,6 +59,7 @@ extern "C" {
   // functions provided by vmc.c
 
   void  set_start_time(void);
+  void  set_start_mem(void);
   void  save_term(void);
   void  restore_term(void);
   void  strupr (char*);
@@ -105,7 +106,7 @@ extern "C" {
   char TIB[256];
   char NumberBuf[256];
   char ParseBuf[1024];
-
+  unsigned long MemUsed;
 }
 extern "C" long int JumpTable[];
 extern "C" void dump_return_stack(void); 
@@ -293,7 +294,7 @@ WordListEntry* WordList::GetFromCfa (void* cfa)
 Vocabulary::Vocabulary( const char* name )
 {
     int n = strlen(name);
-    char *cp = new char [n+1];
+    char *cp = new char [n+1]; MemUsed += n+1;
     strcpy( cp, name );
     StringTable.push_back(cp);
     Name = cp;
@@ -305,12 +306,12 @@ int Vocabulary::Initialize( WordTemplate wt[], int n )
 
    for (i = 0; i < n; i++)
    {
-     pNewWord = new WordListEntry;   
+     pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
      strcpy(pNewWord->WordName, wt[i].WordName);
      wcode = wt[i].WordCode;
      pNewWord->WordCode = wcode;
      pNewWord->Precedence = wt[i].Precedence;
-     pNewWord->Cfa = new byte[WSIZE+2];
+     pNewWord->Cfa = new byte[WSIZE+2]; MemUsed += WSIZE+2;
      pNewWord->Pfa = NULL;
      byte* bp = (byte*) pNewWord->Cfa;
      if (wcode >> 8) {
@@ -450,6 +451,9 @@ void CloseForth ()
     	}
 	Dictionary.pop_back();
    }
+
+    // Remove the search order
+    SearchOrder.clear();
 
     // Clean up the string table
 
@@ -670,8 +674,8 @@ int CPP_cold ()
 // Create a new empty wordlist
 // Forth 2012 Search-Order Wordset 16.6.1.2460
 int CPP_wordlist()
-{
-    Vocabulary* pVoc = new Vocabulary(""); // create an unnamed vocabulary
+{   // create an unnamed vocabulary
+    Vocabulary* pVoc = new Vocabulary(""); MemUsed += sizeof(Vocabulary);
     PUSH_ADDR( (long int) pVoc )
     Dictionary.push_back(pVoc); 
     return 0;
@@ -757,7 +761,7 @@ int CPP_searchwordlist()
     CHK_ADDR
     char* cp = (char*) TOS;
     if (len > 0) {
-      char* name = new char [len+1];
+      char* name = new char [len+1]; MemUsed += len+1;
       strncpy(name, cp, len);
       name[len] =  0;
       strupr(name);
@@ -790,12 +794,13 @@ int CPP_vocabulary()
 {
     CPP_create();
     WordListEntry* pWord = *(pCompilationWL->end() - 1);
-    Vocabulary* pVoc = new Vocabulary(pWord->WordName);
+    Vocabulary* pVoc = new Vocabulary(pWord->WordName); 
+    MemUsed += sizeof(Vocabulary);
     Dictionary.push_back(pVoc);
 
     pWord->Precedence = PRECEDENCE_NON_DEFERRED;
     pWord->Pfa = NULL;
-    byte* bp = new byte[3*WSIZE+6];
+    byte* bp = new byte[3*WSIZE+6]; MemUsed += 3*WSIZE+6;
     pWord->Cfa = bp;
     pWord->WordCode = OP_DEFINITION;
     
@@ -976,7 +981,7 @@ int CPP_create ()
 
     if (nc)
     {
-      pNewWord = new WordListEntry;
+      pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
       strupr(token);
       strcpy (pNewWord->WordName, token);
       pNewWord->WordCode = OP_ADDR;
@@ -1013,7 +1018,7 @@ int CPP_colon()
     State = TRUE;
     pTIB = ExtractName (pTIB, WordToken);
     strupr(WordToken);
-    pNewWord = new WordListEntry;
+    pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
     strcpy (pNewWord->WordName, WordToken);
     pNewWord->WordCode = OP_DEFINITION;
     pNewWord->Precedence = PRECEDENCE_NONE;
@@ -1044,7 +1049,7 @@ int CPP_semicolon()
 
       if (debug) OutputForthByteCode (pCurrentOps);
       int nalloc = max( (int) pCurrentOps->size(), 2*WSIZE );
-      byte* lambda = new byte[ nalloc ];
+      byte* lambda = new byte[ nalloc ]; MemUsed += nalloc;
       void* pLambda;
 
       if (pNewWord) {
@@ -1060,7 +1065,7 @@ int CPP_semicolon()
       }
       else {
         // noname definition
-        pLambda = new byte* ;
+        pLambda = new byte* ; MemUsed += sizeof(byte*);
         *((byte**) pLambda) = lambda;
         PUSH_ADDR( (long int) pLambda )
       }
@@ -1760,7 +1765,7 @@ int CPP_allocate()
 #endif
 
   unsigned long requested = TOS;
-  byte *p = new (nothrow) byte[requested];
+  byte *p = new (nothrow) byte[requested]; MemUsed += requested;
   PUSH_ADDR( (long int) p )
   PUSH_IVAL( p ? 0 : -1 )
   return 0;
@@ -1822,11 +1827,11 @@ int CPP_allot ()
     {
       if (pWord->Pfa == NULL)
 	{ 
-	  pWord->Pfa = new byte[n];
+	  pWord->Pfa = new byte[n]; MemUsed += n;
 	  if (pWord->Pfa) memset (pWord->Pfa, 0, n); 
 
 	  // Provide execution code to the word to return its Pfa
-  	  byte *bp = new byte[WSIZE+2];
+  	  byte *bp = new byte[WSIZE+2]; MemUsed += WSIZE+2;
   	  pWord->Cfa = bp;
   	  bp[0] = OP_ADDR;
   	  *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -1870,7 +1875,7 @@ int CPP_alias ()
     if (pWord) {
       CPP_create();
       WordListEntry* pLastWord = *(pCompilationWL->end() - 1);
-      byte* bp = new byte[WSIZE+2];
+      byte* bp = new byte[WSIZE+2]; MemUsed += WSIZE+2;
       pLastWord->Cfa = bp;
       pLastWord->Pfa = NULL;
       pLastWord->Precedence = pWord->Precedence;
@@ -1923,9 +1928,9 @@ int CPP_constant ()
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   DROP
   pWord->WordCode = IS_ADDR ? OP_PTR : OP_IVAL;
-  pWord->Pfa = new long int[1];
+  pWord->Pfa = new long int[1]; MemUsed += sizeof(long);
   *((long int*) (pWord->Pfa)) = TOS;
-  byte *bp = new byte[WSIZE+3];
+  byte *bp = new byte[WSIZE+3]; MemUsed += WSIZE+3;
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -1942,12 +1947,12 @@ int CPP_twoconstant ()
   if (CPP_create()) return E_V_CREATE;
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   pWord->WordCode = OP_2VAL;
-  pWord->Pfa = new long int[2];
+  pWord->Pfa = new long int[2]; MemUsed += 2*sizeof(long);
   DROP
   *((long int*) pWord->Pfa) = TOS;
   DROP
   *((long int*) pWord->Pfa + 1) = TOS;
-  byte *bp = new byte[WSIZE+3];
+  byte *bp = new byte[WSIZE+3]; MemUsed += WSIZE+3;
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -1963,11 +1968,11 @@ int CPP_fconstant ()
   if (CPP_create()) return E_V_CREATE;
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   pWord->WordCode = OP_FVAL;
-  pWord->Pfa = new double[1];
+  pWord->Pfa = new double[1]; MemUsed += sizeof(double);
   DROP
   *((double*) (pWord->Pfa)) = *((double*)GlobalSp);
   DROP
-  byte *bp = new byte[WSIZE+3];
+  byte *bp = new byte[WSIZE+3]; MemUsed += sizeof(WSIZE+3);
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -2074,7 +2079,7 @@ int CPP_tofile ()
       strcpy (filename, DEFAULT_OUTPUT_FILENAME);
       // cout << "Output redirected to " << filename << '\n';
     }
-  ofstream *pFile = new ofstream (filename);
+  ofstream *pFile = new ofstream (filename); MemUsed += sizeof(ofstream);
   if (! pFile->fail())
     {
       if (FileOutput)
@@ -2156,7 +2161,7 @@ int CPP_sliteral ()
   // If string is not already in the string table, put it there
   if (! InStringTable(cp-1)) 
   {
-    char* str = new char[u + 1];
+    char* str = new char[u + 1]; MemUsed += u+1;
     strncpy(str, cp, u);
     str[u] = '\0';
     StringTable.push_back(str);
@@ -2190,7 +2195,7 @@ int CPP_cquote ()
     }
   pTIB = end_string + 1;
   int nc = (int) (end_string - begin_string);
-  char* str = new char[nc + 2];
+  char* str = new char[nc + 2]; MemUsed += nc+2;
   *((byte*)str) = (byte) nc;
   strncpy(str+1, begin_string, nc);
   str[nc+1] = '\0';
@@ -2348,7 +2353,7 @@ int CPP_abortquote ()
   int nc;
   if (pNewWord) {
     nc = strlen(pNewWord->WordName);
-    str = new char[nc + 3];
+    str = new char[nc + 3]; MemUsed += nc+3;
     strcpy(str, pNewWord->WordName);
     strcat(str, ": ");
     StringTable.push_back(str);
@@ -2616,7 +2621,7 @@ int CPP_does()
 {
   // Allocate new opcode array
 
-  byte* p = new byte[2*WSIZE+4];
+  byte* p = new byte[2*WSIZE+4]; MemUsed += 2*WSIZE+4;
 
   // Insert pfa of last word in dictionary
 
@@ -2678,7 +2683,7 @@ int CPP_evaluate ()
 	  istringstream* pSS = NULL;
 	  istream* pOldStream = pInStream;  // save old input stream
 	  strcpy (s2, pTIB);  // save remaining part of input line in TIB
-	  pSS = new istringstream(s);
+	  pSS = new istringstream(s); MemUsed += sizeof(istringstream);
 	  SetForthInputStream(*pSS);
 	  vector<byte> op, *pOps, *pOldOps;
 	  
