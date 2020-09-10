@@ -18,6 +18,7 @@
 \ 	PARSE_TOKEN ( a u -- a2 u2 a3 u3 )
 \ 	PARSE_LINE  ( a u -- a1 u1 a2 u2 ... an un n )
 \ 	PARSE_ARGS  ( a u -- r1 ... rn n )
+\       PARSE_CSV   ( a u -- r1 ... rn n )
 \
 \ 	IS_LC_ALPHA ( c -- b )
 \ 	ISDIGIT     ( c -- b )
@@ -315,6 +316,9 @@ variable  fnumber_digits
 	  1+ >r 2>r
 	REPEAT
 	2r> 2drop r> ;
+
+: parse_csv ( a u -- r1 ... rn n )
+    [char] , bl replace-char parse_args ;
 
 BASE !
 
