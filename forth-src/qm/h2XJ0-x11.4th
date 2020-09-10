@@ -26,7 +26,7 @@
 \   2016-06-04  km  updated path to simple-graphics-x11.4th.
 \   2017-07-26  km  modified include statements.
 
-include h2XJ0.4th
+include qm/h2XJ0.4th
 include lib-interface
 include libs/x11/libX11
 include x11/simple-graphics-x11
