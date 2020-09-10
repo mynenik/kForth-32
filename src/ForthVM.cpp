@@ -1846,7 +1846,7 @@ int CPP_allot ()
   return 0;
 }
 
-// ?ALLOT  ( n -- a )
+// ALLOT?  ( n -- a )
 // Perform ALLOT and return starting address of allotted region.
 // Non-standard
 int CPP_queryallot ()
@@ -2023,7 +2023,11 @@ int CPP_myname()
 }
 
 //-------------------------------------------------------------------
-
+// FORGET  ( "<spaces>name" -- )
+// Parse "name", find "name" in the compilation wordlist, then delete 
+//   "name" from the dictionary along with all words added to the 
+//   compilation wordlist after "name".
+// Forth 2012 Tools Extensions Wordset 15.6.2.1580
 int CPP_forget ()
 {
   char token[128];
