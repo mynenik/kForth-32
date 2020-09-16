@@ -737,6 +737,7 @@ Public:
 32bit? [IF]
 : mmap2      ( addr  nlength  nprot  nflags  nfd  noffset -- n ) 
     NR_MMAP2 syscall6 ; [THEN]
+: mprotect   ( addr nlen nprot -- n ) NR_MPROTECT syscall3 ;
 : munmap     ( addr nlen -- n )  NR_MUNMAP syscall2 ;
 : msync      ( addr nlen nflags -- n )  NR_MSYNC syscall3 ;
 : mlock      ( addr nlen -- n )  NR_MLOCK syscall2 ;
