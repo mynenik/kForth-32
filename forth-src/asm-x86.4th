@@ -98,11 +98,6 @@
 
 ALSO ASSEMBLER DEFINITIONS
 
-: ASM-ALLOT? ( u -- addr )
-    MC-Here over ?PageCross IF MC-Here NextPage to MC-Here THEN
-    MC-Here dup MY-NAME NAME>INTERPRET CELL+ !  \ kforth32 2.x specific 
-    tuck + to MC-Here ;
-
 BASE @
 HEX    
 : OCTAL 8 BASE ! ; nondeferred
@@ -938,7 +933,7 @@ VARIABLE CODE-STACK-PTR
 
 : SIZED-CODE ( n -- )
         ALSO ASSEMBLER
-	CREATE IMMEDIATE ASM-ALLOT? ASM-TO
+	CREATE IMMEDIATE MC-Allot? ASM-TO
 	  TCELL # EBX ADD,
 	DOES> 
 	  POSTPONE LITERAL

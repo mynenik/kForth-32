@@ -21,6 +21,8 @@
 
 include ans-words
 include modules
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface

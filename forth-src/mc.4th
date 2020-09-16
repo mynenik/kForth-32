@@ -26,12 +26,12 @@ PAGESIZE 1- invert constant PAGEMASK
 : NextPage ( a1 -- a2 )  PAGEMASK and PAGESIZE + ;
 
 \ Machine code buffer will be a multiple of PAGESIZE bytes
-8    constant MC_NPAGES
-PAGESIZE MC_NPAGES * constant MC_BUF
+16    constant MC_NPAGES
+PAGESIZE MC_NPAGES * constant MC_BUFSIZE
 0 ptr MC-Here0
 
 \ Allocate buffer 
-0 MC_BUF PROT_READ PROT_WRITE or MAP_ANONYMOUS MAP_SHARED or
+0 MC_BUFSIZE PROT_READ PROT_WRITE or MAP_ANONYMOUS MAP_SHARED or
 -1 0 mmap to MC-Here0
 
 MC-Here0 -1 = [IF]
@@ -40,6 +40,11 @@ MC-Here0 -1 = [IF]
 [THEN]
 
 MC-Here0 ptr MC-Here
+
+: MC-Allot? ( u -- addr )
+    MC-Here over ?PageCross IF MC-Here NextPage to MC-Here THEN
+    MC-Here dup MY-NAME NAME>INTERPRET CELL+ !  \ kforth32 2.x specific
+    tuck + to MC-Here ;
 
 \ flag_rw = TRUE,  the page is allowed read-executable
 \ flag_rw = FALSE, the page is read-writable
@@ -50,6 +55,7 @@ MC-Here0 ptr MC-Here
     mprotect 0= ;
 
 BASE !
+Previous
  
 
 
