@@ -10,6 +10,9 @@
 \   2017-05-03  km  regular grid layout for alphabet
 
 include ans-words
+include modules
+include syscalls
+include mc
 include asm
 include strings
 include files

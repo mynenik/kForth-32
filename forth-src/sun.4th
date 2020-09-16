@@ -39,9 +39,9 @@
 \   1. Original code and documentation may be found in 
 \      http://quartus.net/files/PalmOS/Forth/Examples/sun.zip
 
-\ Definitions for JD ?ALLOT FTUCK F>S FROUND>S
+\ Definitions for JD ALLOT? FTUCK F>S FROUND>S
 [UNDEFINED] JD [IF] s" jd.4th" included [THEN]
-[UNDEFINED] ?ALLOT [IF] : ?allot here swap allot ; [THEN]
+[UNDEFINED] ALLOT? [IF] : allot? here swap allot ; [THEN]
 [UNDEFINED] FTUCK [IF] 
 : ftuck ( ra rb -- rb ra rb )  fswap fover ;
 [THEN]
@@ -188,7 +188,7 @@ DEFAULT_TIMEZONE set-timezone
 
 \ Builds zenith-setting word.
 : zenith: ( r -- )
-  create  ( here f!)  1 dfloats ?allot f!
+  create  ( here f!)  1 dfloats allot? f!
   does> ( -- )  f@ set-zenith ;
 
 90.83333e  zenith:  official-zenith
