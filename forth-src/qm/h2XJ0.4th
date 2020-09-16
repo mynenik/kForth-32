@@ -76,10 +76,12 @@
 \
 
 include ans-words
+include modules
+include syscalls
+include mc
 include asm
 include fpu-x86
 include strings
-include modules
 include fsl/fsl-util
 include fsl/dynmem
 include fsl/polrat

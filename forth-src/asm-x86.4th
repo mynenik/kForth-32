@@ -122,10 +122,7 @@ variable OUTPUT \ 0=memory, 1=blocks
 ( Assemble to memory -- ORG = start address, by default)
 
 \ : ASM-TO ( a -- ) DUP ORG  ASM0 !  0 >ASM !  0 OUTPUT ! ;
-: ASM-TO ( a -- )
-    DUP FALSE MC-Executable invert 
-    ABORT" Cannot make machine code buffer read/write!" 
-    DUP ASM0 !  0 >ASM ! ORG 0 OUTPUT ! ;
+: ASM-TO ( a -- )   DUP ASM0 !  0 >ASM ! ORG 0 OUTPUT ! ;
 : MEM-db! ( n ta -) ASM0 a@ + C! ;
 
 HEX
@@ -933,7 +930,10 @@ VARIABLE CODE-STACK-PTR
 
 : SIZED-CODE ( n -- )
         ALSO ASSEMBLER
-	CREATE IMMEDIATE MC-Allot? ASM-TO
+	CREATE IMMEDIATE MC-Allot?
+        DUP FALSE MC-Executable invert 
+        ABORT" Failed to make CODE memory (read/write)able!" 
+        ASM-TO
 	  TCELL # EBX ADD,
 	DOES>
           a@ 
