@@ -742,7 +742,6 @@ Public:
 : msync      ( addr nlen nflags -- n )  NR_MSYNC syscall3 ;
 : mlock      ( addr nlen -- n )  NR_MLOCK syscall2 ;
 : munlock    ( addr nlen -- n ) NR_MUNLOCK syscall2 ;
-: mprotect   ( addr nlen nprot -- n ) NR_MPROTECT syscall3 ;
 : mlockall   ( nflags -- n ) NR_MLOCKALL syscall1 ;
 : munlockall ( -- n )  NR_MUNLOCKALL syscall0 ;
 : mremap     ( aoldaddress noldsize nnewsize nflags -- anewmem ) 
