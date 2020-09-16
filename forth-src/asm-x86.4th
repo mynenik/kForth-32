@@ -952,7 +952,7 @@ VARIABLE CODE-STACK-PTR
 	ASM-RESET PREVIOUS ;
 
 : CALL-CODE ( -- | use to call another CODE word from inside a CODE word)
-    ' >BODY TCELL + 2+  \ skip prefix assembly code for advancing EBX
+    ' >BODY a@ TCELL + 2+  \ skip prefix assembly code for advancing EBX
     #   CALL,
 ;
 
