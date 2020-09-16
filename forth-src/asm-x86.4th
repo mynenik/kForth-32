@@ -78,29 +78,30 @@
 \                 between the FPU register and memory  KM
 \  2009-09-26  removed definition of WITHIN  KM
 \  2009-10-05  re-enable use of wordlists; updated CODE, END-CODE, MACRO, and END-MACRO  KM
+\  2020-09-15  requires modules.4th, syscalls.4th, and mc.4th
 \
 \ Version Specific Notes:
 \ ----------------------
 \
 \ 1. Output Options 1 and 3 are not relevant for the kForth version.
 \
-\ 2. This version may be used in other ANS Forths with the
-\      following compatibility definitions:
-\
-\	: a@ @ ;
-\	: ?allot here swap allot ;
-\
-\      A word such as kForth's CALL, which calls machine code,
-\      is also required.
+\ 2. This version makes use of system-specific knowledge of kForth,
+\    and hence requires some effort to port to other Forth systems.
+\    Contact krishna.myneni@ccreweb.org for advice.
 \
 \ 3. Currently, any values placed on top of the stack from a
-\      CODE word get clobbered on return to Forth, due to
-\      specific implementation of CODE. However, values may be 
-\      dropped, or the number of stack items can remain unchanged 
-\      in which case the values may be changed. See asm-x86-test.4th
-\      for examples.
+\    CODE word get clobbered on return to Forth, due to
+\    specific implementation of CODE. However, values may be 
+\    dropped, or the number of stack items can remain unchanged 
+\    in which case the values may be changed. See asm-x86-test.4th
+\    for examples.
 
 ALSO ASSEMBLER DEFINITIONS
+
+: ASM-ALLOT? ( u -- addr )
+    MC-Here over ?PageCross IF MC-Here NextPage to MC-Here THEN
+    MC-Here dup MY-NAME NAME>INTERPRET CELL+ !  \ kforth32 2.x specific 
+    tuck + to MC-Here ;
 
 BASE @
 HEX    
@@ -125,8 +126,11 @@ variable OUTPUT \ 0=memory, 1=blocks
 
 ( Assemble to memory -- ORG = start address, by default)
 
-\ : ASM-TO ( a -) DUP ORG  ASM0 !  0 >ASM !  0 OUTPUT ! ;
-: ASM-TO ( a -) DUP ASM0 !  0 >ASM ! ORG 0 OUTPUT ! ;
+\ : ASM-TO ( a -- ) DUP ORG  ASM0 !  0 >ASM !  0 OUTPUT ! ;
+: ASM-TO ( a -- )
+    DUP FALSE MC-Executable invert 
+    ABORT" Cannot make machine code buffer read/write!" 
+    DUP ASM0 !  0 >ASM ! ORG 0 OUTPUT ! ;
 : MEM-db! ( n ta -) ASM0 a@ + C! ;
 
 HEX
@@ -934,7 +938,7 @@ VARIABLE CODE-STACK-PTR
 
 : SIZED-CODE ( n -- )
         ALSO ASSEMBLER
-	CREATE IMMEDIATE ?allot ASM-TO
+	CREATE IMMEDIATE ASM-ALLOT? ASM-TO
 	  TCELL # EBX ADD,
 	DOES> 
 	  POSTPONE LITERAL
@@ -947,6 +951,8 @@ VARIABLE CODE-STACK-PTR
 : END-CODE       
 	EBX CODE-STACK-PTR #@ MOV,    \ update stack ptr
 	RET,
+        ASM0 a@ TRUE MC-Executable invert
+        ABORT" Failed to make CODE word executable!"
 	ASM-RESET PREVIOUS ;
 
 : CALL-CODE ( -- | use to call another CODE word from inside a CODE word)
@@ -969,7 +975,8 @@ ALSO FORTH DEFINITIONS
 
 : MACRO: ( -- | define a macro)
         ALSO ASSEMBLER
-	CREATE TINYCODESIZE CELL+ ?allot CELL+ ASM-TO
+	CREATE TINYCODESIZE CELL+ 
+        ALLOT? CELL+ ASM-TO
 	DOES> ( a -- )
 	  DUP @ SWAP CELL+ SWAP
 	  0 ?DO DUP C@ db, 1+ LOOP DROP ;
