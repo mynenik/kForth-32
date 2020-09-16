@@ -41,9 +41,10 @@ MC-Here0 -1 = [IF]
 
 MC-Here0 ptr MC-Here
 
+\ Use of MC-Allot? must be paired with CREATE
 : MC-Allot? ( u -- addr )
     MC-Here over ?PageCross IF MC-Here NextPage to MC-Here THEN
-    MC-Here dup MY-NAME NAME>INTERPRET CELL+ !  \ kforth32 2.x specific
+    MC-Here dup 1 cells allot? !
     tuck + to MC-Here ;
 
 \ flag_rw = TRUE,  the page is allowed read-executable

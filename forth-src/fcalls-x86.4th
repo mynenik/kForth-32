@@ -9,7 +9,7 @@
 \ (LGPL).
 \
 \ Requires:
-\   ans-words, asm-x86
+\   ans-words, modules, syscalls, mc, asm-x86
 \
 \ Revisions:
 \   2009-10-02  km  created

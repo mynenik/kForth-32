@@ -85,9 +85,9 @@
 \
 \ 1. Output Options 1 and 3 are not relevant for the kForth version.
 \
-\ 2. This version makes use of system-specific knowledge of kForth,
-\    and hence requires some effort to port to other Forth systems.
-\    Contact krishna.myneni@ccreweb.org for advice.
+\ 2. This version may be ported to other ANS-Forth systems which
+\    provide a way to call machine code at a given address, and
+\    provide MMAP and MPROTECT or equivalent system words.
 \
 \ 3. Currently, any values placed on top of the stack from a
 \    CODE word get clobbered on return to Forth, due to
@@ -245,7 +245,7 @@ HEX
  
 ( REPEAT, and AGAIN are defined after JMP, )
 
-: opc ( opcode -) ( - opcode) CREATE 1 ?allot C! DOES> C@ ;
+: opc ( opcode -) ( - opcode) CREATE 1 allot? C! DOES> C@ ;
 
 73 opc CS,
 75 opc 0=,  
@@ -274,7 +274,7 @@ HEX
   FF AND ( low byte)  ;
 
 
-: r/m ( n -) ( disp - n)  CREATE 1 CELLS ?allot !
+: r/m ( n -) ( disp - n)  CREATE 1 CELLS allot? !
 	DOES> @ <reg> 2 F-CLR ( D) SWAP DISP !  ;
 
 \ high byte = flags, low byte=reg
@@ -309,7 +309,7 @@ OCTAL
 \ Index registers: (s-i-b, r/m=100)
 
 HEX
-: idx ( n -) ( - n)  CREATE 1 CELLS ?allot ! DOES> @
+: idx ( n -) ( - n)  CREATE 1 CELLS allot? ! DOES> @
 	SIB @ 1 AND if ABORT" Index reg defined twice!"
 	else FF AND SIB ! then ;
 
@@ -331,7 +331,7 @@ OCTAL
 
 
 HEX
-: reg ( 000a00ew00rrr000 -) ( - 0000000000rrr000)  CREATE 1 CELLS ?allot !
+: reg ( 000a00ew00rrr000 -) ( - 0000000000rrr000)  CREATE 1 CELLS allot? !
   DOES>
     #OPS @ 1 = if 101 F-GET  SRCSIZ ! then   \ needed for MOVSX, and MOVZX,
     101 F-CLR
@@ -369,7 +369,7 @@ OCTAL
     60 reg DH       
     70 reg BH
 
-: seg ( n -) ( -n)  CREATE 1 CELLS ?allot ! DOES> @ <reg> 2 F-SET ( D) ;
+: seg ( n -) ( -n)  CREATE 1 CELLS allot? ! DOES> @ <reg> 2 F-SET ( D) ;
 
 4400 seg ES   
 4410 seg CS   
@@ -381,7 +381,7 @@ OCTAL
 \ Debugging routine: .F (show flags, etc.)
 HEX
 
-CREATE F$ 8 ?allot
+CREATE F$ 8 allot?
 char O over c! 1+
 char M over c! 1+
 char I over c! 1+
@@ -442,7 +442,7 @@ char W swap c!
 \ prefix instructions
 OCTAL
 
-: PFX CREATE 1 ?allot C! DOES> C@ db, ;
+: PFX CREATE 1 allot? C! DOES> C@ db, ;
 
  46 PFX ES:  
  56 PFX CS:  
@@ -465,7 +465,7 @@ OCTAL
 
 \ one-byte opcodes with no operands
 
-: M1 ( n -) ( -)  CREATE 1 CELLS ?allot ! DOES> @ db, ASM-RESET ;
+: M1 ( n -) ( -)  CREATE 1 CELLS allot? ! DOES> @ db, ASM-RESET ;
 
 OCTAL
  47 M1 DAA,      
@@ -505,7 +505,7 @@ OCTAL
 HEX
 ( ALU instructions with 2 operands, like ADD )
 
-: M2 ( n -) ( various -)   CREATE 1 CELLS ?allot !
+: M2 ( n -) ( various -)   CREATE 1 CELLS allot? !
   DOES> (OPSIZ)  @ >R  IMM? if
     ACC? if   DROP  R> orW 4 OR db,
          else 1REG? if R>M then  80 orW db,
@@ -547,7 +547,7 @@ HEX
 \ MOVZX, MOVSX, -- zero extend / sign extend
 
 : MX ( n -) ( r/m reg -)
-  CREATE 2 ?allot SWAP OVER C! 1+ C! DOES> (OPSIZ)
+  CREATE 2 allot? SWAP OVER C! 1+ C! DOES> (OPSIZ)
   SRCSIZ @ 100 AND if ABORT" Attempt to extend a dword" then
   DUP CHAR+ C@ db,  C@ SRCSIZ @ OR db,
   2REGS? if SWAP R>M then  OR modDISP,
@@ -561,7 +561,7 @@ HEX
 \ String instructions -- all 1-byte opcodes with W bit
 
 : M3 ( n -) ( reg -)
-	CREATE 1 CELLS ?allot ! DOES> (OPSIZ) @ orW db, ASM-RESET ;
+	CREATE 1 CELLS allot? ! DOES> (OPSIZ) @ orW db, ASM-RESET ;
 
 OCTAL
 246 M3 CMPS, 
@@ -575,7 +575,7 @@ OCTAL
 
 OCTAL
 
-: M4 ( n -) ( -)  CREATE 1 cells ?allot !
+: M4 ( n -) ( -)  CREATE 1 cells allot? !
   DOES> (OPSIZ)  @  366 orW db, SWAP
   1REG? if R>M then OR modDISP,  ASM-RESET ;
 
@@ -594,7 +594,7 @@ OCTAL
 OCTAL
 
 : M5 ( n -) ( -)       \ TBD: fix if broken; add LFS/LGS/LSS
-  CREATE 1 ?allot C! DOES> (OPSIZ)  C@  db, OR modDISP, ASM-RESET  ;
+  CREATE 1 allot? C! DOES> (OPSIZ)  C@  db, OR modDISP, ASM-RESET  ;
 
 215 M5 LEA,  
 304 M5 LES,  
@@ -604,7 +604,7 @@ OCTAL
 \ Note: To shift by CL, omit first operand
 
 OCTAL
-: M6 ( n -) ( n# r/m | r/m - )  CREATE 1 CELLS ?allot !
+: M6 ( n -) ( n# r/m | r/m - )  CREATE 1 CELLS allot? !
   DOES> (OPSIZ)  @
   320  IMM? if  3 PICK 1 <> 20 AND XOR  else  2 OR  then
   orW db,
@@ -624,7 +624,7 @@ OCTAL
 \ INC, DEC instructions
 OCTAL
 
-: M7 ( opc -) ( reg | r/m - )  CREATE 1 CELLS ?allot !
+: M7 ( opc -) ( reg | r/m - )  CREATE 1 CELLS allot? !
   DOES> (OPSIZ)  @ SWAP  1REG? if ( opc reg) R>M then
   1REG?  WORD? AND  ( full-size register?)
   if ( opc rX)  OR 100 OR db,
@@ -639,7 +639,7 @@ OCTAL
 \ PUSH, POP instructions
 HEX
 
-: M8 ( n -) ( reg | seg | r/m -)  CREATE 1 CELLS ?allot !
+: M8 ( n -) ( reg | seg | r/m -)  CREATE 1 CELLS allot? !
   DOES> @  8 ( G) F-GET
   if ( seg opc) OVER 20 AND
     if   ( sreg3) 0F db,  4 RSHIFT 1 AND 1 XOR  80 OR  OR db,
@@ -658,7 +658,7 @@ FF30 M8 PUSH,
 \ IN, OUT instructions
 OCTAL
 
-: M9 ( n -) ( n# r1 | r1 -)  CREATE 1 CELLS ?allot !
+: M9 ( n -) ( n# r1 | r1 -)  CREATE 1 CELLS allot? !
   DOES> @  (OPSIZ) orW NIP
     IMM? if ( n# opc)  db, ( n#) else ( opc) 10 OR then db,
     ASM-RESET  ;
@@ -731,8 +731,8 @@ OCTAL
 : INVD,		17 db, 10 db, ;
 : WBINVD,	17 db, 11 db, ;
 
-: LABEL: ( "name" -) ( - a) CREATE $ 1 CELLS ?allot ! DOES> a@ ;
-: LABEL' ( "name" -) ( - a) CREATE $' 1 CELLS ?allot ! DOES> a@ ;
+: LABEL: ( "name" -) ( - a) CREATE $ 1 CELLS allot? ! DOES> a@ ;
+: LABEL' ( "name" -) ( - a) CREATE $' 1 CELLS allot? ! DOES> a@ ;
 
 : JMP-FROM ( "name" -) 351 db,  LABEL'  0 dc, ;
 : JMP-TO ( a -)
@@ -795,8 +795,8 @@ Variable fsize
 
 D9 PFX D9,
 DE PFX DE,   
-: D9: Create 1 CELLS ?allot c! DOES> D9, c@ db, ASM-RESET ;
-: DE: Create 1 CELLS ?allot c! DOES> DE, c@ db, ASM-RESET ;
+: D9: Create 1 CELLS allot? c! DOES> D9, c@ db, ASM-RESET ;
+: DE: Create 1 CELLS allot? c! DOES> DE, c@ db, ASM-RESET ;
 
 \ Some floating point instructions with no operands.
 
@@ -814,7 +814,7 @@ FC D9: FRNDINT,  FD D9: FSCALE,   FE D9: FSIN,     FF D9: FCOS,
 \ Single operand floating point instructions; operand may be a
 \   memory address, indirect register reference, or an fpu
 \   stack register.
-: fop:  ( n -- ) CREATE 1 CELLS ?allot C! 
+: fop:  ( n -- ) CREATE 1 CELLS allot? C! 
 	         DOES> ( reg/mem/st -- ) C@ >R
 	           st? 0= IF  C7 AND R> OR D8 db, db,
 	           ELSE  R> OR D8 
@@ -935,7 +935,8 @@ VARIABLE CODE-STACK-PTR
         ALSO ASSEMBLER
 	CREATE IMMEDIATE MC-Allot? ASM-TO
 	  TCELL # EBX ADD,
-	DOES> 
+	DOES>
+          a@ 
 	  POSTPONE LITERAL
 	  POSTPONE CALL               
 	  CODE-STACK-PTR 
