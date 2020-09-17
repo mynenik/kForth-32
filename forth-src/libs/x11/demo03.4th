@@ -6,14 +6,15 @@
 \
 \  This code may be used as a prototype for displaying gray scale images.
 \
-\ Copyright (c) 2009 Krishna Myneni, Creative Consulting for Research & Education
-\ krishna.myneni@ccreweb.org
+\  Copyright (c) 2009--202 Krishna Myneni
 \
-\ This program is released under the GNU Lesser General Public License (LGPL)
-\ Revisions:
-\   2012-05-04  km  Added statement: Also X11
+\  This program may be used for any purpose as long as the copyright
+\  notice above is preserved. 
 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface

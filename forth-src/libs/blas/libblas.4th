@@ -2,8 +2,7 @@
 \
 \ Interface to the Fortran BLAS shared object library
 \
-\ Krishna Myneni, Creative Consulting for Research & Education
-\ krishna.myneni@ccreweb.org
+\ Krishna Myneni, krishna.myneni@ccreweb.org
 \
 \ Notes:
 \
@@ -46,16 +45,15 @@
 \     for the individual BLAS functions appear to be hard to find.
 \
 \ Requires:
-\   ans-words.4th, asm.4th, strings.4th, lib-interface.4th
 \
-\ Revisions:
-\   2009-10-11  km  created
-\   2009-11-02  km  commented out BLAS routines which are Fortran
-\                   functions, for the present; revised notes.
-\   2009-11-18  km  fixed return type specification: "d" should be "r";
-\                   uncommented BLAS Fortran function routines which
-\                   return type "n", "s", or "r" -- lib-interface.4th and
-\                   fcalls-x86.4th now support these.
+\  ans-words
+\  modules.fs
+\  syscalls
+\  mc
+\  asm
+\  strings
+\  lib-interface
+\
 
 [undefined] open-lib [if] s" lib-interface" included [then]
 

@@ -7,10 +7,6 @@
 \ Based on gmplib-test.fs, ver. 0.6.0, written by 
 \ David N. Williams.
 \
-\ Revisions:
-\  2011-03-24  km  added conversion tests (1.4) and a couple of 
-\                  big integer arithmetic tests.
-\
 \ Notes:
 \
 \   1. The word Z"  compiles a null-terminated string. It is defined in
@@ -20,6 +16,9 @@
 \        It is defined in strings.4th.
 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface

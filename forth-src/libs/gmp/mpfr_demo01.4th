@@ -9,14 +9,14 @@
 
 \ Load library bindings and open the library
 
-1                \ change to 0 if not using kForth
-[IF]
+include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface
-[THEN]
-
-include libmpfr.4th
+include libmpfr
 
 DECIMAL
 
@@ -72,8 +72,19 @@ DECIMAL
 mpfr_t gr
 gr  mpfr_init
 
-cr gr     phi-qu  gr 77 mpfr.
-cr gr     phi-tr  gr 77 mpfr.
-cr gr 150 phi-cs  gr 77 mpfr.
-cr gr 182 phi-cf  gr 77 mpfr.
+cr
+.( MPFR Demo: Compute and print the Golden Ratio to 77 digits using four methods )
+cr 
+cr .( 1. phi = {1 + sqrt[5]}/2 ) 
+cr gr phi-qu  gr 77 mpfr. cr
 
+cr .( 2. phi = 2*cos[pi/5] )
+cr gr phi-tr  gr 77 mpfr. cr
+
+cr .( 3. phi = sqrt[1 + sqrt[1 + sqrt[1 + ... )
+cr gr 150 phi-cs  gr 77 mpfr. cr
+
+cr .( 4. phi = 1 + 1/(1 + 1/(1 + 1/... )
+cr gr 182 phi-cf  gr 77 mpfr. cr
+
+ 

@@ -2,8 +2,7 @@
 \
 \ A small interface for MPFR arithmetic
 \
-\ Copyright (c) 2015 Krishna Myneni,
-\ http://ccreweb.org
+\ Copyright (c) 2015--202 Krishna Myneni
 \
 \ Notation:
 \ --------
@@ -36,10 +35,6 @@
 \ Requires:
 \   libmpfr.4th  ( kForth interface to libmpfr.so, version >= 3 )
 \  
-\ Revisions:
-\   2015-02-06  km; first version
-\   2015-02-07  km; fix comments.
-\   2015-02-08  km; added qupow, qpow, qacos, qasin, qatan, qatan2
 
 Begin-Module
 

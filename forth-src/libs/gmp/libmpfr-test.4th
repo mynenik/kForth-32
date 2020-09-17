@@ -2,8 +2,7 @@
 \
 \ Test the Forth interface to the GNU MPFR shared library.
 \
-\ Copyright (c) Krishna Myneni, Creative Consulting for Research & Education,
-\ krishna.myneni@ccreweb.org
+\ Copyright (c) Krishna Myneni
 \
 \ This code is provided under the Lesser Gnu Public License (LGPL)
 \
@@ -17,6 +16,9 @@
 \   2015-02-08  km; fixed test with mpfr_cos for MPFR v3.
 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface

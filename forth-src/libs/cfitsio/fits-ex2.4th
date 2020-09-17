@@ -4,7 +4,16 @@
 \ 
 \ [1] W. Pence, CFITSIO Quick Start Guide, January 2003, p.4.
 \
-include libcfitsio \ required by every program that uses CFITSIO 
+include ans-words
+include modules.fs
+include syscalls
+include mc
+include asm
+include strings
+include lib-interface
+include struct
+include struct-ext
+include libcfitsio
 
 \ The following two variables are essential
 variable file_fptr       \ pointer to the FITS file; defined in fitsio.h

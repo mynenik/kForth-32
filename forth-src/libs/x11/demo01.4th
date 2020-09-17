@@ -7,13 +7,15 @@
 \
 \ http://users.actcom.co.il/~choo/lupg/tutorials/xlib-programming/simple-drawing.c
 \
-\ Krishna Myneni, Creative Consulting for Research & Education
-\ krishna.myneni@ccreweb.org
+\ Krishna Myneni
 \
 \ Revisions:
 \   2012-05-03  km  Added statement: Also X11
 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface
