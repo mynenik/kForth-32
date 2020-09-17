@@ -76,56 +76,18 @@
 \ Requires:
 \   ans-words.4th
 \   modules.fs
+\   syscalls.4th
+\   mc.4th
 \   asm.4th
 \   strings.4th
 \   lib-interface.4th
 \   libs/x11/libX11.4th
 \
-\  Copyright (c) 2011--2012 Krishna Myneni, Creative Consulting
-\  for Research and Education, http://ccreweb.org
+\  Copyright (c) 2011--2020 Krishna Myneni
 \
 \  This code may be used for any purpose, provided the
 \  copyright notice above is included.
 \
-\ Revisions:
-\   2011-08-27  km  added draw-lines
-\   2012-04-09  km  ported to modules framework; added words
-\                   to provide scaling from user coords to window coords;
-\                   added:  GET-WINDOW-LIMITS  SET-WINDOW-LIMITS
-\                   POINT-PLOT  LINE-PLOT  PUT-POINT  PUT-LINE
-\   2012-04-12  km  added DRAW-POINT  DRAW-LINE  DRAW-TEXT  PUT-TEXT
-\                   SET-LINE-TYPE
-\   2012-04-19  km  added DRAW-RECTANGLE  DRAW-FILLED-RECTANGLE
-\                   DRAW-ELLIPSE  DRAW-FILLED-ELLIPSE  DRAW-CIRCLE
-\                   DRAW-FILLED-CIRCLE  PUT-RECTANGLE  PUT-CIRCLE
-\                   PUT-FILLED-CIRCLE  ON-KEYPRESS  ON-BUTTONPRESS
-\                   GET-KEYINFO  GET-BUTTONINFO  DEFAULT-KEY-HANDLER
-\                   DEFAULT-BUTTON-HANDLER  EXIT-SIMPLE-PLOT
-\   2012-04-20  km  renamed this module from simple-plot-x11 to
-\                   simple-graphics-x11. Renamed SIMPLE-PLOT to
-\                   SIMPLE-GRAPHICS; renamed EXIT-SIMPLE-PLOT
-\                   to EXIT-SIMPLE-GRAPHICS
-\   2012-04-22  km  replaced SCALE-TO-WINDOW with public word UC>WC.
-\                   Added inverse transform WC>UC public word;
-\                   enabled button press notification
-\   2012-04-26  km  added UDX>WDX  UDY>WDY  PUT-FILLED-RECTANGLE
-\                   SET-WINDOW-BACKGROUND  GET-POINTERINFO  ON-POINTERMOVE  
-\                   DEFAULT-POINTERMOVE-HANDLER ; now processes pointer
-\                   motion events; add colors BROWN YELLOW CYAN MAGENTA
-\   2012-04-27  km  added USER-GRAPHICS-INIT and USER-GRAPHICS-CLEANUP
-\                   vectors; added LOAD-FONT  UNLOAD-FONT  SET-FONT
-\   2012-05-04  km  added CLEAR-AREA; revised comments; re-organized code;
-\                   added vocabulary dependency: Also X11
-\                   added GET-RESOLUTION
-\   2012-05-10  km  moved GET-FONT-ASCENT and GET-FONT-HEIGHT from
-\                   simple-fonts-x11 to this module.
-\   2012-05-20  km  added RESIZE-WINDOW
-\   2012-06-01  km  added SET-WINDOW-NAME to permit application to
-\                   provide a name/title to the window manager
-\   2012-06-02  km  SIMPLE-GRAPHICS now registers with the window manager
-\                   to receive window delete messages, and handles the
-\                   message; added SET-ICON-NAME and fixed return value
-\                   bug in SET-WINDOW-NAME.
 
 Module: simple-graphics-x11
 

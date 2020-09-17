@@ -3,8 +3,7 @@
 \ Simplified font loading and selection for X11 windows.
 \
 \ 
-\ Copyright (c) 2012 Krishna Myneni, Creative Consulting for
-\   Research and Education, http://ccreweb.org
+\ Copyright (c) 2012--2020 Krishna Myneni
 \
 \ This code may be used for any purpose, provided the copyright
 \ notice above is included.
@@ -51,24 +50,6 @@
 \
 \     draw-text-xytrack ( x1 y1 caddr u -- x2 y2 )
 \
-\ Revisions:
-\   2012-04-28  km  created.
-\   2012-04-30  km  added GET-CURRENT-FONT and Font Geometry words
-\   2012-05-01  km  added LOAD-SYMBOL-FONT and LOAD-SYMBOL-FONT-TABLE
-\   2012-05-04  km  declare dependency on the X11 vocabulary
-\   2012-05-05  km  added GET-FONT-ASCENT and CURRENT-FONT-ASCENT
-\   2012-05-10  km  added CHANGE-FONT-x words; moved the words
-\                   GET-FONT-ASCENT and GET-FONT-HEIGHT to 
-\                   module, simple-graphics-x11
-\   2012-05-11  km  added DRAW-TEXT-XYTRACK
-\   2012-05-13  km  added font variables for use with SELECT-FONT --
-\                   new FontSpec type declaration and words
-\                   FONT-SPEC@  FONT-SPEC!  and nullFont
-\   2012-10-24  km  revised the following words to return a flag
-\                   indicating success or failure (true = success):
-\                   ?ADD-FONT  LOAD-FONT-TABLE  LOAD-SYMBOL-FONT-TABLE
-\   2015-07-30  km  revise glossary comments to fix stack diagrams.
-\   2016-06-04  km  revised SELECT-FONT to avoid setting uninitialized font.
 
 Module: simple-fonts-x11
 
@@ -89,7 +70,7 @@ Public:
 
 \ Defining word for FontSpec type
 : FontSpec ( weight slant ptsize atable "name" -- )
-    create 4 cells ?allot font-spec! ;
+    create 4 cells allot? font-spec! ;
 
 : nullFont 0 0 0 0 ;   \ a useful fontspec constant
 

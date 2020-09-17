@@ -4,8 +4,7 @@
 \ switching between fonts, changing current font properties,
 \ or to perform other text formatting.
 \
-\ Copyright (c) 2012 Krishna Myneni, Creative Consulting for
-\   Research and Education.
+\ Copyright (c) 2012--2020 Krishna Myneni
 \
 (
   Supported Control Sequences:
@@ -61,14 +60,6 @@
 \   simple-graphics-x11.4th
 \   simple-fonts-x11.4th
 \
-\ Revisions:
-\   2012-05-11 km  created.
-\   2012-05-12 km  changed name from multi-font-strings-x11 to
-\                  cs-strings-x11
-\   2012-05-13 km  added control seq. \fnt  to set a specific
-\                  font, based on a name which returns the font id;
-\                  fixed cs for space and backslash; use data
-\                  type FontSpec as parameter for \fnt
 
 Module: cs-strings-x11
 

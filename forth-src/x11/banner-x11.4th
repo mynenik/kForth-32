@@ -4,13 +4,13 @@
 \
 \ The default message is "Happy Mother's Day" -- tailor as desired.
 \
-\ Copyright (c) 2012 Krishna Myneni, Creative Consulting for
-\   Research and Education, http://ccreweb.org
+\ Copyright (c) 2012--2020 Krishna Myneni
 \
-\ This code is released under the LGPL license.
 \
 include ans-words
 include modules
+include syscalls
+include mc
 include asm
 include strings
 include utils
