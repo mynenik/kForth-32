@@ -4,8 +4,7 @@
 \ generated as individual frames by user-specified code, and traversable
 \ by the user.
 \
-\   Copyright (c) 2012, K. Myneni, Creative Consulting for
-\   Research and Education
+\   Copyright (c) 2012--2020, K. Myneni
 \
 \   This code may be used for any purpose, provided the copyright
 \   notice above is included.
@@ -50,19 +49,6 @@
 \        ' key-handler IS on-keypress
 \        START-FRAMES
 \
-\
-\ Revisions:
-\   2012-04-19  km  created
-\   2012-04-20  km  defined !FRAME and @FRAME
-\   2012-04-25  km  made FRAME-NAV a public member to allow
-\                     for key handler chaining; added notes.
-\   2012-04-28  km  add font handling and user graphics setup/cleanup code
-\   2012-04-29  km  added GET-CURRENT-FRAME; fixed problem with SET-FRAMES
-\                     for case of specifying 1 frame.
-\   2012-05-01  km  fixed loading of symbol fonts in simple-fonts-x11,
-\                     so we now load it by default in setup-fonts.
-\   2012-10-24  km  revised SETUP-FONTS to perform error check for
-\                     successful loading of fonts.
 
 true value  XK_MISCELLANY
 include libs/x11/keysymdef

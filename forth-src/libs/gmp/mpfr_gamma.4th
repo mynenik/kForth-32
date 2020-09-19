@@ -23,12 +23,17 @@
 \      arg may be signed, but arg2 is assumed to be positive. Obviously, 
 \      the use of single length integers restricts the range of 
 \      arguments which may be passed to mpfr_gamma.
-
-include ans-words
-include asm
-include strings
-include lib-interface
-include libmpfr
+\
+\ Requires:
+\
+\  ans-words
+\  modules.fs
+\  syscalls
+\  mc
+\  asm
+\  strings
+\  lib-interface
+\  libmpfr
 
 \ Output a multi-precision float to specified number of digits in 
 \ base 10 using standard rounding
@@ -55,7 +60,5 @@ sca  mpfr_init
     dst  num  GMP_RNDN      mpfr_gamma   drop
     dst
 ;
-
-
 
 

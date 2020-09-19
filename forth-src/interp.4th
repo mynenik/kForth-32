@@ -52,7 +52,7 @@
 \ Create an interpolation table 
 : interp_table ( xstep xbase xmax xmin "name" -- addr )
     2dup 2>r - >r over dup 0= abort" Step size of 0 not allowed" 
-    r> swap / 1+ 2* 4 + cells create ?allot 2r>
+    r> swap / 1+ 2* 4 + cells create allot? 2r>
     rot >r
     swap r@ 2 cells + 2!		    
     swap r@ 2!

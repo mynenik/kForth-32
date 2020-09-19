@@ -2,8 +2,7 @@
 \
 \ Simplified typesetting of text in X11 windows.
 \
-\   Copyright (c) 2012 Krishna Myneni, Creative Consulting for
-\   Research and Education, http://ccreweb.org
+\   Copyright (c) 2012--2020 Krishna Myneni
 \
 \   This code may be used for any purpose, provided the copyright
 \   notice above is included.
@@ -20,14 +19,6 @@
 \   simple-graphics-x11.4th
 \   simple-fonts-x11.4th
 \
-\  
-\ Revisions:
-\   2012-04-30  km  created.
-\   2012-05-05  km  implemented draw-hbox-wrapped-text
-\   2012-05-06  km  implemented line>y for future consistency
-\                     in line position calculations.
-\   2012-05-10  km  fixed problems with draw-hbox-wrapped-text 
-\                     and hbox-split.
 
 Module: simple-typeset-x11
 

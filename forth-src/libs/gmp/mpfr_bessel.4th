@@ -20,12 +20,17 @@
 \
 \      The argument to mpfr_xn, is arg1 * 10^(-arg2), where
 \      arg1 and arg2 are the two integers passed to rbes-xn.
-
-include ans-words
-include asm
-include strings
-include lib-interface
-include libmpfr
+\
+\ Requires:
+\
+\  ans-words
+\  modules.fs
+\  syscalls
+\  mc
+\  asm
+\  strings
+\  lib-interface
+\  libmpfr
 
 \ Output a multi-precision float to specified number of digits in 
 \ base 10 using standard rounding
@@ -66,6 +71,4 @@ sca  mpfr_init
     >r num scaled-arg 
     dst swap r> swap GMP_RNDN mpfr_yn drop
     dst ;
-
-
 

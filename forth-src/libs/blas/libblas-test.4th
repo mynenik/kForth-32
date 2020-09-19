@@ -27,10 +27,11 @@
 \
 \ [4] http://www.intel.com/software/products/mkl/docs/webhelp/appendices/mkl_appC_BLAS.html
 \
-\ Revisions:
-\   
-\ 
+ 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include libblas

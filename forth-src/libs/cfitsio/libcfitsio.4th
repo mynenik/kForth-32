@@ -3,7 +3,6 @@
 \ Forth interface to the CFITSIO library for reading/writing 
 \ FITS format files.
 \
-\ Copyright (c) 2009 Creative Consulting for Research and Education
 \ krishna.myneni@ccreweb.org
 \ 
 \  The FITSIO software was written by William Pence at the High Energy 
@@ -36,11 +35,6 @@
 \ FROM, OR AROSE OUT OF THE RESULTS OF, OR USE OF, THE SOFTWARE OR
 \ SERVICES PROVIDED HEREUNDER."
 \
-\ Requires kForth ver >= 1.5.0 and the following files:
-\
-\   lib-interface.4th, struct.4th, struct-ext.4th,
-\   fitsio.4th
-\
 \ Notes:
 \
 \   1. Requires version 3.20 or greater of the CFITSIO library.
@@ -68,23 +62,22 @@
 \           This will generate the libcfitsio.so file, which may be
 \           copied to a system directory such as /usr/lib or /usr/lib32
 \
-\ Revisions: 
-\   2009-10-10  km
-\   2009-10-17  km  further additions
-\   2009-11-21  km  revised ffvers to use consistent interface
-
-include ans-words
-include asm
-include strings
-include lib-interface
-include struct
-include struct-ext
+\ Requires:
+\
+\  ans-words
+\  modules.fs
+\  syscalls
+\  mc
+\  asm
+\  strings
+\  lib-interface
+\  struct
+\  struct-ext
 
 vocabulary FITSIO
 also FITSIO definitions
 
 include fitsio.4th
-
 
 0 value hndl_cfitsio
 s" libcfitsio.so" open-lib 

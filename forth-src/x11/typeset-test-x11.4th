@@ -4,20 +4,11 @@
 \
 \ K. Myneni, 2012-05-04
 \
-\ Revisions:
-\   2012-05-10  km  added frame2 to illustrate text typesetting
-\                   within entire window width with margins; also
-\                   illustrate changing one font characteristic
-\                   with CHANGE-FONT-SLANT
-\
-\   2012-05-11  km  added frame3 to demonstrate output of
-\                   strings containing more than one font.
-\
-\   2012-05-13  km  use FontSpec variables with \fnt control
-\                   sequence, for changing fonts inside of strings.
 
 include ans-words
 include modules
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface

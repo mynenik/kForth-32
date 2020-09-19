@@ -42,9 +42,10 @@
 
 include ans-words
 include strings
-include asm-x86
 include modules
 include syscalls
+include mc
+include asm-x86
 include fsl/fsl-util
 include fsl/horner
 include fsl/extras/noise

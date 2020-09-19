@@ -47,7 +47,7 @@
 \   2009-11-19  km  factor common code between C-word and F-word
 
 [undefined] fcall [if] s" fcalls.4th" included [then]
-[undefined] ptr   [if] : ptr create 1 cells ?allot ! does> a@ ; [then]
+[undefined] ptr   [if] : ptr create 1 cells allot? ! does> a@ ; [then]
 
 base @
 decimal
@@ -220,7 +220,7 @@ decimal
 
 : C-word ( c-addr u "name" "args_ret" -- )
      lsym check-lib-error
-     create 2 cells ?allot to lword_pfa
+     create 2 cells allot? to lword_pfa
      lword_pfa !
      lword-parse-args 
      lword_ncells lword_pfa cell+ !
@@ -234,7 +234,7 @@ decimal
 
 : F-word ( c-addr u "name" "args_ret" -- )
      s" _" strcat lsym check-lib-error
-     create 2 cells ?allot to lword_pfa
+     create 2 cells allot? to lword_pfa
      lword_pfa !
      lword-parse-args
      \ lword_nargs and lword_ncells MUST be same for F-word 

@@ -3,8 +3,7 @@
 \ Display the Telugu alphabet in a regularly spaced grid,
 \ using the Xft library.
 \
-\ Copyright (c) 2017 Krishna Myneni, Creative Consulting
-\   for Research & Education,  http://ccreweb.org
+\ Copyright (c) 2017--2020 Krishna Myneni
 \
 \ This code may be used for any purpose, provided attribution
 \ of the source is included.
@@ -31,15 +30,13 @@
 \ 1. Unicode entity codes for Telugu Script, Penn State
 \    University, http://symbolcodes.tlt.psu.edu/bylanguage/teluguchart.html
 \
-\ Revisions:
-\   2017-05-01  km  based on kForth's libs/x11/demo-xft.4th
-\   2017-05-03  km  regular grid layout for alphabet
-\   2017-05-05  km  code factoring, text and background colors.
-\   2017-05-06  km  handle window resizing and key press.
 
 include ans-words
-include xchars
+include modules.fs
+include syscalls
+include mc
 include asm
+include xchars
 include strings
 include lib-interface
 include libs/x11/libX11

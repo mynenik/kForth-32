@@ -166,6 +166,7 @@
 \ Revisions:
 \    2011-09-16  km; use Neal Bridges' anonymous modules.
 \    2012-02-19  km; use KM/DNW's modules library.
+\    2020-02-15  km; set arr_op in private base words.
 
 BEGIN-MODULE
 
@@ -185,59 +186,68 @@ DEFER arr_op
 : doubles   ( u1 -- u2 ) DOUBLE  * ;
 
 \ Print u elements of an array
-: }print ( u addr -- )       
+: }print ( u addr xt -- )
+    IS arr_op
     swap 0 ?do 
-      I print-width @ MOD 0= I AND IF CR THEN
-      DUP I } arr_op 
+      I print-width @ MOD 0= I and IF cr THEN
+      dup I } arr_op 
     loop drop ;
 
-: }get ( u 'a -- x1 ... xu u )
+: }get ( u 'a xt -- x1 ... xu u )
+    IS arr_op
     swap dup >r
-    0 ?do  dup I } swap >r arr_op r>  loop  drop r> ;
+    0 ?DO  dup I } swap >r arr_op r>  LOOP  drop r> ;
       
 \ Store x1 ... xn into array of size n
-: }put  ( x1 ... xu u 'a --  )
+: }put  ( x1 ... xu u 'a xt --  )
+     IS arr_op
      swap dup 0 ?DO  1- 2dup 2>r } arr_op 2r>  LOOP  
      2drop ;
 
 \ Fill the first u elements of an array with x
-: }fillx ( x u 'a -- x)
-    swap 0 ?do  dup I } swap >r arr_op r>  loop  drop ;
+: }fillx ( x u 'a xt -- x)
+    IS arr_op
+    swap 0 ?DO  dup I } swap >r arr_op r>  LOOP  drop ;
 
 \ Zero the first u elements of an array
-: }zero ( u 'a -- )  over arr_op erase drop ;
+: }zero ( u 'a xt -- )  IS arr_op over arr_op erase drop ;
 
 \ Copy elements from one array into another
-: }copy ( 'src 'dest u -- )
+: }copy ( 'src 'dest u xt -- ) IS arr_op
      >r 0 } swap 0 } swap r> arr_op move ;
 
 \ Matrix words
 
-: }}row-get  ( u n 'A -- x1 ... xu u )
+: }}row-get  ( u n 'A xt -- x1 ... xu u )
+    IS arr_op
     rot >r swap 
     r@ 0 ?do  2dup I }} -rot 2>r arr_op 2r>  loop
     2drop r> ;
 
-: }}col-get  ( u m 'A -- x1 ... xu u )
+: }}col-get  ( u m 'A xt -- x1 ... xu u )
+    IS arr_op
     rot >r swap
     r@ 0 ?do  2dup I swap }} -rot 2>r arr_op 2r>  loop
     2drop r> ;
 
 : }}get  ( ) ;
 
-: }}row-put  ( x1 ... xu u n 'A -- )
+: }}row-put  ( x1 ... xu u n 'A xt -- )
+    IS arr_op
     swap rot 0 ?do  2dup I }} -rot 2>r arr_op 2r>  loop 2drop ;
     
-: }}col-put  ( x1 ... xu u m 'A -- )
+: }}col-put  ( x1 ... xu u m 'A xt -- )
+    IS arr_op
     swap rot 0 ?do  2dup I swap }} -rot 2>r arr_op 2r>  loop 
     2drop ;
 
-: }}row-copy ( 'src n1 'dest n2 u -- )
-     1 arr_op 
+: }}row-copy ( 'src n1 'dest n2 u xt -- )
+     IS arr_op  1 arr_op 
 ;
  
 \ Print n x m elements of a 2-D array (matrix)
-: }}print ( n m addr -- )       
+: }}print ( n m addr xt -- )
+    IS arr_op       
     ROT ROT SWAP 
     0 DO
       DUP 0 DO  OVER J I  }} arr_op  LOOP CR
@@ -263,60 +273,62 @@ Public:
   
 \ INTEGER arrays and matrices
 
-: }iprint  ( u 'a  -- )      ['] ? is arr_op         }print ;
-: }iget    ( u 'a  -- )      ['] @ is arr_op         }get ;
-: }iput  ( i1 ... iu u 'a -- ) ['] ! is arr_op       }put ;
-: }ifill   ( n u 'a -- )     ['] ! is arr_op         }fillx drop ;
-: }izero  ( u 'a -- )        ['] integers is arr_op  }zero ;
-: }icopy ( 'src 'dest u -- ) ['] integers is arr_op  }copy ;
-: }}irow-get ( u n 'a -- i1...iu u) ['] @ is arr_op  }}row-get ;
-: }}icol-get ( u m 'a -- i1...iu u) ['] @ is arr_op  }}col-get ;   
+: }iprint  ( u 'a  -- )             ['] ?  }print ;
+: }iget    ( u 'a  -- )             ['] @  }get ;
+: }iput  ( i1 ... iu u 'a -- )      ['] !  }put ;
+: }ifill   ( n u 'a -- )            ['] !  }fillx drop ;
+: }izero  ( u 'a -- )               ['] integers }zero ;
+: }icopy ( 'src 'dest u -- )        ['] integers }copy ;
+: }}irow-get ( u n 'a -- i1...iu u) ['] @  }}row-get ;
+: }}icol-get ( u m 'a -- i1...iu u) ['] @  }}col-get ;   
 : }}irow-copy ( 'src n1 'dest n2 u -- ) ;
-: }}iprint  ( n m 'a -- )    ['] ? is arr_op         }}print ;
+: }}iprint  ( n m 'a -- )           ['] ?  }}print ;
 : }}icopy ( 'src 'dest n m -- ) ;
 
 
 \ Double arrays and matrices
 
-: }dprint  ( u 'a -- )       ['] d? is arr_op        }print ;
-: }dget  ( u 'a -- d1 ... du u ) ['] 2@ is arr_op    }get ;
-: }dput  ( d1 ... du u 'a -- ) ['] 2! is arr_op      }put ;
-: }dfill ( d u 'a -- )       ['] 2! is arr_op        }fillx 2drop ;
-: }dzero ( u 'a -- )         ['] doubles is arr_op   }zero ;
-: }dcopy ( 'A 'B u -- )      ['] doubles is arr_op   }copy ;
-: }}drow-get ( u n 'a -- d1...du u) ['] 2@ is arr_op }}row-get ;
-: }}dcol-get ( u m 'a -- d1...du u) ['] 2@ is arr_op }}col-get ;
+: }dprint  ( u 'a -- )              ['] d?  }print ;
+: }dget  ( u 'a -- d1 ... du u )    ['] 2@  }get ;
+: }dput  ( d1 ... du u 'a -- )      ['] 2!  }put ;
+: }dfill ( d u 'a -- )              ['] 2!  }fillx 2drop ;
+: }dzero ( u 'a -- )                ['] doubles }zero ;
+: }dcopy ( 'A 'B u -- )             ['] doubles }copy ;
+: }}drow-get ( u n 'a -- d1...du u) ['] 2@  }}row-get ;
+: }}dcol-get ( u m 'a -- d1...du u) ['] 2@  }}col-get ;
 : }}drow-copy ( 'a n1 'b n2 u -- ) ;
-: }}dprint ( n m 'A -- )     ['] d? is arr_op        }}print ;
+: }}dprint ( n m 'A -- )            ['] d?  }}print ;
 : }}dcopy ( 'src 'dest n m -- ) ;
 
 \ FLOAT arrays and matrices
 
-: }fprint ( n addr -- )      ['] F? is arr_op        }print ;
-: }fget  ( u 'a -- r1 ... ru u ) ['] F@ is arr_op    }get ;
-: }fput  ( r1 ... r_n n 'a -- )  ['] F! is arr_op    }put ;
-: }ffill  ( r u 'a -- )      ['] F! is arr_op        }fillx fdrop ;
-: }fzero ( n 'a -- )         ['] floats is arr_op    }zero ;
-: }fcopy ( 'src 'dest n -- ) ['] floats is arr_op    }copy ;
-: }}frow-get ( u n 'a -- r1...ru u) ['] F@ is arr_op }}row-get ;
-: }}fcol-get ( u m 'a -- r1...ru u) ['] F@ is arr_op }}col-get ;
+: }fprint ( n addr -- )             ['] F?  }print ;
+: }fget  ( u 'a -- r1 ... ru u )    ['] F@  }get ;
+: }fput  ( r1 ... r_n n 'a -- )     ['] F!  }put ;
+: }ffill  ( r u 'a -- )             ['] F!  }fillx fdrop ;
+: }fzero ( n 'a -- )                ['] floats  }zero ;
+: }fcopy ( 'src 'dest n -- )        ['] floats  }copy ;
+: }}frow-get ( u n 'a -- r1...ru u) ['] F@  }}row-get ;
+: }}fcol-get ( u m 'a -- r1...ru u) ['] F@  }}col-get ;
 : }}frow-copy ( 'a n1 'b n2 u -- ) ;
-: }}fprint ( n m 'a -- )     ['] F? is arr_op        }}print ;
-: }}fcopy ( 'src 'dest n m  -- )      \ copy n×m elements of 2-D array src to dest
-        SWAP 0 DO
-                 DUP 0 DO
-                            2 PICK J I  }} F@
-                            3 PICK J I  }} F!
-                        LOOP
-                  LOOP
-        DROP 2DROP
-;
+: }}fprint ( n m 'a -- )            ['] F?  }}print ;
+
+\ Copy n×m elements of 2-D array src to dest
+: }}fcopy ( 'src 'dest n m  -- ) 
+     SWAP 0 DO
+       DUP 0 DO
+         2 PICK J I  }} F@
+         3 PICK J I  }} F!
+       LOOP
+     LOOP
+     DROP 2DROP ;
 
 : }}frow-put  ( r1 ... ru  u n 'A -- )
    swap 0 }} over 1- FLOATS + swap 
    0 DO dup >r F! r> [ 1 FLOATS ] literal - LOOP drop ;
 
-: }}fput ( r11 r12 ... r_nm  n m 'A -- | store r11 ... r_nm into nxm matrix )
+\ Store elements r11 ... r_nm from stack into nxm matrix A 
+: }}fput ( r11 r12 ... r_nm  n m 'A -- | )
       -ROT 2DUP * >R 1- SWAP 1- SWAP }} R> 
       0 ?DO  DUP >R F! R> float -  LOOP  drop ;
 

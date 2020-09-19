@@ -179,7 +179,7 @@ true value qclean?
 : xzmat-size ( nrows ncols -- u ) * zfloats HDRSIZE + ;
 
 : xzmatrix ( nrows  ncols "name" -- )
-    create 2dup xzmat-size ?allot xzmat-hdr!
+    create 2dup xzmat-size allot? xzmat-hdr!
     does> HDRSIZE + ;
 
 \ Return the dimensions of an xzmatrix

@@ -12,9 +12,12 @@
 \  Revisions:
 \       2007-08-25  created  km
 \
-
-include signal.4th
+include ans-words
+include modules
+include syscalls
+include mc
 include asm-x86.4th
+include signal.4th
 
 VARIABLE DAQ_IN_USE  ( the lock variable )
 VARIABLE START_TIME

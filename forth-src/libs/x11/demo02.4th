@@ -2,18 +2,15 @@
 \
 \  Demonstrate refreshed drawing and event handling in X.
 \
-\ Copyright (c) 2009 Krishna Myneni, Creative Consulting for
-\   Research & Education, krishna.myneni@ccreweb.org
+\ Copyright (c) 2009--2020 Krishna Myneni
 \
-\ This code is released under the GNU Lesser GPL (LGPL).
+\ This code may be used for any purpose provided the copyright notice
+\ above is preserved.
 \
-\ Revisions:
-\   2009-11-07  km  removed the center rectangle and connecting lines and
-\                   text. The text has been moved to demo01.4th; changed
-\                   background to SkyBlue
-\   2012-05-04  km  added statement: Also X11
-
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include random
@@ -36,7 +33,9 @@ time&date 2drop 2drop + seed !
 
 : 3dup  dup 2over rot ;
 : 3drop 2drop drop ;
+[UNDEFINED] uw@ [IF]
 : uw@   dup c@ swap 1+ c@ 8 lshift or ;
+[THEN]
 
 XPoint% %size constant XPT_SIZE
 : XPoint! ( nx ny apoint -- )

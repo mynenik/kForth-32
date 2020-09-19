@@ -61,10 +61,12 @@
 \      http://www.nist.gov/pml/data/asd.cfm
 
 include ans-words
-include strings
+include modules.fs
+include syscalls
+include mc
 include asm-x86
 include fpu-x86
-include modules.fs
+include strings
 include fsl/fsl-util
 include fsl/dynmem
 include fsl/complex

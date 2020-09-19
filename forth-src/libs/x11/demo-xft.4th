@@ -5,13 +5,13 @@
 \ Original C Program From:
 \   http://forums.nekochan.net/viewtopic.php?f=15&t=8794
 \
-\ Translated to Forth by Krishna Myneni, Creative Consulting
-\   for Research & Education,  http://ccreweb.org
+\ Translated to Forth by Krishna Myneni
 \
-\ Revisions:
-\   2012-06-03  km  Forth version created.
 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include lib-interface

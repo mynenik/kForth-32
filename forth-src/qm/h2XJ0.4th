@@ -76,10 +76,12 @@
 \
 
 include ans-words
+include modules
+include syscalls
+include mc
 include asm
 include fpu-x86
 include strings
-include modules
 include fsl/fsl-util
 include fsl/dynmem
 include fsl/polrat
@@ -88,8 +90,8 @@ include fsl/extras/find
 include fsl/extras/read_xyfile
 include fsl/extras/array-utils0
 include fsl/extras/array-utils1
-include potential
-include schr1d
+include qm/potential
+include qm/schr1d
 
 Also qm.potential
 Also qm.schr1d

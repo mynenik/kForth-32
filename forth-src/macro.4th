@@ -24,10 +24,10 @@
 \
 \     : NONDEFERRED ;
 
-[undefined] ?allot [IF]  : ?allot ( u -- a ) here swap allot ;  [THEN]
+[undefined] allot? [IF]  : allot? ( u -- a ) here swap allot ;  [THEN]
 
 : PLACE  ( caddr n addr -)  2DUP  C!  CHAR+  SWAP  CHARS  MOVE ;
-: SSTRING ( char "ccc" - addr) WORD COUNT DUP 1+ CHARS ?ALLOT PLACE ;
+: SSTRING ( char "ccc" - addr) WORD COUNT DUP 1+ CHARS ALLOT? PLACE ;
 
 : split-at-char  ( a  n  char  -  a  k  a+k  n-k)
      >r  2dup  

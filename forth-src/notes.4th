@@ -96,7 +96,7 @@ include struct-ext.fs
 : a@         \ a1 -- a2  | fetch address stored at a1
 	@ ;
 
-: ?allot     \ n -- a | allot n bytes, return start address
+: allot?     \ n -- a | allot n bytes, return start address
        here swap allot ;
 
 
@@ -108,7 +108,7 @@ include struct-ext.fs
     2dup c! 1+ swap cmove ;	
 
 : $constant  ( a u <name> -- | create a string constant )
-    create dup >r cell+ ?allot dup r@ swap ! cell+ r> cmove  
+    create dup >r cell+ allot? dup r@ swap ! cell+ r> cmove  
     does> ( -- a' u ) dup @ swap cell+ swap ;  
 
 \ pfe shell command

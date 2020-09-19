@@ -2,8 +2,7 @@
 \
 \ Module for making valid x11 font description strings
 \ 
-\  Copyright (c) 2012 Krishna Myneni, Creative Consulting for
-\  Research and Education, http://ccreweb.org
+\  Copyright (c) 2012--2020 Krishna Myneni
 \
 \  This code may be used for any purpose, provided the
 \  copyright notice above is included.
@@ -12,11 +11,6 @@
 \   strings.4th
 \   utils.4th
 \
-\ Revisions:
-\   2012-04-28  km  created.
-\   2012-05-04  km  added XLFD-SET-RESOLUTION
-\   2015-07-30  km  added FONT_CHARSET_ANY and FONT_CHARSET_ISO10646_1;
-\                   revised GET-COMMON-FONT-XLFD to use FONT_CHARSET_ANY.
 
 [undefined] $table [IF] s" utils" included  [THEN]
 

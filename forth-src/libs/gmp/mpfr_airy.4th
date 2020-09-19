@@ -20,12 +20,16 @@
 \
 \      The argument to mpfr_ai, is arg1 * 10^(-arg2), where
 \      arg1 and arg2 are the two integers passed to AIRY.
-
-include ans-words
-include asm
-include strings
-include lib-interface
-include libmpfr
+\
+\ Requires:
+\   ans-words
+\   modules.fs
+\   syscalls
+\   mc
+\   asm
+\   strings
+\   lib-interface
+\   libmpfr
 
 \ Output a multi-precision float to specified number of digits in 
 \ base 10 using standard rounding

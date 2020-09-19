@@ -2,8 +2,7 @@
 \
 \  Wire frame drawing of space shuttle from a 3d model.
 \  
-\ Copyright (c) 2009 Krishna Myneni, Creative Consulting for Research & Education
-\ krishna.myneni@ccreweb.org
+\ Copyright (c) 2009--202 Krishna Myneni
 \
 \ Notes:
 \
@@ -16,11 +15,11 @@
 \
 \   3. Needs hidden line removal
 \
-\ Revisions: 
-\   2009-11-09  km  implemented rotation of object
-\   2012-05-04  km  added statement: Also X11
 
 include ans-words
+include modules.fs
+include syscalls
+include mc
 include asm
 include strings
 include files
@@ -37,7 +36,9 @@ include keysymdef
 \ Handy utilities for calls to X drawing functions
 : 3dup  dup 2over rot ;
 : 3drop 2drop drop ;
+[UNDEFINED] uw@ [IF]
 : uw@   dup c@ swap 1+ c@ 8 lshift or ;
+[THEN]
 
 XPoint% %size constant XPT_SIZE
 : XPoint! ( nx ny apoint -- )

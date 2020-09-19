@@ -6,9 +6,18 @@
 \
 \   http://heasarc.gsfc.nasa.gov/fitsio/
 \
-\ K. Myneni, Creative Consulting for Research & Education
+\ K. Myneni, krishna.myneni@ccreweb.org
 \
-include libcfitsio \ required by every program that uses CFITSIO 
+include ans-words
+include modules.fs
+include syscalls
+include mc
+include asm
+include strings
+include lib-interface
+include struct
+include struct-ext
+include libcfitsio 
 include fsl/fsl-util
 
 variable file_fptr       \ pointer to the FITS file; defined in fitsio.h
