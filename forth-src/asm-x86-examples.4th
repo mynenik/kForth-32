@@ -4,16 +4,7 @@
 \
 \ K. Myneni, 18 Oct 2001
 \
-\ Requires: asm-x86.4th, dump.4th
-\ Revisions:
-\
-\	2004-10-20  additional examples  km
-\       2004-10-21  fp examples; changed stack reg to ebx  km
-\       2004-10-22  complex number examples  km
-\	2004-10-26  further fpu instruction tests  km
-\       2006-03-13  changed BEGIN, to DO, in add-loop; added new examples for
-\                    BEGIN, ... WHILE, ... REPEAT, and use of LABELs and JMP, km
-\       2009-05-24  added cpu info words  km
+\ Requires: ans-words.4th
 
 include modules.fs
 include syscalls.4th
@@ -21,8 +12,8 @@ include mc.4th
 include asm-x86.4th
 include dump
 
-: SEE ( "name" -- ) ' >BODY 256 DUMP ;
-\ : CODE TINY-CODE ;
+: SEE-CODE ( "name" -- ) ' >BODY a@ 256 DUMP ;
+
 variable v
 
 CODE adrop ( n -- | drop an item from the Forth stack using assembly code )
