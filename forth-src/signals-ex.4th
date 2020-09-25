@@ -19,6 +19,7 @@ include signal
      . BL EMIT . BL EMIT . ;
 
 : TEST1  ( -- )
+    decimal
     ['] WINDOW-HANDLER  SIGWINCH  forth-signal  drop
     ['] TIMER-HANDLER   SIGALRM   forth-signal  drop
     CR ." Installed new handlers for SIGWINCH and SIGALRM"
@@ -33,14 +34,14 @@ include signal
 ;
 
 : GPF-HANDLER ( -- )
-    cr ." Protection Fault!" ABORT ;
+    cr ." Protection Fault!" cr ABORT ;
 
 0 ptr memAddr
 
 create inbuf 16 allot
 : input-an-address ( -- u )
-    1 cells 4 = IF inbuf 8 accept ELSE 16 accept THEN
-    inbuf swap 0 0 2swap >number 2drop d>s ;
+    0 s>d inbuf 1 cells 2* accept 
+    inbuf swap >number 2drop d>s ;
 
 hex
 variable v
