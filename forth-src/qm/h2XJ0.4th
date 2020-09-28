@@ -68,8 +68,9 @@
 \                  ref. 7; updated m_p from ref. 8.
 \   2017-07-25  km fp number formatting and output words removed
 \                  to strings.4th, and renamed.
+\   2020-09-28  km updated conversion factor from Hartrees to cm^-1
 \
-\ Copyright (c) 2010--2017 Krishna Myneni, http://ccreweb.org
+\ Copyright (c) 2010--2020 Krishna Myneni, krishna.myneni@ccreweb.org
 \
 \ This code may be used for any purpose as long as the copyright
 \ notice above is preserved.
@@ -96,7 +97,7 @@ include qm/schr1d
 Also qm.potential
 Also qm.schr1d
 
-219474.6314e    fconstant  cm^-1/Eh  \ Hartree to wavenumber conversion
+219474.6313705e fconstant  cm^-1/Eh  \ Hartree to wavenumber conversion
 0.5291772083e   fconstant  A/a0  \ Bohr radius to Angstroms conversion
 1e              fconstant  m_e   \ mass of electron in atomic units
 \ 1836.15267247e  fconstant  m_p \ mass of proton in a.u. (obsolete)
