@@ -32,6 +32,7 @@ include fsl/dynmem
 \      z(t = 0) = 0
 
 1000000 value nsteps
+17 set-precision
 
 cr .( Benchmark: Integrate the Lorenz equations with combination of Forth/Assembly )
 cr .( using ) nsteps . .( steps and fixed-step RK4 integrator ) 

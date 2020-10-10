@@ -130,7 +130,6 @@ f:  xmax        The largest finite floating-point number.
 
 
 : fdepth 0 ;	\ no separate fp stack
-: fs. f. ;      \ for kForth
 
 : ?stacks  ( -- )
    depth IF .s THEN
@@ -140,7 +139,9 @@ f:  xmax        The largest finite floating-point number.
 : f>s   ( r -- n ) f>d drop ;
 : f2/   ( r -- r/2 ) 0.5e f* ;
 : fnip  ( x y -- y ) fswap fdrop ;
+[UNDEFINED] f2dup [IF]
 : f2dup ( x y -- x y x y ) fover fover ;
+[THEN]
 
 \ In the following, the labels A, B, etc. correspond to
 \ temporary variables used in the Fortran code.  The sometimes

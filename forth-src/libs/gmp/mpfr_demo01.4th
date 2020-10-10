@@ -16,7 +16,7 @@ include mc
 include asm
 include strings
 include lib-interface
-include libmpfr
+include libs/gmp/libmpfr
 
 DECIMAL
 
