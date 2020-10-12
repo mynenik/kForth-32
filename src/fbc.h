@@ -408,4 +408,10 @@
 #define OP_MSLASH_FLOORED       415
 #define OP_MSTARSLASH_FLOORED   416
 
+// Windows specific opcodes
+#define OP_VALLOC               420
+#define OP_VFREE                421
+#define OP_VPROTECT             422
+
 #endif
+
