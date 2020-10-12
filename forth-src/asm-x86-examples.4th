@@ -12,7 +12,7 @@ include mc.4th
 include asm-x86.4th
 include dump
 
-: SEE-CODE ( "name" -- ) ' >BODY a@ 256 DUMP ;
+: SEE-CODE ( "name" -- ) ' >MC-Code 256 DUMP ;
 
 variable v
 
