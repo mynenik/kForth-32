@@ -1420,13 +1420,13 @@ int CPP_allot ()
 #endif
 
   WordIndex id = pCompilationWL->end() - 1;
-  long int n = TOS;
-  if (n > 0)
+  unsigned long int u = TOS;
+  if (u > 0)
     {
       if (id->Pfa == NULL)
 	{ 
-	  id->Pfa = new byte[n];
-	  if (id->Pfa) memset (id->Pfa, 0, n); 
+	  id->Pfa = new byte[u];
+	  if (id->Pfa) memset (id->Pfa, 0, u); 
 
 	  // Provide execution code to the word to return its Pfa
   	  byte *bp = new byte[WSIZE+2];
@@ -1447,7 +1447,7 @@ int CPP_allot ()
 
 int CPP_queryallot ()
 {
-  // stack: ( n -- a | allot n bytes and leave starting address on the stack )
+  // stack: ( u -- a | allot u bytes and leave starting address on the stack )
 
   int e = CPP_allot();
   if (!e)
