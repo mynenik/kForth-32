@@ -75,13 +75,14 @@
 \                    column count.
 \   2017-05-19  km;  add the constant DFLOAT which has the value 1 DFLOATS.
 \   2019-10-29  km;  conditional def. of F2DUP (intrinsic to some Forths).
+\   2021-05-09  km;  provide defs. of  }FCOPY and }FPUT for separate FP stack. 
 \ ================= kForth specific defs/notes ==============================
 \ Requires ans-words.4th
 
-[undefined] ptr [IF] : ptr create 1 cells ?allot ! does> a@ ; [THEN]
+[undefined] ptr [IF] : ptr create 1 cells allot? ! does> a@ ; [THEN]
 \ ================= end of kForth specific defs ==============================
 
-CR .( FSL-UTIL          V1.21          29 October 2019   EFC, KM )
+CR .( FSL-UTIL          V1.3           09 May 2021   EFC, KM )
 BASE @ DECIMAL
 
 \ ================= compilation control ======================================
@@ -121,9 +122,6 @@ WORDLIST ptr hidden-wordlist
 ;
 
 : Reset_Search_Order   Reset-Search-Order ;     \ these are
-\ : reset-search-order   Reset-Search-Order ;	\ for backward compatibility
-\ : private:             Private: ;
-\ : public:              Public:  ;
 [ELSE]
 \ Use KM/DNW's modules interface
 [undefined] begin-module [IF] s" modules.4th" included [THEN]
@@ -148,9 +146,7 @@ CREATE fsl-pad	84 CHARS ( or more ) ALLOT
 	ROT AND >R AND R>
 ;
 
-: d>
-         2SWAP D<
-;
+: d>  2SWAP D< ;  \ == fixme ==> should use D<=
 
 \ : 2+    2 + ;
 \ : >=     < 0= ;                        \ greater than or equal to
@@ -158,12 +154,9 @@ CREATE fsl-pad	84 CHARS ( or more ) ALLOT
 
 \ single * double = double
 : sd*   ( multiplicand  multiplier_double  -- product_double  )
-             2 PICK * >R   UM*   R> +
-;
-
+    2 PICK * >R   UM*   R> + ;
 
 : CELL-    [ 1 CELLS ] LITERAL - ;           \ backup one cell
-
 
 0 VALUE TYPE-ID               \ for building structures
 FALSE VALUE STRUCT-ARRAY?
@@ -207,38 +200,35 @@ TRUE  VALUE is-static?     \ TRUE for statically allocated structs and arrays
 \    | cell_size | data area     |
 \    -----------------------------
 
-: MARRAY ( n cell_size -- | -- addr )             \ monotype array
-     CREATE
-        \ DUP , * ALLOT
-	2DUP SWAP 1+ * ?ALLOT ! DROP
-     DOES> CELL+
-;
+\ monotype array
+: MARRAY ( n cell_size -- | -- addr ) 
+    CREATE
+      \ DUP , * ALLOT
+    2DUP SWAP 1+ * ?ALLOT ! DROP
+    DOES> CELL+ ;
 
 \    -----------------------------
 \    | id | cell_size | data area |
 \    -----------------------------
 
-: SARRAY ( n cell_size -- | -- id addr )          \ structure array
-     CREATE
-       \ TYPE-ID ,
-       \ DUP , * ALLOT
-	2DUP SWAP 2+ * ?ALLOT
-	TYPE-ID OVER !
-	CELL+ ! DROP
-     DOES> DUP @ SWAP [ 2 CELLS ] LITERAL +
-;
+\ structure array
+: SARRAY ( n cell_size -- | -- id addr ) 
+    CREATE
+      \ TYPE-ID ,
+      \ DUP , * ALLOT
+    2DUP SWAP 2+ * ?ALLOT
+    TYPE-ID OVER !
+    CELL+ ! DROP
+     DOES> DUP @ SWAP [ 2 CELLS ] LITERAL + ;
 
 
 : ARRAY ( n cell_size -- )  \ n >= 0
      OVER 0= IF cr ." WARNING: Creating zero length array!" THEN
      OVER 0< ABORT" Negative array length!"
-     STRUCT-ARRAY? IF   SARRAY FALSE TO STRUCT-ARRAY?
-                   ELSE MARRAY
-                   THEN
-;
-
-
-\ : Array   ARRAY ;
+     STRUCT-ARRAY? IF
+       SARRAY FALSE TO STRUCT-ARRAY?
+     ELSE MARRAY
+     THEN ;
 
 \ word for creation of a dynamic array (no memory allocated)
 
@@ -247,69 +237,78 @@ TRUE  VALUE is-static?     \ TRUE for statically allocated structs and arrays
 \    | data_ptr | cell_size |
 \    ------------------------
 
-: DMARRAY   ( cell_size -- )   CREATE  
-				\ 0 , ,
-				2 CELLS ?ALLOT
-				0 OVER ! CELL+ !
-                              DOES>
-                                    a@ CELL+
-;
+: DMARRAY   ( cell_size -- )   
+    CREATE  
+    \ 0 , ,
+    2 CELLS allot?
+    0 OVER ! CELL+ !
+    DOES>  a@ CELL+  ;
 
 \ Structures
 \    ----------------------------
 \    | data_ptr | cell_size | id |
 \    ----------------------------
 
-: DSARRAY   ( cell_size -- )  CREATE  
-				\ 0 , , TYPE-ID ,
-				3 CELLS ?ALLOT
-				0 OVER ! CELL+ SWAP OVER !
-				TYPE-ID SWAP CELL+ !
-                              DOES>
-                                    DUP [ 2 CELLS ] LITERAL + @ SWAP
-                                    @ CELL+
-;
+: DSARRAY   ( cell_size -- )  
+    CREATE  
+    \ 0 , , TYPE-ID ,
+    3 CELLS ?ALLOT
+    0 OVER ! CELL+ SWAP OVER !
+    TYPE-ID SWAP CELL+ !
+    DOES>
+      DUP [ 2 CELLS ] LITERAL + @ SWAP @ CELL+ ;
 
 
 : DARRAY   ( cell_size -- )
-     STRUCT-ARRAY? IF   DSARRAY FALSE TO STRUCT-ARRAY?
-                   ELSE DMARRAY
-                   THEN
-;
+    STRUCT-ARRAY? IF
+      DSARRAY FALSE TO STRUCT-ARRAY?
+    ELSE DMARRAY
+    THEN ;
 
 
 \ word for aliasing arrays,
 \  typical usage:  a{ & b{ &!  sets b{ to point to a{'s data
 
-: &!    ( addr_a &b -- )
-        SWAP CELL- SWAP >BODY  !
-;
+: &!  ( addr_a &b -- )  SWAP CELL- SWAP >BODY  ! ;
 
-
-: }   ( addr n -- addr[n])       \ word that fetches 1-D array addresses
-    OVER [ 1 CELLS ] LITERAL - @ * + ;
+\ word that fetches 1-D array addresses
+: }   ( addr n -- addr[n] ) OVER [ 1 CELLS ] LITERAL - @ * + ;
 
 VARIABLE print-width      6 print-width !
 
 : }fprint ( n addr -- )       \ print n elements of a float array
-        SWAP 0 DO I print-width @ MOD 0= I AND IF CR THEN
-                  DUP I } F@ F. LOOP
-        DROP
-;
+    SWAP 0 DO 
+      I print-width @ MOD 0= I AND IF CR THEN
+      DUP I } F@ F. 
+    LOOP DROP ;
 
 : }iprint ( n addr -- )       \ print n elements of an integer array
-        SWAP 0 DO I print-width @ MOD 0= I AND IF CR THEN
-                  DUP I } @ . LOOP
-        DROP
-;
+    SWAP 0 DO 
+      I print-width @ MOD 0= I AND IF CR THEN
+      DUP I } @ . 
+    LOOP  DROP  ;
 
-: }fcopy ( 'src 'dest n -- )         \ copy one array into another
-     >R SWAP R>
-     0 ?DO  2DUP I } F@ ROT I } F!  LOOP  2DROP ;
+[DEFINED] FDEPTH [IF]
 
-: }fput ( r1 ... r_n n 'a -- | store r1 ... r_n into array of size n )
-     SWAP DUP 0 ?DO  1- 2DUP 2>R } F! 2R>  LOOP  2DROP ;
+\ copy one array into another
+: }fcopy ( 'src 'dest n -- ) 
+    >R SWAP R>
+    0 ?DO  2DUP I } F@ I } F!  LOOP 2DROP ;
 
+\ store r1 ... r_n into array of size n 
+: }fput ( n 'a -- ) ( F: r1 ... r_n -- ) 
+    SWAP DUP 0 ?DO  1- 2DUP } F! LOOP  2DROP ;
+
+[ELSE]
+
+: }fcopy ( 'src 'dest n -- ) 
+    >R SWAP R>
+    0 ?DO  2DUP I } F@ ROT I } F!  LOOP  2DROP ;
+
+\ store r1 ... r_n into array of size n
+: }fput ( r1 ... r_n n 'a -- ) 
+    SWAP DUP 0 ?DO  1- 2DUP 2>R } F! 2R>  LOOP  2DROP ;
+[THEN]
 
 \ 2-D array definition,
 
@@ -318,92 +317,76 @@ VARIABLE print-width      6 print-width !
 \    | m | cell_size |  data area |
 \    ------------------------------
 
-: MMATRIX  ( n m size -- )           \ defining word for a 2-d matrix
-        CREATE
-           \ OVER , DUP ,
-           \ * * ALLOT
-	   >R 2DUP * R@ * 2 CELLS + ?ALLOT
-	   2DUP ! CELL+ R> SWAP ! 2DROP
-        DOES>  [ 2 CELLS ] LITERAL +
-;
+\ defining word for a 2-d matrix
+: MMATRIX  ( n m size -- ) 
+    CREATE
+    \ OVER , DUP ,
+    \ * * ALLOT
+    >R 2DUP * R@ * 2 CELLS + ?ALLOT
+    2DUP ! CELL+ R> SWAP ! 2DROP
+    DOES>  [ 2 CELLS ] LITERAL + ;
 
 \ Structures
 \    -----------------------------------
 \    | id | m | cell_size |  data area |
 \    -----------------------------------
 
-: SMATRIX  ( n m size -- )           \ defining word for a 2-d matrix
-        CREATE 
-	   \ TYPE-ID ,
-           \ OVER , DUP ,
-           \ * * ALLOT
-	   >R 2DUP * R@ * 3 CELLS + ?ALLOT
-	   TYPE-ID OVER ! CELL+ 2DUP ! CELL+ R> SWAP ! 2DROP
-        DOES>  DUP @ TO TYPE-ID
-               [ 3 CELLS ] LITERAL +
-;
+\ defining word for a 2-d matrix
+: SMATRIX  ( n m size -- ) 
+    CREATE 
+    \ TYPE-ID ,
+    \ OVER , DUP ,
+    \ * * ALLOT
+    >R 2DUP * R@ * 3 CELLS + allot?
+    TYPE-ID OVER ! CELL+ 2DUP ! CELL+ R> SWAP ! 2DROP
+    DOES>  DUP @ TO TYPE-ID [ 3 CELLS ] LITERAL + ;
 
-
-: MATRIX  ( n m size -- )           \ defining word for a 2-d matrix
+\ defining word for a 2-d matrix
+: MATRIX  ( n m size -- ) 
      >r 2dup 0= swap 0= or IF 
        ." WARNING: Creating matrix with zero rows or zero columns!"
      THEN 
      2dup 0< swap 0< or ABORT" Negative row or column count!"
      r>
-     STRUCT-ARRAY? IF   SMATRIX FALSE TO STRUCT-ARRAY?
-                   ELSE MMATRIX
-                   THEN
+     STRUCT-ARRAY? IF 
+       SMATRIX FALSE TO STRUCT-ARRAY?
+     ELSE MMATRIX
+     THEN ;
 
-;
+: DMATRIX ( size -- )  DARRAY ;
 
+\ word to fetch 2-D array addresses
+: }}  ( addr i j -- addr[i][j] ) 
+    >R >R
+    DUP [ 2 CELLS ] LITERAL - 2@     \ &a[0][0] size m
+    R> * R> + * + ;
 
-: DMATRIX ( size -- )      DARRAY ;
+\ print nXm elements of a float 2-D array
+: }}fprint ( n m addr -- ) 
+    ROT ROT SWAP 
+    0 DO  DUP 
+       0 DO
+         OVER J I  }} F@ F.
+       LOOP  CR
+     LOOP
+     2DROP ;
 
+\ copy n m elements of 2-D array src to dest
+: }}fcopy ( 'src 'dest n m  -- ) 
+    SWAP 0 DO
+      DUP 0 DO
+        2 PICK J I  }} F@
+        3 PICK J I  }} F!
+      LOOP
+    LOOP
+    DROP 2DROP ;
 
-: }}    ( addr i j -- addr[i][j] )    \ word to fetch 2-D array addresses
-  	>R >R
-        DUP [ 2 CELLS ] LITERAL - 2@     \ &a[0][0] size m
-        R> * R> + * +
-
-;
-
-
-: }}fprint ( n m addr -- )       \ print nXm elements of a float 2-D array
-        ROT ROT SWAP 0 DO
-                         DUP 0 DO
-                                  OVER J I  }} F@ F.
-                         LOOP
-
-                         CR
-                  LOOP
-        2DROP
-;
-
-: }}fcopy ( 'src 'dest n m  -- )      \ copy n m elements of 2-D array src to dest
-        SWAP 0 DO
-                 DUP 0 DO
-                            2 PICK J I  }} F@
-                            3 PICK J I  }} F!
-                        LOOP
-                  LOOP
-        DROP 2DROP
-;
-
-: }}fput ( r11 r12 ... r_nm  n m 'A -- | store r11 ... r_nm into nxm matrix )
-      -ROT 2DUP * >R 1- SWAP 1- SWAP }} R> 
-      0 ?DO  DUP >R F! R> FLOAT -  LOOP  DROP ;
-
-\ function vector definition
-\
-\ V: and DEFINES  are obsolete since Forth now has the common words
-\ DEFER and IS for this purpose. In kForth, DEFER and IS are provided
-\ by ans-words.4th 
+\ store r11 ... r_nm into nxm matrix
+: }}fput ( n m 'A -- ) ( F: r11 r12 ... r_nm -- ) 
+     -ROT 2DUP * >R 1- SWAP 1- SWAP }} R> 
+     0 ?DO  DUP >R F! R> FLOAT -  LOOP  DROP ;
 
 : noop ; 
-
-\ : v: CREATE 1 CELLS ?ALLOT ['] noop SWAP ! DOES> a@ EXECUTE ;
-\ : defines   ' >BODY STATE @ IF POSTPONE LITERAL POSTPONE !
-\                            ELSE ! THEN ;   IMMEDIATE
 
 : use(  STATE @ IF POSTPONE ['] ELSE ' THEN ;  IMMEDIATE
 : &     POSTPONE use( ; IMMEDIATE

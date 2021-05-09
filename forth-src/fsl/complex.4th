@@ -287,25 +287,19 @@ DECIMAL  \ important for fp input
     : nparg ( f: x y -- nprincp.arg )  FSWAP FATAN2 ;
 [THEN]
 
-s" [UN]" PAD C! PAD CHAR+ PAD C@ MOVE 
-PAD FIND NIP 0= [IF]
-    \ Leave true if name is in the search order, else leave false.
-    : [UN]  ( "name" -- flag )  BL WORD FIND NIP 0= ; IMMEDIATE
-[THEN]
-
 \ non-Standard fp words jvn has found useful
-[UN] s>f     [IF]  : s>f    S>D  D>F  ;       [THEN]
-[UN] -frot   [IF]  : -frot  FROT  FROT  ;     [THEN]
-[UN] fnip    [IF]  : fnip   FSWAP  FDROP  ;   [THEN]
-[UN] ftuck   [IF]  : ftuck  FSWAP  FOVER  ;   [THEN]
-[UN] 1/f     [IF]  : 1/f    f1.0  FSWAP  F/ ; [THEN]
-[UN] f^2     [IF]  : f^2    FDUP  F*  ;       [THEN]
+[UNDEFINED] s>f     [IF]  : s>f    S>D  D>F  ;       [THEN]
+[UNDEFINED] -frot   [IF]  : -frot  FROT  FROT  ;     [THEN]
+[UNDEFINED] fnip    [IF]  : fnip   FSWAP  FDROP  ;   [THEN]
+[UNDEFINED] ftuck   [IF]  : ftuck  FSWAP  FOVER  ;   [THEN]
+[UNDEFINED] 1/f     [IF]  : 1/f    f1.0  FSWAP  F/ ; [THEN]
+[UNDEFINED] f^2     [IF]  : f^2    FDUP  F*  ;       [THEN]
 
 \ added by dnw
-[UN] f2*     [IF]  : f2*    FDUP F+  ;        [THEN]
-[UN] f2/     [IF]  : f2/    0.5E F*  ;        [THEN]
+[UNDEFINED] f2*     [IF]  : f2*    FDUP F+  ;        [THEN]
+[UNDEFINED] f2/     [IF]  : f2/    0.5E F*  ;        [THEN]
 
-[UN] fsignbit [IF]
+[UNDEFINED] fsignbit [IF]
 : fsignbit  ( f: r -- s: minus? )
 (
 Emulate the IEEE 754 signbit function, including signed zero
@@ -326,7 +320,7 @@ bit is unity.
 
 : COMPLEXES ( n -- n*/complex )           2* FLOATS ;
 : COMPLEX+  ( f-addr -- f-addr+/complex ) [ 1 COMPLEXES ] LITERAL + ;
-[UN] COMPLEX [IF] 1 COMPLEXES CONSTANT COMPLEX [THEN]
+[UNDEFINED] COMPLEX [IF] 1 COMPLEXES CONSTANT COMPLEX [THEN]
 
 \ hidden, *nonnestable* scratch storage for stuff from fp stack
 \  FALIGN HERE 3 COMPLEXES ALLOT VALUE fnoname
