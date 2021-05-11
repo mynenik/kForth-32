@@ -227,14 +227,14 @@ variable  number_val
 \   results in total number of digits > 17 will give
 \   incorrect results, e.g. "65536.9921875e 15 f>fpstr type"
 \   will output garbage (20 digits are being requested).
-: f>fpstr ( n -- a u ) ( F: r -- ) | ( r n -- a u )
+: f>fpstr ( n -- a u ) ( F: r -- ) \ ( r n -- a u )
     0 max 17 min >r 10e r@ s>f f** 
     f* fround f>d dup -rot dabs
     <# r> 0 ?DO # LOOP [char] . hold #s rot sign #> ; 
 
 \ Print an fp number as a fixed point string with
 \ n decimal places, right-justified in a field of width, w
-: f.rd ( w n -- ) ( F: r -- ) | ( r w n -- )
+: f.rd ( w n -- ) ( F: r -- ) \ ( r w n -- )
     swap >r f>fpstr dup 20 > IF
       \ Too many digits requested in fixed point output
       2drop r> 0 ?DO [char] * emit LOOP
@@ -250,7 +250,7 @@ variable  fnumber_digits
 
 \ Convert r to a counted string in scientific notation
 \ with n decimal places
-: f>string ( n -- ^str ) ( F: r -- ) | ( r n -- ^str )
+: f>string ( n -- ^str ) ( F: r -- ) \ ( r n -- ^str )
 	>r 
 	fdup f0= IF
 	  f>d <# r> 0 ?do # loop #> s" e0" strcat 
@@ -294,7 +294,7 @@ variable  fnumber_digits
 
 0e 0e f/ fconstant NAN
 	 
-: string>f ( ^str -- ) ( F: -- r ) | ( ^str -- r )
+: string>f ( ^str -- ) ( F: -- r ) \ ( ^str -- r )
     count bl skip base @ >r decimal >float 
     0= IF NAN THEN r> base ! ;
 
@@ -335,7 +335,7 @@ variable  fnumber_digits
 	2r> 2drop r> ;
 [THEN]
 
-: parse_csv ( a u -- n ) ( F: -- r1 ... rn ) | ( a u -- r1 ... rn n )
+: parse_csv ( a u -- n ) ( F: -- r1 ... rn ) \ ( a u -- r1 ... rn n )
     [char] , bl replace-char parse_args ;
 
 BASE !
