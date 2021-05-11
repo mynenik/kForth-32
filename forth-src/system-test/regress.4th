@@ -454,7 +454,6 @@ t{ c" 5G" number?  ->  5 s>d false }t
 t{ c" G5" number?  ->  0 s>d false }t
 decimal
 
-64bit? invert [IF]
 COMMENT Uncomment lines in regress.4th to test errors.
 
 \ Use stolerance for single precision floating point 
@@ -464,16 +463,16 @@ COMMENT Uncomment lines in regress.4th to test errors.
 1e-7  fconstant stolerance  \ tolerance for single precision fp
 1e-15 fconstant tolerance
 
-: -2rot  ( x y z -- z x y )  2rot 2rot ;
+: -frot  ( F: x y z -- z x y )  frot frot ;
 
-t{ 1 2 3 4 5 6 -2rot -> 5 6 1 2 3 4 }t
+t{ 1e 2e 3e -frot -> 3e 1e 2e }t
 
-: fwithin ( x y z -- flag )
+: fwithin ( -- flag ) ( F: x y z -- )
 (
 Assume y < z.  Leave flag = [y<=x<z].
 )
-  -2rot 2over       ( z x y x)
-  f<= ( [y<=x]) >r  ( z x)
+  -frot fover       ( F: z x y x)
+  f<= ( [y<=x]) >r  ( F: z x)
   f> ( [z>x]) r> and
 ;
 
@@ -528,10 +527,16 @@ t{ -3 s>f -> -3e r}t
 t{  3  0         d>f ->  3e r}t
 t{  0  0         d>f ->  0e r}t
 t{ -3 -1         d>f -> -3e r}t
+
+64bit? invert [IF]
 t{  0  1         d>f ->  4294967296e r}t
 t{  0  1 dnegate d>f -> -4294967296e r}t
+[THEN]
 
 hex
+[DEFINED] FDEPTH [IF]  \ has fp stack
+comment Skipping all F>D tests
+[ELSE]
 -1 43dfffff           fconstant  maxftod.f
 maxftod.f fnegate     fconstant -maxftod.f
 0 40900000            fconstant  2^10.f
@@ -579,6 +584,7 @@ t{ -1e  0e f/            f>d -> -maxdint }t  \ -Inf
 t{  0e  0e f/            f>d ->  maxdint }t  \  NaN
 t{  0e  0e f/ fnegate    f>d -> -maxdint }t  \ -NaN
 )
+[THEN]
 
 decimal
 SET-EXACT
@@ -718,4 +724,3 @@ t{ 0e   fsincos -> 0e 1e rr}t
 t{ pi/2 fsincos -> 1e 0e rr}t
 t{ 45e deg>rad fsincos ->  1/sqrt2  1/sqrt2  rr}t
 
-[THEN] \ 64bit? ...
