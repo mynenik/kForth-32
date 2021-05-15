@@ -38,6 +38,7 @@
 \   2011-01-20  km  completed analytic FT for example 1, version 1.3
 \   2011-09-16  km  use Neal Bridges' anonymous module interface
 \   2012-02-19  km  use KM/DNW's modules library
+\   2021-05-10  km  updated paths to FSL files for test code.
 CR .( DFourier          V1.3b          19 February  2012   EFC, KM )
 BEGIN-MODULE
 BASE @
@@ -225,12 +226,10 @@ END-MODULE
 BASE !
 
 TEST-CODE? [IF]     \ test code =============================================
-[undefined] T{  [IF]  
-  s" ttester.4th" included
-  s" strings.4th" included
-  s" fsl-test-utils.4th" included
-[THEN]
-[undefined] zvariable [IF] s" complex.4th" included [THEN]
+[undefined] PARSE_ARGS [IF] s" strings.4th" included  [THEN]
+[undefined] T{  [IF]  s" ttester.4th" included [THEN]
+[undefined] CompareArrays [IF] s" fsl/fsl-test-utils.4th" included [THEN]
+[undefined] zvariable [IF] s" fsl/complex.4th" included [THEN]
 
 BASE @
 DECIMAL

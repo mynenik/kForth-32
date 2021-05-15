@@ -34,28 +34,39 @@
 \ Revisions:
 \    2007-09-22  km; replaced test code with automated tests
 \    2007-10-27  km; save base, switch to decimal, and restore base
+\    2021-05-15  km; update for separate fp stack and convert to module
 
-CR .( HILBERT           V1.1c          27 October 2007   EFC )
+CR .( HILBERT           V1.2           15 May     2021   EFC )
+
+BEGIN-MODULE
+
 BASE @ DECIMAL
+0 ptr h{{
 
-: HILBERT ( &h n -- )             \ stores in array with address &h
+Public:
 
+\ Make a n x n Hilbert matrix; store in matrix with address &h
+: HILBERT ( &h n -- )  
+    swap to h{{
     DUP 0 DO
 	DUP 0 DO
-	    OVER 1.0E0 I J + 1+ S>F F/
-	    ROT I J }} F!
+	    1.0E0 I J + 1+ S>F F/
+	    h{{ I J }} F!
 	LOOP
     LOOP
-    2DROP
-;
+    DROP ;
 
-
+Private:
 0 ptr hinv{{
 0 value hn
-: HILBERT-INV ( &s n -- )       \ stores inverse in array with address &s
 
+Public:
+
+\ Compute inverse of Hilbert matrix;
+\ store inverse in matrix with address &s
+: HILBERT-INV ( &s n -- )
     to hn  to hinv{{
-    hn DUP * S>F FDUP hinv{{ F!  
+    hn DUP * S>F FDUP hinv{{ F!
     
     hn 1 ?DO                \ do diagonals
 	hn DUP I + SWAP I - *   S>F
@@ -65,29 +76,27 @@ BASE @ DECIMAL
     LOOP
     FDROP
 
-
     hn 1- 0 ?DO                \ do off-diagonals
 	hn I 1+ DO
 	    hn DUP  I +  SWAP I - * S>F
             I DUP * S>F F/ FNEGATE
             hinv{{ J I 1- }} F@ F*
-            hinv{{ J I }} F!                      
+            hinv{{ J I }} F!
 	LOOP
     LOOP
 
-
-    hn 1 ?DO                         \ normalize
+    hn 1 ?DO                  \ normalize
 	I 1+ 0 DO
 	    I J + 1+ S>F
             hinv{{ I J }} DUP >R F@ FSWAP F/
             FDUP R> F!
             hinv{{ J I }} F!
-	LOOP   
-    LOOP
-;
+	LOOP
+    LOOP ;
 
-: HILBERT-DET ( n -- det )                \ calculates determinant of n order matrix
-                                          \ the actual matrix is implicit
+\ Calculates determinant of n order matrix.
+\ The actual matrix is implicit
+: HILBERT-DET ( n -- det )
     to hn
     1.0E0  1.0E0
     hn 0 DO
@@ -96,13 +105,13 @@ BASE @ DECIMAL
 		I J - S>F FDUP F* FROT F* FSWAP
 	    THEN
 
-	    I J + 1+ S>F F*            \ denominator accumulation
+	    I J + 1+ S>F F*    \ denominator accumulation
 	LOOP
     LOOP
-    F/
-;
+    F/ ;
 
 BASE !
+END-MODULE
 
 TEST-CODE? [IF]   \ test code ==============================================
 [undefined] T{      [IF]  include ttester.4th  [THEN]    
