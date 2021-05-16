@@ -56,7 +56,8 @@
 \   2010-12-19  km; reintroduce Private: and Public: and revised test code
 \   2011-09-16  km; use Neal Bridges' anonymous modules
 \   2012-02-19  km; use KM/DNW's modules library     
-CR .( LUFACT            V1.6g         19 February  2012   EFC )
+\   2021-05-16  km; update for use in separate fp stack system.
+CR .( LUFACT            V1.6h         16 May       2021   EFC )
 BEGIN-MODULE
 
 BASE @ DECIMAL
@@ -133,42 +134,36 @@ Private:
 
     DUP
     
-    a{{ matrix{{ ROT DUP }}fcopy
-
-;
+    a{{ matrix{{ ROT DUP }}fcopy ;
 
 : lufact-finish ( n -- flag )
-
      1- DUP
      pivot{ OVER } !
 
-     matrix{{ OVER DUP }} F@ F0= IF LU@ ->status !
-                                 ELSE
-                                    DROP
-                                 THEN
+     matrix{{ OVER DUP }} F@ F0= IF 
+       LU@ ->status !
+     ELSE
+       DROP
+     THEN
 
-
-    LU@ ->status @
-
-;
+     LU@ ->status @ ;
 
 FVARIABLE fpivot
 
 : partial-pivot ( n k  -- n l )
-
         \ ." partial pivot k = " DUP . CR
         \ over DUP matrix{{ }}fprint
 
         0.0E0  fpivot F!
         DUP DUP
         3 PICK SWAP  DO
-                       matrix{{ I 3 PICK  }} F@ FABS
-                       fpivot F@ FOVER F< IF
-                                         fpivot F! 
-                                         DROP I
-				ELSE FDROP
-                                THEN
-                     LOOP
+          matrix{{ I 3 PICK  }} F@ FABS
+          fpivot F@ FOVER F< IF
+            fpivot F! 
+            DROP I
+          ELSE FDROP
+          THEN
+        LOOP
 
          DUP ROT pivot{ SWAP } !
  \ ." l = " DUP . CR
@@ -179,17 +174,26 @@ FVARIABLE fpivot
 
 FVARIABLE ftemp
 
+[DEFINED] FDEPTH [IF]
+: interchange ( n l k -- n )      
+       2 PICK 0 DO  \ -- n l
+           matrix{{ 2 PICK I }} DUP F@   \ -- n l a1 ; F: m[n,i]  
+           matrix{{ 2 PICK I }} DUP F@   \ -- n l a1 a2 ; F: m[n,i]  m[l,i]
+           SWAP F! F!
+       LOOP
+       2DROP ;
+[ELSE]
 : interchange ( n l k -- n )
 
         \ OVER OVER ." interchanging k = " . ." l = " . CR
 
         2 PICK 0 DO
-           matrix{{ 2 PICK I }} DUP F@  ftemp F!  
-           matrix{{ 2 PICK I }} DUP F@  2>R  
+           matrix{{ 2 PICK I }} DUP F@  ftemp F!
+           matrix{{ 2 PICK I }} DUP F@  2>R
            SWAP 2R> ROT F!  ftemp F@ ROT F!
        LOOP
-       2DROP
-;
+       2DROP ;
+[THEN]
 
 FVARIABLE fscale1
 FVARIABLE fscale2 
@@ -201,42 +205,52 @@ FVARIABLE fscale2
        matrix{{ OVER DUP }} F@ 1.0E0 FSWAP F/ fscale1 F!
        
        2DUP 1+ DO
-               matrix{{ I 2 PICK }} DUP F@ fscale1 F@ F*
-               FDUP  fscale2 F! ROT F!
+         matrix{{ I 2 PICK }} DUP >R F@ fscale1 F@ F*
+         FDUP  fscale2 F! R> F!
 
-               OVER OVER 1+ DO
-                 matrix{{ OVER I }} F@ fscale2 F@ F* FNEGATE ftemp F!
-                 matrix{{ J I }} DUP F@ ftemp F@ F+
-                 ROT F!
-               LOOP
+         OVER OVER 1+ DO
+           matrix{{ OVER I }} F@ fscale2 F@ F* FNEGATE ftemp F!
+           matrix{{ J I }} DUP >R F@ ftemp F@ F+ R> F!
+         LOOP
               
        LOOP
 
-     DROP
-;
+     DROP ;
 
 
-: build-identity ( 'p n -- 'p )         \ make an NxN identity matrix
-             0 DO
-                  I 1+ 0 DO
-                            I J = IF   DUP I J }} 1.0E0 ROT F!
-                                  ELSE
-                                       DUP J I }} 0.0E0 ROT F!
-                                       DUP I J }} 0.0E0 ROT F!
-                                  THEN
-                         LOOP
-                 LOOP
-;
+\ Make an NxN identity matrix
+0 ptr m{{
 
+: build-identity ( 'p n -- 'p )
+     SWAP TO m{{
+     0 DO
+       I 1+ 0 DO
+         I J = IF
+           1.0E0 m{{ I J }} F!
+         ELSE
+           0.0E0 m{{ J I }} F!
+           0.0E0 m{{ I J }} F!
+         THEN
+       LOOP
+     LOOP ;
+
+[DEFINED] FDEPTH [IF] 
 : column_swap ( 'p n k1 k2 -- 'p n )
-
-           2 PICK 0 DO
-                        3 PICK I 3 PICK }} DUP F@ ftemp F!
-                        4 PICK I 3 PICK }} DUP F@ 2>R
-                        SWAP 2R> ROT F! ftemp F@ ROT F!
-                    LOOP
-           2DROP
-;
+     2 PICK 0 DO
+       3 PICK I 3 PICK }} DUP F@  \ -- 'p n k1 k2 a1  F: p{{ I k1 }}
+       4 PICK I 3 PICK }} DUP F@  \ -- 'p n k1 k2 a1 a2  F: p{{ I k1 }} p{{ I k2 }}
+       SWAP F! F!
+     LOOP
+     2DROP ;
+[ELSE]
+: column_swap ( 'p n k1 k2 -- 'p n )
+     2 PICK 0 DO
+       3 PICK I 3 PICK }} DUP F@ ftemp F!
+       4 PICK I 3 PICK }} DUP F@ 2>R
+       SWAP 2R> ROT F! ftemp F@ ROT F!
+     LOOP
+     2DROP ;
+[THEN]
 
 Public:
 
@@ -245,39 +259,34 @@ Public:
      lufact-init
 
      DUP 2 < IF
-               lufact-finish
-               ABORT" lufact failed! (1) "
-             THEN
-
+       lufact-finish
+       ABORT" lufact failed! (1) "
+     THEN
 
      DUP 1- 0 DO
-                  I partial-pivot
+       I partial-pivot
 
-                  matrix{{ OVER I }} F@ F0= IF
-                                           DROP I singular-pivot
-                                        ELSE
-                                           I OVER = IF
-                                                       DROP
-                                                     ELSE
-                                                       I interchange
-                                                     THEN
+       matrix{{ OVER I }} F@ F0= IF
+         DROP I singular-pivot
+       ELSE
+         I OVER = IF
+           DROP
+         ELSE
+           I interchange
+         THEN
 
-                                           I scale-row
-                                            
-                                        THEN
+         I scale-row
 
+       THEN
+     LOOP
 
-              LOOP
-
-              
      lufact-finish
 
-     ABORT" lufact failed! (2) "
-     
-;
+     ABORT" lufact failed! (2) " ;
 
-: LU->L  ( 'lu 'l{{ -- )         \ unpack L matrix from LU struture
 
+\ Unpack L matrix from LU structure
+: LU->L  ( 'lu 'l{{ -- ) 
          >R
          DUP  ->matrix{{ a@    \ get base address of matrix
          >R
@@ -285,21 +294,21 @@ Public:
          R> R>
 
          ROT 0 DO
-                  I 1+ 0 DO
-                            I J = IF
-                                    DUP I J }} 1.0E0 ROT F!
-                                  ELSE
-                                    DUP I J }} 0.0E0 ROT F!
-                                    OVER  J I }} F@  ftemp F! DUP J I }} ftemp F@ ROT F!
-                                  THEN
-                         LOOP
-                 LOOP
+           I 1+ 0 DO
+             I J = IF
+               DUP I J }} >R 1.0E0 R> F!
+             ELSE
+               DUP I J }} >R 0.0E0 R> F!
+               OVER  J I }} F@  ftemp F! 
+               DUP J I }} >R ftemp F@ R> F!
+             THEN
+           LOOP
+         LOOP
 
-         2DROP
-;
+         2DROP ;
 
-: LU->U  ( 'lu 'u{{ -- )         \ unpack U matrix from LU struture
-
+\ unpack U matrix from LU struture
+: LU->U  ( 'lu 'u{{ -- )         
          >R
          DUP  ->matrix{{ a@    \ get base address of matrix
          >R
@@ -307,17 +316,17 @@ Public:
          R> R>
 
          ROT 0 DO
-                  I 1+ 0 DO
-                            DUP J I }} 0.0E0 ROT F!
-                            OVER  I J }} F@  ftemp F! DUP I J }} ftemp F@ ROT F!
-                         LOOP
-                 LOOP
+           I 1+ 0 DO
+             DUP J I }} >R 0.0E0 R> F!
+             OVER  I J }} F@  ftemp F! 
+             DUP I J }} >R ftemp F@ R> F!
+           LOOP
+         LOOP
 
-         2DROP
-;
+         2DROP ;
 
-: LU->P  ( 'lu 'p{{ -- )         \ extract P matrix from LU struture
-
+\ Extract P matrix from LU struture
+: LU->P  ( 'lu 'p{{ -- )         
          >R
          DUP  ->pivot{    \ get base address of pivot
          >R
@@ -331,12 +340,11 @@ Public:
 
          \ now swap the appropriate columns
          DUP 0 DO
-                  2 PICK I } @ I OVER OVER =
-                  IF  2DROP   ELSE  column_swap   THEN
-               LOOP
+           2 PICK I } @ I OVER OVER =
+           IF  2DROP   ELSE  column_swap   THEN
+         LOOP
 
-         DROP 2DROP
-;
+         DROP 2DROP ;
 
 BASE !
 END-MODULE
@@ -344,9 +352,9 @@ END-MODULE
 TEST-CODE? [IF]   \ test code ==============================================
 [undefined] T{      [IF]
     include ttester
-    include fsl-test-utils
+    include fsl/fsl-test-utils
 [THEN]
-[undefined] hilbert [IF] include hilbert  [THEN]
+[undefined] hilbert [IF] include fsl/hilbert  [THEN]
 BASE @ DECIMAL
 
 1e-14 abs-near F!
