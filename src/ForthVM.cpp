@@ -1025,6 +1025,7 @@ int CPP_colon()
     pNewWord->Pfa = NULL;
     pNewWord->Cfa = NULL;
     recursestack.erase(recursestack.begin(), recursestack.end());
+    pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
     return 0;
 }
 
