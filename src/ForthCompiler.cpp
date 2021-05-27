@@ -112,9 +112,10 @@ long int linecount;
 istream* pInStream ;
 ostream* pOutStream ;
 
-// Global ptr to current opcode vector
+// Global ptrs to current and previous opcode vectors
 
 vector<byte>* pCurrentOps;
+vector<byte>* pPreviousOps;
 
 // The word currently being compiled (needs to be global)
 

@@ -42,6 +42,7 @@ extern long int linecount;
 extern istream* pInStream ;    // global input stream
 extern ostream* pOutStream ;   // global output stream
 extern vector<byte>* pCurrentOps;
+extern vector<byte>* pPreviousOps;
 extern vector<int> ifstack;
 extern vector<int> beginstack;
 extern vector<int> whilestack;
@@ -245,7 +246,6 @@ byte ForthReturnTypeStack[RETURN_STACK_SIZE];// the return value type stack
 
 
 bool FileOutput = FALSE;
-vector<byte>* pPreviousOps;    // copy of ptr to old opcode vector for [ and ]
 vector<byte> tempOps;          // temporary opcode vector for [ and ]
 
 //---------------------------------------------------------------
@@ -1105,10 +1105,11 @@ int CPP_semicolon()
 // Forth 2012 Core Wordset 6.2.0945
 int CPP_compilecomma ()
 {
+    vector<byte>* pSaveOps = pCurrentOps;
     if (State == 0) pCurrentOps = pPreviousOps;
     CPP_literal();
     pCurrentOps->push_back(OP_EXECUTE);
-    if (State == 0) pCurrentOps = &tempOps;
+    if (State == 0) pCurrentOps = pSaveOps;
     return 0;  
 }
 
@@ -1122,6 +1123,8 @@ int CPP_compilename ()
     WordListEntry* p = (WordListEntry*) TOS;
     byte* bp;
     int wc = (p->WordCode >> 8) ? OP_CALLADDR : p->WordCode;
+    // vector<byte>* pSaveOps = pCurrentOps;
+    // if (State == 0) pCurrentOps = pPreviousOps;
     pCurrentOps->push_back(wc);
     switch (wc) 
     {
@@ -1155,6 +1158,7 @@ int CPP_compilename ()
       default:
         ;
     }
+    // if (State == 0) pCurrentOps = pSaveOps;
     return 0;
 }
 
@@ -2615,7 +2619,7 @@ int CPP_lbracket()
 int CPP_rbracket()
 {
   State = TRUE;
-  pCurrentOps = pPreviousOps;
+  if (pPreviousOps) pCurrentOps = pPreviousOps;
   return 0;
 }
 
