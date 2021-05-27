@@ -41,7 +41,8 @@
 \                   convergence test when EPSILON is too small                   
 \   2011-09-16  km; use Neal Bridges' anonymous modules.
 \   2012-02-19  km; use KM/DNW's modules library
-CR .( REGFALSI          V1.1f          19 February  2012  JVN )
+\   2021-05-10  km; fix path to sph_bes.4th in test code.
+CR .( REGFALSI          V1.1g          10 May       2021  JVN )
 BEGIN-MODULE
 
 BASE @ DECIMAL
@@ -130,7 +131,7 @@ t{ use( FSIN 3e 3.2e abs-near F@ )root       -> PI  r}t
 t{ use( f1   0e 1e   abs-near F@ )root  f1   -> 0e  r}t
 t{ use( f1   0e 1e   abs-near F@ )root  -> 5.671432904097833E-1 r}t
 
-[undefined] sphbes [IF] s" sph_bes.4th" included [THEN]
+[undefined] sphbes [IF] s" fsl/sph_bes.4th" included [THEN]
 \ First few roots of spherical Bessel functions, j0 through j2
 : j0  ( x -- j0[x] )  sphbes jbes{ 0 } f@ ;
 : j1  ( x -- j1[x] )  sphbes jbes{ 1 } f@ ;

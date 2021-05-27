@@ -40,7 +40,8 @@
 \                  FSL version as possible
 \  2011-09-16  km; use Neal Bridges' anonymous module interface
 \  2012-02-19  km; use KM/DNW's modules library
-CR .( DETS              V1.0f          19 February  2012  EFC )
+\  2021-05-16  km; updated for use with separate fp stack system
+CR .( DETS              V1.0g          16 May       2021  EFC )
 BEGIN-MODULE
 BASE @ DECIMAL
 
@@ -50,9 +51,7 @@ Private:
 FLOAT  DMATRIX a{{            \ pointer to users matrix
 INTEGER DARRAY pivot{          \ pointer to users array of LU pivots
 
-: ?odd ( n -- t/f )
-     DUP 2/ 2* -
-;
+: ?odd ( n -- t/f )  DUP 2/ 2* - ;
 
 0 value nexp
 
@@ -62,9 +61,7 @@ INTEGER DARRAY pivot{          \ pointer to users array of LU pivots
 	0.10e F*
 	nexp 1+ to nexp
 	10.0e FOVER FABS F< 0=
-    UNTIL
-
-;
+    UNTIL ;
 
 : small-det ( fdet -- fdet' ) 
 
@@ -72,9 +69,7 @@ INTEGER DARRAY pivot{          \ pointer to users array of LU pivots
 	10.0e F*
 	nexp 1- to nexp
 	FDUP FABS 0.10e F< 0=
-    UNTIL
-
-;
+    UNTIL ;
 
 Public:
 
@@ -86,25 +81,23 @@ Public:
     DUP ->pivot{   a@  & pivot{ &! 
     0 to npiv
     
-    1e 
-    ROT ->N @ 0 DO
+    >R 1e 
+    R> ->N @ 0 DO
 	a{{ I I }} F@ F*
 	pivot{ I } @ I = 0= IF npiv 1+ to npiv THEN
     LOOP
 
-    npiv ?odd IF FNEGATE THEN
-    
-;
+    npiv ?odd IF FNEGATE THEN ;
 
 
-: deti ( 'lu -- nexp fx )     \ det = fx * 10^nexp
+: deti0 ( 'lu -- fx )     \ det = fx * 10^nexp
 
     DUP ->matrix{{ a@  & a{{ &! 
     DUP ->pivot{   a@  & pivot{ &!
     0 to npiv  0 to nexp
     
-    1e
-    ROT ->N @ 0 DO
+    >R 1e
+    R> ->N @ 0 DO
 	a{{ I I }} F@ F*
 	pivot{ I } @ I = 0= IF npiv 1+ to npiv THEN
 	
@@ -118,10 +111,13 @@ Public:
 
     LOOP
 
-    npiv ?odd IF FNEGATE THEN
-    nexp -ROT
-               
-;
+    npiv ?odd IF FNEGATE THEN ;
+
+fp-stack? [IF]
+: deti ( 'lu -- nexp ) ( F: -- r )  deti0 nexp ;
+[ELSE]
+: deti ( 'lu -- nexp r )  deti0 nexp -ROT ;
+[THEN]
 
 BASE !
 END-MODULE

@@ -27,11 +27,12 @@
 \	ans-words.4th
 \	fsl-util.4th
 \
-\ and definition of ptr (given below):
 
-.( SHELLSORT         v1.3           28 October 1994   cgm ) CR    
+.( SHELLSORT         v1.3b          28 October 1994   cgm ) CR    
 
 0 ptr astart  \ storage for base address used in array access
+0 ptr a1
+0 ptr a2
 
 : }shellsort    ( nsize &array -- )
 
@@ -46,16 +47,16 @@
 
 \ compare Ith and (I+M)th elements 
               DUP I + DUP               ( n m l l )
-              FLOATS astart + F@        
+              FLOATS   astart + F@        
               I FLOATS astart + F@      ( n m l Al Ai )
               F<                \ reverse this to get ascending sort
 
 \ switch them if necessary
               IF  DROP LEAVE            ( n m )
               THEN                      ( n m l )
-              FLOATS astart + DUP F@ ROT
-              I FLOATS astart + DUP F@ 2SWAP ( n m Al Ai &Al &Ai)
-              >R  F! R> F!
+              FLOATS   astart + DUP to a1 F@  
+              I FLOATS astart + DUP to a2 F@  ( n m Al Ai &Al &Ai)
+              a1 F! a2 F!
 
               DUP NEGATE                ( n m -m )
             +LOOP
@@ -69,14 +70,16 @@ TEST-CODE? [IF]     \ test code =============================================
 
 : fillTest{  ( -- )  33 0 DO  I S>F 0.7e F/ FSIN Test{ I } F!  LOOP  ;
 
-: test_sort  ( -- )
-   \ PRECISION @ 3 SET-PRECISION  print-width @ 10 print-width !
+   \ PRECISION  3 SET-PRECISION  print-width @ 10 print-width !
+
    fillTest{
-   33  Test{ }fprint CR
-   33 Test{ }shellsort
-   33  Test{ }fprint
+   cr .( UNSORTED values: ) cr  
+   33  Test{ }fprint cr
+   cr .( SORTED values: ) cr
+   33  Test{ }shellsort
+   33  Test{ }fprint cr
+
    \ print-width ! SET-PRECISION
-;
 
 [THEN]
 

@@ -39,7 +39,8 @@
 \   2007-10-27  km; save base, switch to decimal, and restore base
 \   2011-09-16  km; use Neal Bridges' anonymous modules
 \   2012-02-19  km; use KM/DNW's modules library
-CR .( INVM              V1.2d          19 February  2012   EFC )
+\   2021-05-16  km; update file paths in test code
+CR .( INVM              V1.2e          16 May       2021   EFC )
 
 BEGIN-MODULE
 
@@ -85,7 +86,9 @@ END-MODULE
 
 TEST-CODE? [IF]   \ test code =============================================
 [undefined] T{           [IF] include ttester  [THEN]
-[undefined] BACKSUB      [IF] include backsub  [THEN]
+[undefined] CompareMatrices [IF] include fsl/fsl-test-utils [THEN]
+[undefined] LUFACT       [IF] include fsl/lufact  [THEN]
+[undefined] BACKSUB      [IF] include fsl/backsub [THEN]
 BASE @ DECIMAL
 
 1e-13 abs-near F!   ( tolerance of 1e-14 causes failed test )
