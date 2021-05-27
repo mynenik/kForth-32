@@ -760,7 +760,7 @@ int CPP_colon()
     NewWord.Pfa = NULL;
     NewWord.Cfa = NULL;
     recursestack.erase(recursestack.begin(), recursestack.end());
-
+    pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
     return 0;
 }
 

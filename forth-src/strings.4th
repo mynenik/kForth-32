@@ -2,7 +2,7 @@
 \
 \ String utility words for kForth
 \
-\ Copyright (c) 1999--2020 Krishna Myneni
+\ Copyright (c) 1999--2021 Krishna Myneni
 \
 \ This software is provided under the terms of the
 \ GNU General Public License.
@@ -17,9 +17,8 @@
 \
 \ 	PARSE_TOKEN ( a u -- a2 u2 a3 u3 )
 \ 	PARSE_LINE  ( a u -- a1 u1 a2 u2 ... an un n )
-\ 	PARSE_ARGS  ( a u -- r1 ... rn n )
-\       PARSE_CSV   ( a u -- r1 ... rn n )
-\
+\ 	PARSE_ARGS  ( a u -- n ) ( F: r1 ... rn ) | ( a u -- r1 ... rn n )
+\       PARSE_CSV   ( a u -- n ) ( F: r1 ... rn ) | ( a u -- r1 ... rn n )
 \ 	IS_LC_ALPHA ( c -- b )
 \ 	ISDIGIT     ( c -- b )
 \ 	UCASE       ( c1 -- c2 )
@@ -39,10 +38,10 @@
 \ 	STRING>S    ( ^str -- n )
 \ 	STRING>D    ( ^str -- d )
 \
-\ 	F>STRING    ( r n -- ^str )
-\ 	F>FPSTR     ( r n -- a u )
-\ 	F.RD        ( r w n -- )
-\ 	STRING>F    ( ^str -- r )
+\ 	F>STRING    ( n -- ^str ) ( F: r -- ) | ( r n -- ^str )
+\ 	F>FPSTR     ( n -- a u )  ( F: r -- ) | ( r n -- a u )
+\ 	F.RD        ( w n -- )    ( F: r -- ) | ( r w n -- )
+\ 	STRING>F    ( ^str -- )   ( F: -- r ) | ( ^str -- r )
 \ 	
 BASE @
 DECIMAL
@@ -221,21 +220,21 @@ variable  number_val
 	LOOP
 	drop
 	number_val @ number_sign @ IF negate THEN ;
-
+ 
 \ Convert r to a formatted fixed point string with
 \ n decimal places, 0 <= n <= 17.
 \ WARNING: Requesting a number fixed point decimal places which
 \   results in total number of digits > 17 will give
 \   incorrect results, e.g. "65536.9921875e 15 f>fpstr type"
 \   will output garbage (20 digits are being requested).
-: f>fpstr ( r n -- a u )
+: f>fpstr ( n -- a u ) ( F: r -- ) \ ( r n -- a u )
     0 max 17 min >r 10e r@ s>f f** 
     f* fround f>d dup -rot dabs
     <# r> 0 ?DO # LOOP [char] . hold #s rot sign #> ; 
 
 \ Print an fp number as a fixed point string with
 \ n decimal places, right-justified in a field of width, w
-: f.rd ( r w n -- )
+: f.rd ( w n -- ) ( F: r -- ) \ ( r w n -- )
     swap >r f>fpstr dup 20 > IF
       \ Too many digits requested in fixed point output
       2drop r> 0 ?DO [char] * emit LOOP
@@ -251,7 +250,7 @@ variable  fnumber_digits
 
 \ Convert r to a counted string in scientific notation
 \ with n decimal places
-: f>string ( r n -- ^str )
+: f>string ( n -- ^str ) ( F: r -- ) \ ( r n -- ^str )
 	>r 
 	fdup f0= IF
 	  f>d <# r> 0 ?do # loop #> s" e0" strcat 
@@ -295,11 +294,29 @@ variable  fnumber_digits
 
 0e 0e f/ fconstant NAN
 	 
-: string>f ( ^str -- r )
+: string>f ( ^str -- ) ( F: -- r ) \ ( ^str -- r )
     count bl skip base @ >r decimal >float 
     0= IF NAN THEN r> base ! ;
 
 \ Parse a string delimited by spaces into fp numbers
+
+[DEFINED] FDEPTH [IF]
+: parse_args ( a u -- n ) ( F: -- r1 ... rn )
+	0 >r  
+	BEGIN
+	  dup 0>
+	WHILE
+	  bl skip 
+	  2dup 
+	  bl scan 2>r
+	  r@ - dup 0= 
+	  IF drop r> 0 >r THEN
+	  strpck string>f
+	  2r> r> 
+	  1+ >r
+	REPEAT
+	2drop r> ;
+[ELSE]
 : parse_args ( a u -- r1 ... rn n )
 	0 >r 
 	2>r
@@ -316,8 +333,9 @@ variable  fnumber_digits
 	  1+ >r 2>r
 	REPEAT
 	2r> 2drop r> ;
+[THEN]
 
-: parse_csv ( a u -- r1 ... rn n )
+: parse_csv ( a u -- n ) ( F: -- r1 ... rn ) \ ( a u -- r1 ... rn n )
     [char] , bl replace-char parse_args ;
 
 BASE !

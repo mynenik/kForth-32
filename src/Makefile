@@ -25,7 +25,7 @@
 # Invoke "make debug" if you want to create an executable
 # that contains debugging information for the GNU debugger (gdb).
 
-VERSION = 1.6.7
+VERSION = 1.6.8
 DEF_DIR_VAR=KFORTH_DIR
 BUILD_DATE=`date +%F`
 DEBUG = 
@@ -45,7 +45,8 @@ CFLAGS = -c -m32 -Wall
 FAST = -D__FAST__
 OBJS = kforth.o ForthVM.o ForthCompiler.o vm32.o vmc.o
 FOBJS = kforth-fast.o ForthVM-fast.o ForthCompiler.o vm32-fast.o vmc-fast.o
-LIBS = -lreadline -lncurses -ldl -lm
+# LIBS = -lreadline -lncurses -ldl -lm
+LIBS = -lreadline -ldl -lm
 
 all:	
 	make kforth32
