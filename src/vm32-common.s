@@ -381,9 +381,10 @@ L_calladdr:
 	movl %ebp, %ecx # address to execute (intrinsic Forth word or other)
 	addl $3, %ebp
 	movl %ebp, GlobalIp
-	call *(%ecx)
-	movl GlobalIp, %ebp
-	ret
+        jmpl *(%ecx)
+#	call *(%ecx)
+#	movl GlobalIp, %ebp
+#	ret
 
 L_binary:
 	movl $Base, %ecx
