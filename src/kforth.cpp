@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
     if (argc < 2) {
 	cout << "kForth-32 v " << version << "\t (Build: " << build << ")" << endl;
-	cout << "Copyright (c) 1998--2020 Krishna Myneni" << endl;
+	cout << "Copyright (c) 1998--2021 Krishna Myneni" << endl;
         cout << "Contributions by: dpw gd mu bk abs tn cmb bg dnw" << endl;
 	cout << "Provided under the GNU Affero General Public License, v3.0 or later" 
 	  << endl << endl;
