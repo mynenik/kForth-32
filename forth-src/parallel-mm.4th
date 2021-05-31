@@ -39,28 +39,34 @@
 \                   module fsl/extras/mmul.4th; execution speed improved
 \                   from previous version by a factor of 5 with 
 \                   kforth-fast.
+\
+
+1 cells 4 = constant 32bit?
 
 include ans-words
 include strings
 include modules
 include syscalls
 include mc
-include asm-x86
+32bit? [IF]  include asm-x86  [THEN]
 include fsl/fsl-util
 include fsl/horner
 include fsl/extras/noise
-\ include fsl/extras/mmul
+32bit? [IF] 
 include fsl/extras/mmul_x86
+[ELSE]
+include fsl/extras/mmul
+[THEN]
 
 Also syscalls
 
 variable cpid        \ child process id
-variable status
+create status 128 allot
 variable shared_mem  \ address of shared memory buffer used by
                      \   both child and parent.
 
 1000000 constant NCOLS
-4       constant NROWS
+100     constant NROWS
 
 NROWS DFLOATS constant SHARED_LEN  \ length of shared memory region
 
@@ -105,7 +111,8 @@ NROWS FLOAT ARRAY P{          \ result from parallel processes
 	\ child  handles multiplication of odd rows of A{{
         swap dfloat+ swap
         1 ?DO
-          I 0 df_mul_r1c2 2 pick f!
+          I 0 df_mul_r1c2 
+[ fp-stack? ] [IF] dup [ELSE] 2 pick [THEN] f!
           DFL2 + 
 	2 +LOOP
         drop
@@ -113,7 +120,8 @@ NROWS FLOAT ARRAY P{          \ result from parallel processes
      ELSE
  	\ parent handles multiplication of even rows of A{{ 
         0 ?DO
-	  I 0 df_mul_r1c2 2 pick f!
+	  I 0 df_mul_r1c2 
+[ fp-stack? ] [IF] dup [ELSE]  2 pick [THEN] f!
           DFL2 +
         2 +LOOP
         drop
@@ -144,7 +152,7 @@ dup shared_mem !
 ms@ 
 parallel-process
 \ parent has finished; now, wait for the child to terminate
-cpid @ status 0 waitpid cpid @ <> 
+cpid @ status 0 waitpid cpid @ <>
 [IF] 
 cr .( Child process did not terminate properly! )
 [ELSE]
@@ -165,7 +173,9 @@ P{ 0 } S{ 0 } NROWS dfloats tuck compare
 cr .( Parallel result is ) [IF] .( NOT ) [THEN]
 .( equal to single process result. ) cr
 
+0 [IF]
 cr .( To print the results, type ) cr
 cr .(    NROWS S{ }fprint )
 cr .(    NROWS P{ }fprint )
+[THEN]
 
