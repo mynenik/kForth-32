@@ -3,7 +3,7 @@
 // The C++ portion of the kForth Virtual Machine to 
 // execute Forth byte code.
 //
-// Copyright (c) 1996--2020 Krishna Myneni,
+// Copyright (c) 1996--2021 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -52,7 +52,9 @@ extern vector<int> leavestack;
 extern vector<int> recursestack;
 extern vector<int> casestack;
 extern vector<int> ofstack;
+extern vector<WordListEntry*> PendingDefStack;
 extern WordListEntry* pNewWord;
+
 extern size_t NUMBER_OF_INTRINSIC_WORDS;
 
 extern "C" {
@@ -220,7 +222,8 @@ const char* V_SysDefinedMessages[] =  {
   "Not allowed inside colon definition", // E_V_NOT_IN_DEF
   "Unexpected end of input stream",      // E_V_END_OF_STREAM
   "Unexpected end of string",            // E_V_END_OF_STRING
-  "VM returned unknown error"            // E_V_VM_UNKNOWN_ERROR
+  "VM returned unknown error",           // E_V_VM_UNKNOWN_ERROR
+  "No pending definition"                // E_V_NOPENDING_DEF
 };
 
 // The Dictionary
@@ -1005,7 +1008,9 @@ int CPP_noname()
 {
     State = TRUE;
     pNewWord = NULL;
+    PendingDefStack.push_back(pNewWord);
     recursestack.erase(recursestack.begin(), recursestack.end());
+    pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
     return 0;
 }
 
@@ -1019,6 +1024,7 @@ int CPP_colon()
     pTIB = ExtractName (pTIB, WordToken);
     strupr(WordToken);
     pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
+    PendingDefStack.push_back(pNewWord);
     strcpy (pNewWord->WordName, WordToken);
     pNewWord->WordCode = OP_DEFINITION;
     pNewWord->Precedence = PRECEDENCE_NONE;
@@ -1041,13 +1047,13 @@ int CPP_semicolon()
   if (State)
     {
       // Check for incomplete control structures
-		    
-      if (ifstack.size())                          ecode = E_V_INCOMPLETE_IF;
-      if (beginstack.size() || whilestack.size())  ecode = E_V_INCOMPLETE_BEGIN;
-      if (dostack.size()    || leavestack.size())  ecode = E_V_INCOMPLETE_LOOP;
-      if (casestack.size()  || ofstack.size())     ecode = E_V_INCOMPLETE_CASE;
-      if (ecode) return ecode;
-
+      if (pNewWord) {
+        if (ifstack.size())                          ecode = E_V_INCOMPLETE_IF;
+        if (beginstack.size() || whilestack.size())  ecode = E_V_INCOMPLETE_BEGIN;
+        if (dostack.size()    || leavestack.size())  ecode = E_V_INCOMPLETE_LOOP;
+        if (casestack.size()  || ofstack.size())     ecode = E_V_INCOMPLETE_CASE;
+        if (ecode) return ecode;
+      }
       if (debug) OutputForthByteCode (pCurrentOps);
       int nalloc = max( (int) pCurrentOps->size(), 2*WSIZE );
       byte* lambda = new byte[ nalloc ]; MemUsed += nalloc;
@@ -1070,6 +1076,7 @@ int CPP_semicolon()
         *((byte**) pLambda) = lambda;
         PUSH_ADDR( (long int) pLambda )
       }
+      PendingDefStack.pop_back();
 
       // Resolve any self references (recursion)
 
@@ -1088,7 +1095,6 @@ int CPP_semicolon()
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *lambda++ = *bp++;
 
-
       pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
       State = FALSE;
     }
@@ -1105,11 +1111,10 @@ int CPP_semicolon()
 // Forth 2012 Core Wordset 6.2.0945
 int CPP_compilecomma ()
 {
-    vector<byte>* pSaveOps = pCurrentOps;
     if (State == 0) pCurrentOps = pPreviousOps;
     CPP_literal();
     pCurrentOps->push_back(OP_EXECUTE);
-    if (State == 0) pCurrentOps = pSaveOps;
+    if (State == 0) pCurrentOps = &tempOps;
     return 0;  
 }
 
@@ -1123,8 +1128,6 @@ int CPP_compilename ()
     WordListEntry* p = (WordListEntry*) TOS;
     byte* bp;
     int wc = (p->WordCode >> 8) ? OP_CALLADDR : p->WordCode;
-    // vector<byte>* pSaveOps = pCurrentOps;
-    // if (State == 0) pCurrentOps = pPreviousOps;
     pCurrentOps->push_back(wc);
     switch (wc) 
     {
@@ -1158,7 +1161,6 @@ int CPP_compilename ()
       default:
         ;
     }
-    // if (State == 0) pCurrentOps = pSaveOps;
     return 0;
 }
 
@@ -2618,9 +2620,18 @@ int CPP_lbracket()
 // Forth 2012 Core Wordset 6.1.2540
 int CPP_rbracket()
 {
+  int ecode = 0;
   State = TRUE;
-  if (pPreviousOps) pCurrentOps = pPreviousOps;
-  return 0;
+  pCurrentOps = pPreviousOps;
+  int nPending = PendingDefStack.size();
+  if (nPending) {
+    pNewWord = PendingDefStack[nPending - 1];
+  }
+  else {
+    pNewWord = NULL;
+    ecode = E_V_NOPENDING_DEF;
+  }
+  return ecode;
 }
 
 // DOES>  ( -- )

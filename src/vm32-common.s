@@ -503,11 +503,12 @@ L_jmp:
 L_calladdr:
 	incl %ebp
 	movl %ebp, %ecx # address to execute (intrinsic Forth word or other)
-	addl $3, %ebp
+	addl $WSIZE-1, %ebp
 	movl %ebp, GlobalIp
-	call *(%ecx)
-	movl GlobalIp, %ebp
-	ret
+#	call *(%ecx)
+        jmpl *(%ecx)
+#	movl GlobalIp, %ebp
+#	ret
 
 L_binary:
 	movl $Base, %ecx
