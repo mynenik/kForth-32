@@ -2,7 +2,7 @@
 //
 //  Forth Byte Codes (FBC) for kForth
 //
-//  Copyright (c) 1996--2020 Krishna Myneni,
+//  Copyright (c) 1996--2021 Krishna Myneni,
 //    <krishna.myneni@ccreweb.org>
 //
 //  This software is provided under the terms of the GNU
@@ -327,7 +327,7 @@
 #define OP_SLASHSTRING          312
 #define OP_TRAILING             313
 #define OP_PARSE                314
-
+#define OP_PARSENAME            315
 #define OP_DNE			316
 #define OP_DGT			317
 #define OP_DLE			318
@@ -389,6 +389,18 @@
 #define OP_ZMUL                 378
 #define OP_ZDIV                 379
 #define OP_ZABS                 380
+
+#define OP_FDUP                 385
+#define OP_FDROP                386
+#define OP_FSWAP                387
+#define OP_FROT                 388
+#define OP_FOVER                389
+#define OP_XSIZE                390
+#define OP_XCSIZE               391
+#define OP_XCHARPLUS            392
+#define OP_XCFETCHPLUS          393
+#define OP_XCSTOREPLUS          394
+#define OP_XCSTOREPLUSQUERY     395
 
 #define OP_BOOL_NOT             400
 #define OP_BOOL_AND             401
