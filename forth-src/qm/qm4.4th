@@ -133,10 +133,12 @@
 \   2001-08-21 -- First version
 \   2003-04-15 -- Replaced F>S with FROUND>S
 \   2018-10-13 -- Revised.
+\   2021-07-05 -- Revised to work on separate FP stack system.
 
 include ans-words
 include strings
 
+[DEFINED] FDEPTH constant FPSTACK?
 [UNDEFINED] a@  [IF] : a@ @ ; [THEN]
 [UNDEFINED] s>f [IF] : s>f s>d d>f ; [THEN]
 [UNDEFINED] fround>s [IF] : fround>s fround f>d d>s ; [THEN]
@@ -252,8 +254,9 @@ variable ntemp
 	set_step_size
 	nsteps @ 0 DO
 	  dup
-	  I s>f rstep f@ f* ntemp @ @efa[] execute 
-	  rot f! DSIZE +	  
+	  I s>f rstep f@ f* ntemp @ @efa[] execute
+[ FPSTACK? invert ] [IF] rot [THEN] 
+	  f! DSIZE +	  
 	LOOP
 	drop ;
 
@@ -374,15 +377,21 @@ fvariable r2
 	\   forward and backward slopes
 
 	nsteps @ 1- 1 DO
-	  wf_a1 a@ dup I    @psi[] rot I 1- @psi[] f-  
-	  wf_a1 a@ dup I 1+ @psi[] rot I    @psi[] f-
+	  wf_a1 a@ dup I    @psi[] 
+[ FPSTACK? invert ] [IF] rot [THEN]
+          I 1- @psi[] f-  
+	  wf_a1 a@ dup I 1+ @psi[] 
+[ FPSTACK? invert ] [IF] rot [THEN]
+          I    @psi[] f-
 	  f+ rstep f@ f/ 2e f/
 	  wf_a2 a@ I !psi[]
 	LOOP
 	  
 	\ Compute backward slope at last point	  	  	  
 
-	wf_a1 a@ dup nsteps @ 1- @psi[] rot nsteps @ 2- @psi[] f- 
+	wf_a1 a@ dup nsteps @ 1- @psi[] 
+[ FPSTACK? invert ] [IF] rot [THEN]
+        nsteps @ 2- @psi[] f- 
 	rstep f@ f/ wf_a2 a@ nsteps @ 1- !psi[]
 
 	wf_a2 a@ ;
@@ -420,7 +429,5 @@ fvariable r2
 
 \ Apply the H operator to a wavefunction
 : H ( a1 -- a2 )  dup T swap V add ;
-
-
 
 
