@@ -72,7 +72,8 @@
 \    2011-09-16  km; set BASE to decimal and restore; use Neal Bridges'
 \                    anonymous modules.
 \    2012-02-19  km; use KM/DNW's modules library
-CR .( MARQUARDT         V1.0b          19 February   2012     MH )
+\    2021-07-09  km; update for separate fp stack also.
+CR .( MARQUARDT         V1.0c          09 July       2021     MH )
 BEGIN-MODULE
 
 BASE @ DECIMAL
@@ -114,7 +115,7 @@ Public:
 FVARIABLE alamda
 FVARIABLE chisq 
 
-v: MrqFitter ( fx 'a 'dyda -- fy )
+DEFER MrqFitter ( fx 'a 'dyda -- fy )
 
 Private:
 
@@ -123,21 +124,29 @@ Private:
 \ total parameters, and their ordering lista[1..ma], repack the covariance 
 \ matrix to the true order of the parameters. Elements associated with fixed
 \ parameters will be zero. 
+fvariable temp
 : covsrt ( -- )
 	\ zero the elements below the diagonal
 	ma 1- 0 ?DO  ma I 1+ ?DO  0e covar{{ I J }} F!  LOOP LOOP
 
 	\ pack off-diagonal elements of fit into correct locations below 
 	\ diagonal
-	mfit 1- 0 ?DO	mfit  I 1+ ?DO  covar{{ I J }} F@  
-					covar{{ lista{ J } @  lista{ I } @
-					2DUP < IF  SWAP  THEN   }} F!
-				  LOOP
-		 LOOP
+        mfit 1- 0 ?DO	
+          mfit  I 1+ ?DO
+            covar{{ I J }} F@  
+            covar{{ lista{ J } @  lista{ I } @
+            2DUP < IF  SWAP  THEN   }} F!
+          LOOP
+        LOOP
 
 	\ Temporarily store diagonal elements in top row and zero the diagonal 
 	covar{{ 0 0 }} F@ ( -- "swap" )
-	ma 0 DO  covar{{ I I }} DUP F@ 2>R 0e ROT F! 2R> covar{{ 0 I }} F!  LOOP
+	ma 0 DO  
+          covar{{ I I }} DUP F@ 
+          temp f! 0e 
+[ fp-stack? invert ] [IF] ROT [THEN]
+          F! temp f@ covar{{ 0 I }} F!  
+        LOOP
 
 	\ Sort elements into proper order on diagonal 
 	( -- swap) covar{{ lista{ 0 } @ DUP }} F!
@@ -159,7 +168,7 @@ Private:
 	mfit 0 DO \ init symmetric alpha and beta
 		  I 1+ 0 DO  0e alpha2{{ J I }} F!  LOOP
 		  0e beta{ I } F!
-	     LOOP
+	LOOP
 	0e ( chi2)
 	ndata 0 DO \ summation loop over all data
 		   sig{ I } F@ FSQR 1/F ( -- chi2 s2)
@@ -171,11 +180,11 @@ Private:
 			     I 1+ 0 DO
 				       FDUP dyda{ lista{ I } @ } F@ F*
 				       alpha2{{ J I }} F+!
-				  LOOP ( -- chi2 s2 dy wt)
+		 	     LOOP ( -- chi2 s2 dy wt)
 			     FOVER F* beta{ I } F+!
-			LOOP ( -- chi2 s2 dy)
+		   LOOP ( -- chi2 s2 dy)
 		   FSQR F* F+ ( -- chi2)
-	      LOOP
+	LOOP
 	chisq F!
 	mfit 1 DO  I 0 DO  alpha2{{ J I }} F@ alpha2{{ I J }} F!  LOOP LOOP ;
 
@@ -255,14 +264,18 @@ FLOAT DMATRIX dummy{{
 	atry{ covar{{ da{ mrqcof 
 	chisq F@  MrqminOchisq F@ 
 	 F< IF
-		alamda DUP F@ 0.1e F* ROT F!
+		alamda DUP F@ 0.1e F* 
+[ fp-stack? invert ] [IF] ROT [THEN] 
+                F!
 		chisq F@  MrqminOchisq F!
 		covar{{ alpha{{ mfit mfit }}fcopy   
 		mfit 0 DO  
 			   atry{ lista{ I } @ } F@  a{ lista{ I } @ } F!
 			   da{ I } F@  MrqminBeta{ I } F!
 		     LOOP
-	  ELSE	alamda DUP F@ 10e F* ROT F!  MrqminOchisq F@ chisq F!
+	  ELSE	alamda DUP F@ 10e F* 
+[ fp-stack? invert ] [IF] ROT [THEN]
+                F!  MrqminOchisq F@ chisq F!
 	  THEN 
 
 	FALSE ;
@@ -287,9 +300,9 @@ INTEGER DARRAY lista{
 FLOAT DMATRIX covar{{
 FLOAT DMATRIX alpha{{
 
-v: MRQ-SETUP    ( -- )
-v: MRQ-STOP?    ( iter -- stop? )
-v: MRQ-RESULTS  ( -- )
+DEFER MRQ-SETUP    ( -- )
+DEFER MRQ-STOP?    ( iter -- stop? )
+DEFER MRQ-RESULTS  ( -- )
 
 0 VALUE iter
 : FIND-COEFFS ( -- )
@@ -332,7 +345,7 @@ FVARIABLE c
  	LOOP 
 	FSWAP ( -- x ) FDROP ;
 
-	& fgauss defines MrqFitter
+	& fgauss IS MrqFitter
 
 
 
@@ -393,7 +406,7 @@ FVARIABLE spread	\ actual value does NOT influence the number of
 	
 	mrqminimize ABORT" singular matrix" ;
 
-	& GAUSS-SETUP defines MRQ-SETUP
+	& GAUSS-SETUP IS MRQ-SETUP
 
 
 : GAUSS? ( iter -- stop? )
@@ -401,7 +414,7 @@ FVARIABLE spread	\ actual value does NOT influence the number of
 	." chisq = " chisq F@ F. ." alamda = " alamda F@ F.
 	KEY? DUP IF KEY DROP THEN ;
 
-	& GAUSS? defines MRQ-STOP?
+	& GAUSS? IS MRQ-STOP?
 
 
 : F.NICE ( r -- )
@@ -437,7 +450,7 @@ FVARIABLE spread	\ actual value does NOT influence the number of
 	 CR #funcs #params/f * DUP alpha{{ }}fprint 
 	R> print-width ! ;
 
-	& .GAUSS defines MRQ-RESULTS
+	& .GAUSS IS MRQ-RESULTS
 
 CR .( Try:  UNSURE 20 TO scaled  30 TO #datapoints  FIND-COEFFS )
 

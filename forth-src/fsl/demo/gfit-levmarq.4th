@@ -18,12 +18,13 @@
 \
 \   2004-01-03  created
 \   2007-11-03  renamed to gfit-levmarq.4th
+\   2021-07-09  updated file paths, replaced DEFINES with IS
 
 include ans-words
-include fsl-util
-include dynmem
-include gaussj
-include levmarq
+include fsl/fsl-util
+include fsl/dynmem
+include fsl/gaussj
+include fsl/levmarq
 
 \ Define the fitting function. Computes the y value and the derivatives dy/da.
 \ Derivatives are computed from analytic expressions.
@@ -59,7 +60,7 @@ fvariable fx
 	dyda{ 5 } f!
 	1e dyda{ 6 } f! ;
 
-& f2gauss defines MrqFitter
+& f2gauss IS MrqFitter
 	
 
 FLOAT DARRAY  x{

@@ -16,14 +16,15 @@
 \ Revisions:
 \       01-01-2002  cleaned up code  KM
 \       09-18-2007  use new polyfit.4th module, with FSL-style arrays  KM
-
+\       05/16/2021  update file paths.  KM
+\
 \ First load the necessary source files
 
 include ans-words
-include fsl-util
-include dynmem
-include determ
-include polyfit
+include fsl/fsl-util
+include fsl/dynmem
+include fsl/extras/determ
+include fsl/extras/polyfit
 
 
 \ First create the x and y arrays (floating pt) to hold

@@ -1,11 +1,8 @@
 \ mmul.4th
 \
-\ Double precision floating point matrix multiplication
-\ for an integrated data/fp stack, for 1 DFLOATS occupying
-\ 2 cells.
+\ Double precision floating point matrix multiplication.
 \
-\ Krishna Myneni, Creative Consulting for Research
-\ and Education
+\ Krishna Myneni
 \
 \ Usage: a1 a2 a3 nr1 nc1 nc2 df_mmul
 \
@@ -28,14 +25,13 @@
 \                   under kforth-fast.
 \   2017-05-21  km; added SET_MMUL_PARAMS to be able to use DF_R1C2>A1A2
 \                   and DF_MUL_R1C2 independently of DF_MMUL.
+\   2021-05-09  km; added separate stack versions of words.
+\
 \ Notes:
 \   0. Matrix data is assumed to be stored in row order
 \
-\   1. Only the word DF_MMUL is specific for an integrated
-\      data/fp stack. Other words work with separate fp
-\      stack.
 
-CR .( MMUL               V1.2         21 May  2017 )
+CR .( MMUL               V1.3         09 May  2021 )
 
 BEGIN-MODULE
 
@@ -60,17 +56,27 @@ Public:
 
 \ Multiply row of a1 with col of a2, element by element,
 \ and accumulate the sum.
+[DEFINED] FDEPTH [IF]
+: df_mul_r1c2 ( row1 col2 -- ) ( F: -- rsum )
+    df_r1c2>a1a2
+    0e
+    nc1 @ 0 DO  
+      2dup f@ f@ f* f+
+      roffs2 @ + 
+      swap dfloat+ swap
+    LOOP
+    2drop ;
+[ELSE]
 : df_mul_r1c2 ( row1 col2 -- rsum )
     df_r1c2>a1a2
     2>r 0e 2r>  \ rsum a1 a2
     nc1 @ 0 DO  
       2dup 2>r >r f@ r> f@ f* f+
       2r> roffs2 @ + 
-      \ >r dfloat+ r>
       swap dfloat+ swap
     LOOP
-    2drop
-;
+    2drop ;
+[THEN]
 
 : set_mmul_params ( a1 a2 a3 nr1 nc1 nc2 -- a3 nr1 )
     nc2 ! nc1 ! 2>r a2 ! a1 !
@@ -83,6 +89,17 @@ Public:
 \ a1 and a2, and store at a3. Proper memory allocation is
 \ assumed, as are the dimensions for a2, i.e. nr2 = nc1 is
 \ assumed. This word assumes an integrated data/fp stack.
+[DEFINED] FDEPTH [IF]
+: df_mmul ( a1 a2 a3 nr1 nc1 nc2 -- )
+    set_mmul_params
+    0 DO
+      nc2 @ 0 DO
+        J I df_mul_r1c2 dup f!
+        dfloat+
+      LOOP
+    LOOP
+    drop ;
+[ELSE]
 : df_mmul ( a1 a2 a3 nr1 nc1 nc2 -- )
     set_mmul_params
     0 DO
@@ -91,8 +108,8 @@ Public:
         dfloat+
       LOOP
     LOOP
-    drop
-;
+    drop ;
+[THEN]
 
 BASE !
 

@@ -71,7 +71,8 @@
 \     2007-10-27  km; save base, switch to decimal, and restore base
 \     2011-09-16  km; use Neal Bridges' anonymous modules.
 \     2012-02-19  km; use KM/DNW's modules library
-CR .( RUNGE4            V1.2f         19 February  2012   EFC )
+\     2021-07-09  km; updated for separate fp stack; removed Lorenz eqns.
+CR .( RUNGE4            V1.2g         09 July      2021   EFC )
 BEGIN-MODULE
 
 BASE @ DECIMAL
@@ -150,7 +151,8 @@ Private:
              dum{ I } F@ FOVER F* u{ I } F@ F+
              ut{ I } F!
 
-             dum{ I } DUP F@ dut{ I } F@ F+ ROT F!             
+             dum{ I } DUP F@ dut{ I } F@ F+ 
+[ fp-stack? invert ] [IF] ROT [THEN] F!             
 
            LOOP
 
@@ -209,7 +211,7 @@ FLOAT DARRAY uscal{
 	tstart F@ uorig{ uscal{ dsdt()	
 	dim 0 ?DO uscal{ I } DUP F@ step F@ F* FABS
 		  uorig{ I }     F@ FABS F+ tiny F+
-		  ROT F!		 
+[ fp-stack? invert ] [IF] ROT  [THEN] F!		 
 	    LOOP ;
 
 \ With a trick the result of a step can be made accurate to 5th order.
@@ -217,7 +219,8 @@ FLOAT DARRAY uscal{
 	dim 0 DO 		\ get 5th order truncation error
 		 uorig{ I } DUP F@  FDUP  
 	         u1{ I }    F@ F-  fcor F* 
-		 F+  ROT F! 
+		 F+  
+[ fp-stack? invert ] [IF] ROT [THEN] F! 
 	    LOOP ;
 
 \ Test if the step size needs shrinking
@@ -380,8 +383,9 @@ FVARIABLE t_start
 \
 \      r = 4 * exp ( pi/2 - theta )
 
+fvariable ftemp
 : derivs-A5() ( t 'u 'dudt -- )
-    >R >R FDUP R> 0 } F@ FDUP FROT F- 2>R F+ 2R> F/ R> 0 } F! ;
+    >R >R FDUP R> 0 } F@ FDUP FROT F- ftemp F! F+ ftemp F@ F/ R> 0 } F! ;
 
 FVARIABLE r
 FVARIABLE theta
@@ -444,36 +448,19 @@ cm FNEGATE F2/ PI*2 F/ FCONSTANT v0
 \ dy/dt = r * x - y - x * z
 \ dz/dt = -bp * z + x * y
 \ Exact solution: NONE
+\
+\ See fsl/demo/lorenz.4th for an example of using the fixed and
+\ adaptive steppers for solving the Lorenz equations.
+\
 \ Comments: Since chaotic equations are extremely sensitive to
 \   initial conditions, the result after integration will
-\   depend very sensitively on the precision of the input values
+\   depend sensitively on the precision of the input values
 \   x(t0), y(t0), and z(t0), and on the precision with which
 \   floating point calculations are performed. Such sensitivity is
 \   not useful for directly testing the accuracy of a portable ODE
 \   solver; however, some invariant properties of the attractor can
 \   be computed from the solution, and may possibly serve as suitable
 \   tests of the ODE solver. 
-16.0E0  FCONSTANT sig
-45.92E0 FCONSTANT r
-4.0E0   FCONSTANT bp
-
-: derivs-LE() ( t 'u 'dudt -- ) 
-       2SWAP FDROP     \ does not use t
-
-       >R	\ 'u
-       DUP DUP 1 } F@ ROT 0 } F@ F- sig F*
-       R@ 0 } F!
-
-       DUP 2DUP 2 } F@ FNEGATE r F+
-       ROT      0 } F@ F*
-       ROT      1 } F@ F-
-       R@ 1 } F!
-
-       DUP 2DUP 0 } F@ ROT 1 } F@ F* ROT 2 } F@ bp F* F-
-       R> 2 } F!
-       DROP   
-;
-
 
 \ ----- Begin Testing --------------------
 
@@ -510,24 +497,6 @@ t{ use(  derivs-DV() 80 0e u0 v0  )rk_fixed2  ->  t_final F@ DV  r}t
 
 TESTING Charging Capacitor (Fixed Step)
 t{ use(  derivs-Vc() 4  0e 0e  )rk_fixed1  ->  t_final F@ Vc  r}t
-
-
-0 [IF]
-\ see comments for the Lorenz equations, above -- km 2007-09-27
-    
-: lorenz_test ( n -- )               \ n is the number of time steps to run
-
-    0.0E0 x{ 0 } F!   1.0E0 x{ 1 } F!   0.0E0 x{ 2 } F!     
-    use( derivs-LE() 3 )runge_kutta4_init
-    0.0E0       \ initial time
-          
-    ROT 0 DO
-	x{ 1 dt runge_kutta4_integrate()      
-    LOOP
-
-    FDROP runge_kutta4_done
-;
-[THEN]
 
 BASE !
 [THEN]
