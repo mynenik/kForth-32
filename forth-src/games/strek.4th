@@ -251,14 +251,6 @@ string_buf str_buf_ptr !
 
 \ --- String and numeric input ---
 
-kForth? [IF]
-  [undefined] >float [IF]
-    : >float ( a u -- r flag )
-	$ucase 2dup s" E" search >r 2drop r> invert
-	IF  s" E0" $cat  THEN evaluate true ;
-  [THEN]
-[THEN]
-
 : $input ( -- a u )
     pad 64 accept pad swap ;
 

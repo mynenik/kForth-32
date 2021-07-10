@@ -3,6 +3,7 @@
 \ అనువాదకుడు : మైనేని కృష్ణ
 \ 30 నవంబరు 2019
 
+include ans-words
 include mlp-telugu
 చేర్చు strings
 చేర్చు ansi

@@ -84,9 +84,8 @@ Calls : 458
 
 )
 
-\ ======== kForth interface ==========
-include strings
-: CHARS ;
+\ ======== kForth requires  ==========
+include ans-words
 \ ====================================
 
 
@@ -384,6 +383,14 @@ create sudoku_box 9 cells allot
   ."      help        ; for help " CR
   ."      puzzle      ; make a new puzzle from the next" CR
   ."                  ; 81 whitespace delimited digits" CR
+  ." Example:" cr cr
+  ." ( next three lines are entered as a single line )" cr
+  ."   puzzle 5 3 0 0 7 0 0 0 0 6 0 0 1 9 5 0 0 0 0 9 8 0 0 0 0 6 0" cr 
+  ."          8 0 0 0 6 0 0 0 3 4 0 0 8 0 3 0 0 1 7 0 0 0 2 0 0 0 6" cr
+  ."          0 6 0 0 0 0 2 8 0 0 0 0 4 1 9 0 0 5 0 0 0 0 8 0 0 7 9" cr
+  ."   showit" cr
+  ."   solveit" cr
+
   CR
 ;
 
