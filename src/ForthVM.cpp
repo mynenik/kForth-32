@@ -20,6 +20,7 @@ const char* dir_env_var=DIR_ENV_VAR;
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <stack>
 using namespace std;
 
 #include "fbc.h"
@@ -30,6 +31,9 @@ using namespace std;
 
 #define STACK_SIZE 32768
 #define RETURN_STACK_SIZE 4096
+#ifndef __NO_FPSTACK__
+#define FP_STACK_SIZE 16384
+#endif
 
 extern bool debug;
 
@@ -41,19 +45,19 @@ extern const char* C_ErrorMessages[];
 extern long int linecount;
 extern istream* pInStream ;    // global input stream
 extern ostream* pOutStream ;   // global output stream
-extern vector<byte>* pCurrentOps;
-extern vector<byte>* pPreviousOps;
-extern vector<int> ifstack;
-extern vector<int> beginstack;
-extern vector<int> whilestack;
-extern vector<int> dostack;
-extern vector<int> querydostack;
-extern vector<int> leavestack;
-extern vector<int> recursestack;
-extern vector<int> casestack;
-extern vector<int> ofstack;
-extern vector<WordListEntry*> PendingDefStack;
+extern stack<int> ifstack;
+extern stack<int> beginstack;
+extern stack<int> whilestack;
+extern stack<int> dostack;
+extern stack<int> querydostack;
+extern stack<int> leavestack;
+extern stack<int> recursestack;
+extern stack<int> casestack;
+extern stack<int> ofstack;
+extern stack<WordListEntry*> PendingDefStack;
+extern stack<vector<byte>*> PendingOps;
 extern WordListEntry* pNewWord;
+extern vector<byte>* pCurrentOps;
 
 extern size_t NUMBER_OF_INTRINSIC_WORDS;
 
@@ -62,7 +66,6 @@ extern "C" {
   // functions provided by vmc.c
 
   void  set_start_time(void);
-  void  set_start_mem(void);
   void  save_term(void);
   void  restore_term(void);
   void  strupr (char*);
@@ -79,6 +82,9 @@ extern "C" {
 
   int L_initfpu();
   int L_depth();
+#ifndef __NO_FPSTACK__
+  int L_fdepth();
+#endif
   int L_abort();
   int L_ret();
   int L_dabs();
@@ -86,11 +92,17 @@ extern "C" {
 
   // global pointers exported to other modules
 
-  long int* GlobalSp;      // the global stack pointer
-  byte* GlobalIp;     // the global instruction pointer
+  long int* GlobalSp;  // the typed global stack pointer
+#ifndef __NO_FPSTACK__
+  void* GlobalFp;      // the untyped floating point stack pointer
+#endif
+  byte* GlobalIp;      // the global instruction pointer
   long int* GlobalRp;      // the global return stack pointer
   long int* BottomOfStack;
   long int* BottomOfReturnStack;
+#ifndef __NO_FPSTACK__
+  void* BottomOfFpStack;
+#endif
 
 #ifndef __FAST__
   byte* GlobalTp;     // the global type stack pointer
@@ -103,13 +115,15 @@ extern "C" {
   long int Base;
   long int State;
   long int Precision;
+#ifndef __NO_FPSTACK__
+  long int FpSize;
+#endif
   char* pTIB;
   long int NumberCount;
   char WordBuf[256];
   char TIB[256];
   char NumberBuf[256];
   char ParseBuf[1024];
-  unsigned long MemUsed;
 }
 extern "C" long int JumpTable[];
 extern "C" void dump_return_stack(void); 
@@ -297,7 +311,7 @@ WordListEntry* WordList::GetFromCfa (void* cfa)
 Vocabulary::Vocabulary( const char* name )
 {
     int n = strlen(name);
-    char *cp = new char [n+1]; MemUsed += n+1;
+    char *cp = new char [n+1];
     strcpy( cp, name );
     StringTable.push_back(cp);
     Name = cp;
@@ -309,12 +323,12 @@ int Vocabulary::Initialize( WordTemplate wt[], int n )
 
    for (i = 0; i < n; i++)
    {
-     pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
+     pNewWord = new WordListEntry;
      strcpy(pNewWord->WordName, wt[i].WordName);
      wcode = wt[i].WordCode;
      pNewWord->WordCode = wcode;
      pNewWord->Precedence = wt[i].Precedence;
-     pNewWord->Cfa = new byte[WSIZE+2]; MemUsed += WSIZE+2;
+     pNewWord->Cfa = new byte[WSIZE+2];
      pNewWord->Pfa = NULL;
      byte* bp = (byte*) pNewWord->Cfa;
      if (wcode >> 8) {
@@ -371,7 +385,10 @@ int InitSystemVars ()
 
     Base = 10;
     State = FALSE;
-    Precision = 15;
+    Precision = 15;  // Default FP output precision
+#ifndef __NO_FPSTACK__
+    FpSize = 8;      // Default FP size in bytes
+#endif
 
     WordListEntry* pWord;
     pWord = Voc_Forth.GetFromName("STATE");
@@ -429,6 +446,9 @@ int OpenForth ()
    // Other initialization
     vmEntryRp = BottomOfReturnStack;
     InitSystemVars();
+#ifndef __NO_FPSTACK__
+    InitFpStack();
+#endif
     set_start_time();
     save_term();
     L_initfpu();
@@ -467,7 +487,12 @@ void CloseForth ()
         if (*j) delete [] *j;
         ++j;
     }
-    StringTable.erase(StringTable.begin(), StringTable.end());
+    StringTable.clear();
+
+#ifndef __NO_FPSTACK__
+    // Delete the floating point stack
+    delete [] (((byte*) BottomOfFpStack) + FpSize - FP_STACK_SIZE*FpSize) ;
+#endif
 
     restore_term();
 }
@@ -498,14 +523,14 @@ void ClearControlStacks ()
   // Clear the flow control stacks
 
   if (debug) cout << "Clearing all flow control stacks" << endl; 
-  ifstack.erase(ifstack.begin(), ifstack.end());
-  beginstack.erase(beginstack.begin(),beginstack.end());
-  whilestack.erase(whilestack.begin(),whilestack.end());
-  dostack.erase(dostack.begin(), dostack.end());
-  querydostack.erase(querydostack.begin(), querydostack.end());
-  leavestack.erase(leavestack.begin(), leavestack.end());
-  ofstack.erase(ofstack.begin(), ofstack.end());
-  casestack.erase(casestack.begin(), casestack.end());
+  while (!ifstack.empty())    ifstack.pop();
+  while (!beginstack.empty()) beginstack.pop();
+  while (!whilestack.empty()) whilestack.pop();
+  while (!dostack.empty())    dostack.pop();
+  while (!querydostack.empty()) querydostack.pop();
+  while (!leavestack.empty()) leavestack.pop();
+  while (!ofstack.empty())    ofstack.pop();
+  while (!casestack.empty())  casestack.pop();
 }
 //---------------------------------------------------------------
 
@@ -678,7 +703,7 @@ int CPP_cold ()
 // Forth 2012 Search-Order Wordset 16.6.1.2460
 int CPP_wordlist()
 {   // create an unnamed vocabulary
-    Vocabulary* pVoc = new Vocabulary(""); MemUsed += sizeof(Vocabulary);
+    Vocabulary* pVoc = new Vocabulary("");
     PUSH_ADDR( (long int) pVoc )
     Dictionary.push_back(pVoc); 
     return 0;
@@ -764,7 +789,7 @@ int CPP_searchwordlist()
     CHK_ADDR
     char* cp = (char*) TOS;
     if (len > 0) {
-      char* name = new char [len+1]; MemUsed += len+1;
+      char* name = new char [len+1];
       strncpy(name, cp, len);
       name[len] =  0;
       strupr(name);
@@ -798,12 +823,11 @@ int CPP_vocabulary()
     CPP_create();
     WordListEntry* pWord = *(pCompilationWL->end() - 1);
     Vocabulary* pVoc = new Vocabulary(pWord->WordName); 
-    MemUsed += sizeof(Vocabulary);
     Dictionary.push_back(pVoc);
 
     pWord->Precedence = PRECEDENCE_NON_DEFERRED;
     pWord->Pfa = NULL;
-    byte* bp = new byte[3*WSIZE+6]; MemUsed += 3*WSIZE+6;
+    byte* bp = new byte[3*WSIZE+6];
     pWord->Cfa = bp;
     pWord->WordCode = OP_DEFINITION;
     
@@ -984,7 +1008,7 @@ int CPP_create ()
 
     if (nc)
     {
-      pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
+      pNewWord = new WordListEntry;
       strupr(token);
       strcpy (pNewWord->WordName, token);
       pNewWord->WordCode = OP_ADDR;
@@ -1006,11 +1030,15 @@ int CPP_create ()
 // Forth 2012 Core Extensions Wordset 6.2.0455
 int CPP_noname()
 {
+    if (PendingDefStack.size()) {
+      PendingOps.push(pCurrentOps);
+      pCurrentOps = new vector<byte>;
+    }
     State = TRUE;
     pNewWord = NULL;
-    PendingDefStack.push_back(pNewWord);
-    recursestack.erase(recursestack.begin(), recursestack.end());
-    pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+    PendingDefStack.push(pNewWord);
+    while (!recursestack.empty()) recursestack.pop();
+    // pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
     return 0;
 }
 
@@ -1023,14 +1051,14 @@ int CPP_colon()
     State = TRUE;
     pTIB = ExtractName (pTIB, WordToken);
     strupr(WordToken);
-    pNewWord = new WordListEntry; MemUsed += sizeof(WordListEntry);
-    PendingDefStack.push_back(pNewWord);
+    pNewWord = new WordListEntry;
+    PendingDefStack.push(pNewWord);
     strcpy (pNewWord->WordName, WordToken);
     pNewWord->WordCode = OP_DEFINITION;
     pNewWord->Precedence = PRECEDENCE_NONE;
     pNewWord->Pfa = NULL;
     pNewWord->Cfa = NULL;
-    recursestack.erase(recursestack.begin(), recursestack.end());
+    while (!recursestack.empty()) recursestack.pop();
     pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
     return 0;
 }
@@ -1056,7 +1084,7 @@ int CPP_semicolon()
       }
       if (debug) OutputForthByteCode (pCurrentOps);
       int nalloc = max( (int) pCurrentOps->size(), 2*WSIZE );
-      byte* lambda = new byte[ nalloc ]; MemUsed += nalloc;
+      byte* lambda = new byte[ nalloc ];
       void* pLambda;
 
       if (pNewWord) {
@@ -1072,11 +1100,11 @@ int CPP_semicolon()
       }
       else {
         // noname definition
-        pLambda = new byte* ; MemUsed += sizeof(byte*);
+        pLambda = new byte* ;
         *((byte**) pLambda) = lambda;
         PUSH_ADDR( (long int) pLambda )
       }
-      PendingDefStack.pop_back();
+      // PendingDefStack.pop();
 
       // Resolve any self references (recursion)
 
@@ -1086,23 +1114,32 @@ int CPP_semicolon()
 
       while (recursestack.size())
       {
-         i = recursestack[recursestack.size() - 1];
+         i = recursestack.top();
          ib = pCurrentOps->begin() + i;
          for (i = 0; i < sizeof(void*); i++) *ib++ = *(bp + i);
-         recursestack.pop_back();
+         recursestack.pop();
       }
 
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *lambda++ = *bp++;
 
-      pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+      pNewWord = PendingDefStack.top();
+      PendingDefStack.pop();
+      if ((pNewWord == NULL) && (PendingDefStack.size())) {
+         delete pCurrentOps;
+	 pCurrentOps = PendingOps.top();
+	 PendingOps.pop();
+      }
+      else {
+        pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+      }
       State = FALSE;
     }
   else
     {
       ecode = E_V_END_OF_DEF;
     }
-    
+
   return ecode;
 }
 
@@ -1111,10 +1148,11 @@ int CPP_semicolon()
 // Forth 2012 Core Wordset 6.2.0945
 int CPP_compilecomma ()
 {
-    if (State == 0) pCurrentOps = pPreviousOps;
+    vector<byte>* pSaveOps = pCurrentOps;
+    if (State == 0) pCurrentOps = PendingOps.top();
     CPP_literal();
     pCurrentOps->push_back(OP_EXECUTE);
-    if (State == 0) pCurrentOps = &tempOps;
+    if (State == 0) pCurrentOps = pSaveOps;
     return 0;  
 }
 
@@ -1772,7 +1810,7 @@ int CPP_allocate()
 #endif
 
   unsigned long requested = TOS;
-  byte *p = new (nothrow) byte[requested]; MemUsed += requested;
+  byte *p = new (nothrow) byte[requested];
   PUSH_ADDR( (long int) p )
   PUSH_IVAL( p ? 0 : -1 )
   return 0;
@@ -1816,7 +1854,7 @@ int CPP_resize()
 // Reserve n bytes of memory
 // Forth 2012 Core Wordset 6.1.0710
 // System-specific: if n <= 0, ALLOT does not do anything.
-// All memory is dynamically allocated in kForth (see ?ALLOT).
+// All memory is dynamically allocated in kForth (see ALLOT?).
 // ALLOT must only be used following CREATE.
 int CPP_allot ()
 {
@@ -1834,11 +1872,11 @@ int CPP_allot ()
     {
       if (pWord->Pfa == NULL)
 	{ 
-	  pWord->Pfa = new byte[n]; MemUsed += n;
+	  pWord->Pfa = new byte[n];
 	  if (pWord->Pfa) memset (pWord->Pfa, 0, n); 
 
 	  // Provide execution code to the word to return its Pfa
-  	  byte *bp = new byte[WSIZE+2]; MemUsed += WSIZE+2;
+  	  byte *bp = new byte[WSIZE+2];
   	  pWord->Cfa = bp;
   	  bp[0] = OP_ADDR;
   	  *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -1882,7 +1920,7 @@ int CPP_alias ()
     if (pWord) {
       CPP_create();
       WordListEntry* pLastWord = *(pCompilationWL->end() - 1);
-      byte* bp = new byte[WSIZE+2]; MemUsed += WSIZE+2;
+      byte* bp = new byte[WSIZE+2];
       pLastWord->Cfa = bp;
       pLastWord->Pfa = NULL;
       pLastWord->Precedence = pWord->Precedence;
@@ -1935,9 +1973,9 @@ int CPP_constant ()
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   DROP
   pWord->WordCode = IS_ADDR ? OP_PTR : OP_IVAL;
-  pWord->Pfa = new long int[1]; MemUsed += sizeof(long);
+  pWord->Pfa = new long int[1];
   *((long int*) (pWord->Pfa)) = TOS;
-  byte *bp = new byte[WSIZE+3]; MemUsed += WSIZE+3;
+  byte *bp = new byte[WSIZE+3];
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -1954,12 +1992,12 @@ int CPP_twoconstant ()
   if (CPP_create()) return E_V_CREATE;
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   pWord->WordCode = OP_2VAL;
-  pWord->Pfa = new long int[2]; MemUsed += 2*sizeof(long);
+  pWord->Pfa = new long int[2];
   DROP
   *((long int*) pWord->Pfa) = TOS;
   DROP
   *((long int*) pWord->Pfa + 1) = TOS;
-  byte *bp = new byte[WSIZE+3]; MemUsed += WSIZE+3;
+  byte *bp = new byte[WSIZE+3];
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -1975,11 +2013,11 @@ int CPP_fconstant ()
   if (CPP_create()) return E_V_CREATE;
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   pWord->WordCode = OP_FVAL;
-  pWord->Pfa = new double[1]; MemUsed += sizeof(double);
+  pWord->Pfa = new double[1];
   DROP
   *((double*) (pWord->Pfa)) = *((double*)GlobalSp);
   DROP
-  byte *bp = new byte[WSIZE+3]; MemUsed += sizeof(WSIZE+3);
+  byte *bp = new byte[WSIZE+3];
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
   *((long int*) &bp[1]) = (long int) pWord->Pfa;
@@ -2090,7 +2128,7 @@ int CPP_tofile ()
       strcpy (filename, DEFAULT_OUTPUT_FILENAME);
       // cout << "Output redirected to " << filename << '\n';
     }
-  ofstream *pFile = new ofstream (filename); MemUsed += sizeof(ofstream);
+  ofstream *pFile = new ofstream (filename);
   if (! pFile->fail())
     {
       if (FileOutput)
@@ -2172,7 +2210,7 @@ int CPP_sliteral ()
   // If string is not already in the string table, put it there
   if (! InStringTable(cp-1)) 
   {
-    char* str = new char[u + 1]; MemUsed += u+1;
+    char* str = new char[u + 1];
     strncpy(str, cp, u);
     str[u] = '\0';
     StringTable.push_back(str);
@@ -2206,7 +2244,7 @@ int CPP_cquote ()
     }
   pTIB = end_string + 1;
   int nc = (int) (end_string - begin_string);
-  char* str = new char[nc + 2]; MemUsed += nc+2;
+  char* str = new char[nc + 2];
   *((byte*)str) = (byte) nc;
   strncpy(str+1, begin_string, nc);
   str[nc+1] = '\0';
@@ -2257,7 +2295,7 @@ int CPP_do ()
   pCurrentOps->push_back(OP_PUSH);
   pCurrentOps->push_back(OP_PUSHIP);
 
-  dostack.push_back(pCurrentOps->size());
+  dostack.push(pCurrentOps->size());
   return 0;
 }
 //------------------------------------------------------------------
@@ -2273,7 +2311,7 @@ int CPP_querydo ()
   CPP_else();
   CPP_do();
 
-  querydostack.push_back(pCurrentOps->size());
+  querydostack.push(pCurrentOps->size());
   return 0;
 }
 //------------------------------------------------------------------
@@ -2284,24 +2322,24 @@ int CPP_loop ()
   pCurrentOps->push_back(OP_RTLOOP);  // run-time loop
 
   int i, j, ival;
-  i = dostack[dostack.size() - 1];
+  i = dostack.top();
   if (leavestack.size()) {
     do {
-      j = leavestack[leavestack.size() - 1];
+      j = leavestack.top();
       if (j > i) {
         ival = pCurrentOps->size() - j + 1;
         OpsCopyInt(j, ival); // write relative jump count
-        leavestack.pop_back();
+        leavestack.pop();
       }
     } while ((j > i) && (leavestack.size())) ;
   }
-  dostack.pop_back();
+  dostack.pop();
 
   if (querydostack.size()) {
-    j = querydostack[querydostack.size() - 1];
+    j = querydostack.top();
     if (j >= i) {
       CPP_then();
-      querydostack.pop_back();
+      querydostack.pop();
     }
   }
   return 0;  
@@ -2313,24 +2351,24 @@ int CPP_plusloop ()
   pCurrentOps->push_back(OP_RTPLUSLOOP);  // run-time +loop
 
   int i, j, ival;
-  i = dostack[dostack.size() - 1];
+  i = dostack.top();
   if (leavestack.size()) {
     do {
-      j = leavestack[leavestack.size() - 1];
+      j = leavestack.top();
       if (j > i) {
         ival = pCurrentOps->size() - j + 1;
         OpsCopyInt(j, ival); // write relative jump count
-        leavestack.pop_back();
+        leavestack.pop();
       }
     } while ((j > i) && (leavestack.size())) ;
   }
-  dostack.pop_back();
+  dostack.pop();
 
   if (querydostack.size()) {
-    j = querydostack[querydostack.size() - 1];
+    j = querydostack.top();
     if (j >= i) {
       CPP_then();
-      querydostack.pop_back();
+      querydostack.pop();
     }
   }
   return 0;
@@ -2350,7 +2388,7 @@ int CPP_leave ()
   if (dostack.empty()) return E_V_NO_DO;
   pCurrentOps->push_back(OP_RTUNLOOP);
   pCurrentOps->push_back(OP_JMP);
-  leavestack.push_back(pCurrentOps->size());
+  leavestack.push(pCurrentOps->size());
   OpsPushInt(0);
   return 0;
 }
@@ -2364,7 +2402,7 @@ int CPP_abortquote ()
   int nc;
   if (pNewWord) {
     nc = strlen(pNewWord->WordName);
-    str = new char[nc + 3]; MemUsed += nc+3;
+    str = new char[nc + 3];
     strcpy(str, pNewWord->WordName);
     strcat(str, ": ");
     StringTable.push_back(str);
@@ -2394,7 +2432,7 @@ int CPP_begin()
 {
   // stack: ( -- | mark the start of a begin ... structure )
 
-  beginstack.push_back(pCurrentOps->size());
+  beginstack.push(pCurrentOps->size());
   return 0;
 }
 //------------------------------------------------------------------
@@ -2405,7 +2443,7 @@ int CPP_while()
 
   if (beginstack.empty()) return E_V_NO_BEGIN;
   pCurrentOps->push_back(OP_JZ);
-  whilestack.push_back(pCurrentOps->size());
+  whilestack.push(pCurrentOps->size());
   OpsPushInt(0);
   return 0;
 }
@@ -2417,17 +2455,17 @@ int CPP_repeat()
 
   if (beginstack.empty()) return E_V_NO_BEGIN;  // no matching BEGIN
 
-  int i = beginstack[beginstack.size()-1];
-  beginstack.pop_back();
+  int i = beginstack.top();
+  beginstack.pop();
 
   long int ival;
 
   if (whilestack.size())
     {
-      int j = whilestack[whilestack.size()-1];
+      int j = whilestack.top();
       if (j > i)
 	{
-	  whilestack.pop_back();
+	  whilestack.pop();
 	  ival = pCurrentOps->size() - j + WSIZE + 2;
 	  OpsCopyInt (j, ival);  // write the relative jump count
 	}
@@ -2447,8 +2485,8 @@ int CPP_until()
 
   if (beginstack.empty()) return E_V_NO_BEGIN;  // no matching BEGIN
 
-  int i = beginstack[beginstack.size()-1];
-  beginstack.pop_back();
+  int i = beginstack.top();
+  beginstack.pop();
   long int ival = i - pCurrentOps->size();
   pCurrentOps->push_back(OP_JZ);
   OpsPushInt(ival);   // write the relative jump count
@@ -2463,8 +2501,8 @@ int CPP_again()
 
   if (beginstack.empty()) return E_V_NO_BEGIN;  // no matching BEGIN
 
-  int i = beginstack[beginstack.size()-1];
-  beginstack.pop_back();
+  int i = beginstack.top();
+  beginstack.pop();
   long int ival = i - pCurrentOps->size();
   pCurrentOps->push_back(OP_JMP);
   OpsPushInt(ival);   // write the relative jump count
@@ -2478,7 +2516,7 @@ int CPP_if()
   // stack: ( -- | generate start of an if-then or if-else-then block )
 
   pCurrentOps->push_back(OP_JZ);
-  ifstack.push_back(pCurrentOps->size());
+  ifstack.push(pCurrentOps->size());
   OpsPushInt(0);   // placeholder for jump count
   return 0;
 }
@@ -2492,9 +2530,9 @@ int CPP_else()
   OpsPushInt(0);  // placeholder for jump count
 
   if (ifstack.empty()) return E_V_ELSE_NO_IF;  // ELSE without matching IF
-  int i = ifstack[ifstack.size()-1];
-  ifstack.pop_back();
-  ifstack.push_back(pCurrentOps->size() - sizeof(long int));
+  int i = ifstack.top();
+  ifstack.pop();
+  ifstack.push(pCurrentOps->size() - sizeof(long int));
   long int ival = pCurrentOps->size() - i + 1;
   OpsCopyInt (i, ival);  // write the relative jump count
 
@@ -2509,8 +2547,8 @@ int CPP_then()
   if (ifstack.empty()) 
     return E_V_THEN_NO_IF;  // THEN without matching IF or IF-ELSE
 
-  int i = ifstack[ifstack.size()-1];
-  ifstack.pop_back();
+  int i = ifstack.top();
+  ifstack.pop();
   long int ival = (long int) (pCurrentOps->size() - i) + 1;
   OpsCopyInt (i, ival);   // write the relative jump count
 
@@ -2522,7 +2560,7 @@ int CPP_then()
 // Forth 2012
 int CPP_case()
 {
-  casestack.push_back(-1);
+  casestack.push(-1);
   return 0;
 }
 
@@ -2539,8 +2577,8 @@ int CPP_endcase()
   int i; long int ival;
   do
     {
-      i = casestack[casestack.size()-1];
-      casestack.pop_back();
+      i = casestack.top();
+      casestack.pop();
       if (i == -1) break;
       ival = (long int) (pCurrentOps->size() - i) + 1;
       OpsCopyInt (i, ival);   // write the relative jump count
@@ -2557,7 +2595,7 @@ int CPP_of()
   pCurrentOps->push_back(OP_OVER);
   pCurrentOps->push_back(OP_EQ);
   pCurrentOps->push_back(OP_JZ);
-  ofstack.push_back(pCurrentOps->size());
+  ofstack.push(pCurrentOps->size());
   OpsPushInt(0);   // placeholder for jump count
   pCurrentOps->push_back(OP_DROP);
   return 0;
@@ -2569,14 +2607,14 @@ int CPP_of()
 int CPP_endof()
 {
   pCurrentOps->push_back(OP_JMP);
-  casestack.push_back(pCurrentOps->size());
+  casestack.push(pCurrentOps->size());
   OpsPushInt(0);   // placeholder for jump count
 
   if (ofstack.empty())
     return E_V_ENDOF_NO_OF;  // ENDOF without matching OF
 
-  int i = ofstack[ofstack.size()-1];
-  ofstack.pop_back();
+  int i = ofstack.top();
+  ofstack.pop();
   long int ival = (long int) (pCurrentOps->size() - i) + 1;
   OpsCopyInt (i, ival);   // write the relative jump count
 
@@ -2591,7 +2629,7 @@ int CPP_recurse()
   pCurrentOps->push_back(OP_ADDR);
   if (State)
     {
-      recursestack.push_back(pCurrentOps->size());
+      recursestack.push(pCurrentOps->size());
       OpsPushInt(0);
     }
   else
@@ -2608,9 +2646,9 @@ int CPP_recurse()
 // Forth 2012 Core Wordset 6.1.2500
 int CPP_lbracket()
 {
+  PendingOps.push(pCurrentOps);
   State = FALSE;
-  pPreviousOps = pCurrentOps;
-  tempOps.erase(tempOps.begin(), tempOps.end());
+  tempOps.clear();
   pCurrentOps = &tempOps;
   return 0;
 }
@@ -2622,10 +2660,13 @@ int CPP_rbracket()
 {
   int ecode = 0;
   State = TRUE;
-  pCurrentOps = pPreviousOps;
-  int nPending = PendingDefStack.size();
-  if (nPending) {
-    pNewWord = PendingDefStack[nPending - 1];
+  if (PendingOps.size()) {
+     pCurrentOps->clear();
+     pCurrentOps = PendingOps.top();
+     PendingOps.pop();
+  }
+  if (PendingDefStack.size()) {
+    pNewWord = PendingDefStack.top();
   }
   else {
     pNewWord = NULL;
@@ -2641,7 +2682,7 @@ int CPP_does()
 {
   // Allocate new opcode array
 
-  byte* p = new byte[2*WSIZE+4]; MemUsed += 2*WSIZE+4;
+  byte* p = new byte[2*WSIZE+4];
 
   // Insert pfa of last word in dictionary
 
@@ -2703,7 +2744,7 @@ int CPP_evaluate ()
 	  istringstream* pSS = NULL;
 	  istream* pOldStream = pInStream;  // save old input stream
 	  strcpy (s2, pTIB);  // save remaining part of input line in TIB
-	  pSS = new istringstream(s); MemUsed += sizeof(istringstream);
+	  pSS = new istringstream(s);
 	  SetForthInputStream(*pSS);
 	  vector<byte> op, *pOps, *pOldOps;
 	  
@@ -2794,7 +2835,7 @@ int CPP_included()
   long int *sp;
   byte *tp;
   ecode = ForthVM (&ops, &sp, &tp);
-  ops.erase(ops.begin(), ops.end());
+  ops.clear();
 
   return ecode;
 }

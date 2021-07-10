@@ -43,6 +43,7 @@ CC  = ${GCCDIR}/gcc
 CPPFLAGS = -c -m32 -Wall 
 CFLAGS = -c -m32 -Wall
 FAST = -D__FAST__
+NOFPSTACK = -D__NO_FPSTACK__
 OBJS = kforth.o ForthVM.o ForthCompiler.o vm32.o vmc.o
 FOBJS = kforth-fast.o ForthVM-fast.o ForthCompiler-fast.o vm32-fast.o vmc-fast.o
 # LIBS = -lreadline -lncurses -ldl -lm
@@ -76,25 +77,26 @@ kforth-fast.o: kforth.cpp ForthVM.h ForthCompiler.h VMerrors.h
 
 ForthCompiler.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h \
 	VMerrors.h kfmacros.h
-	${CPP} ${CPPFLAGS} ${DEBUG} ForthCompiler.cpp
+	${CPP} ${CPPFLAGS} ${DEBUG} ${NOFPSTACK} ForthCompiler.cpp
 
 ForthCompiler-fast.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h \
 	VMerrors.h kfmacros.h
-	${CPP} ${CPPFLAGS} ${DEBUG} ${FAST} -o ForthCompiler-fast.o ForthCompiler.cpp
+	${CPP} ${CPPFLAGS} ${DEBUG} ${FAST} ${NOFPSTACK} -o ForthCompiler-fast.o \
+	ForthCompiler.cpp
 
 ForthVM.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} -DDIR_ENV_VAR=\"${DEF_DIR_VAR}\" \
-        ${DEBUG} ForthVM.cpp
+        ${DEBUG} ${NOFPSTACK} ForthVM.cpp
 
 ForthVM-fast.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} -DDIR_ENV_VAR=\"${DEF_DIR_VAR}\" \
-        ${DEBUG} ${FAST} -o ForthVM-fast.o ForthVM.cpp
+        ${DEBUG} ${NOFPSTACK} ${FAST} -o ForthVM-fast.o ForthVM.cpp
 
 vmc.o: vmc.c kfmacros.h
-	${CC} ${CFLAGS} ${DEBUG} vmc.c
+	${CC} ${CFLAGS} ${DEBUG} ${NOFPSTACK} vmc.c
 
 vmc-fast.o: vmc.c kfmacros.h
-	${CC} ${CFLAGS} ${DEBUG} ${FAST} -o vmc-fast.o vmc.c
+	${CC} ${CFLAGS} ${DEBUG} ${NOFPSTACK} ${FAST} -o vmc-fast.o vmc.c
 
 vm32.o: vm32.s vm32-common.s
 	as --32 -o vm32.o vm32.s

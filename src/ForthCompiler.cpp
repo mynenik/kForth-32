@@ -81,8 +81,14 @@ extern "C" {
 // Provided by ForthVM.cpp
 extern "C"  long int* GlobalSp;
 extern "C"  long int* GlobalRp;
+#ifndef __NO_FPSTACK__
+extern "C"  void* GlobalFsp;
+#endif
 extern "C"  long int Base;
 extern "C"  long int State;  // TRUE = compile, FALSE = interpret
+#ifndef __NO_FPSTACK__
+extern "C"  long int FpSize;
+#endif
 extern "C"  char* pTIB; 
 extern "C"  char TIB[];  // contains current line of input
 #ifndef __FAST__
@@ -95,18 +101,20 @@ extern "C"  long int JumpTable[];
 
 // stacks for keeping track of nested control structures
 
-vector<int> ifstack;	// stack for if-then constructs
-vector<int> beginstack;	// stack for begin ... constructs
-vector<int> whilestack;	// stack for while jump holders
-vector<int> dostack;    // stack for do loops
-vector<int> querydostack; // stack for conditional do loops
-vector<int> leavestack; // stack for leave jumps
-vector<int> recursestack; // stack for recursion
-vector<int> casestack;  // stack for case jumps
-vector<int> ofstack;   // stack for of...endof constructs
+stack<int> ifstack;	// stack for if-then constructs
+stack<int> beginstack;	// stack for begin ... constructs
+stack<int> whilestack;	// stack for while jump holders
+stack<int> dostack;    // stack for do loops
+stack<int> querydostack; // stack for conditional do loops
+stack<int> leavestack; // stack for leave jumps
+stack<int> recursestack; // stack for recursion
+stack<int> casestack;  // stack for case jumps
+stack<int> ofstack;   // stack for of...endof constructs
 
-vector<WordListEntry*> PendingDefStack;
-WordListEntry* pNewWord;  // current definition (word or anonymous)
+stack<WordListEntry*> PendingDefStack;
+stack<vector<byte>*> PendingOps;
+WordListEntry* pNewWord;   // current definition (word or anonymous)
+vector<byte>* pCurrentOps; // current opcode vector
 
 long int linecount;
 
@@ -114,11 +122,6 @@ long int linecount;
 
 istream* pInStream ;
 ostream* pOutStream ;
-
-// Global ptrs to current and previous opcode vectors
-
-vector<byte>* pCurrentOps;
-vector<byte>* pPreviousOps;
 
 //---------------------------------------------------------------
 
