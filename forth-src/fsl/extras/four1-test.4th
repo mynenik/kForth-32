@@ -3,9 +3,9 @@
 \ Test Forth version of Numerical Recipes routine four1
 \
 include ans-words
-include fsl-util
-include complex
-include four1
+include fsl/fsl-util
+include fsl/complex
+include fsl/extras/four1
 
 2048 FLOAT array a{ 
 2048 FLOAT array b{

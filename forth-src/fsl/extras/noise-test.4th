@@ -15,9 +15,9 @@
 \   2007-11-07  km; revised for new noise.4th (using FSL)
 
 include ans-words
-include fsl-util
-include horner
-include noise
+include fsl/fsl-util
+include fsl/horner
+include fsl/extras/noise
 
 8192 3 FLOAT matrix samples{{
 
