@@ -11,69 +11,72 @@
 \
 \ Revisions:
 \   2009-09-07  km  perform check for SHDRCNT = 0.
-\
+\   2021-07-15  km  use Forth 200x standard structures.
+
 include ans-words
 include strings
 include files
 include utils
-include struct
+include struct-200x
 
-1 2 2constant short%
+[UNDEFINED] +WFIELD [IF]
+: +WFIELD 2 +FIELD ;
+[THEN]
 
-struct
-  1 4 chars   field  MAGIC
-      char%   field  CLASS
-      char%   field  BYTEORDER
-      char%   field  HVERSION
-  1 9 chars   field  PADDING
-      short%  field  FILETYPE
-      short%  field  ARCHTYPE
-      cell%   field  FVERSION
-      cell%   field  ENTRY
-      cell%   field  PHDRPOS
-      cell%   field  SHDRPOS
-      cell%   field  FLAGS
-      short%  field  HDRSIZE
-      short%  field  PHDRENT
-      short%  field  PHDRCNT
-      short%  field  SHDRENT
-      short%  field  SHDRCNT
-      short%  field  STRSEC
-end-struct elf-header%
+BEGIN-STRUCTURE elf-header%
+  4 chars +field   MAGIC
+          cfield:  CLASS
+          cfield:  BYTEORDER
+          cfield:  HVERSION
+  9 chars +field   PADDING
+          +wfield  FILETYPE
+          +wfield  ARCHTYPE
+           field:  FVERSION
+           field:  ENTRY
+           field:  PHDRPOS
+           field:  SHDRPOS
+           field:  FLAGS
+          +wfield  HDRSIZE
+          +wfield  PHDRENT
+          +wfield  PHDRCNT
+          +wfield  SHDRENT
+          +wfield  SHDRCNT
+          +wfield  STRSEC
+END-STRUCTURE
 
 \ Defining word for creating an elf file header
 
-: elf-header CREATE  elf-header% %allot drop ;
+: elf-header CREATE elf-header% allot ;
 
-struct
-   cell%  field  SH_NAME
-   cell%  field  SH_TYPE
-   cell%  field  SH_FLAGS
-   cell%  field  SH_ADDR
-   cell%  field  SH_OFFSET
-   cell%  field  SH_SIZE
-   cell%  field  SH_LINK
-   cell%  field  SH_INFO
-   cell%  field  SH_ALIGN
-   cell%  field  SH_ENTSIZE
-end-struct section-header%
+BEGIN-STRUCTURE section-header%
+  field:  SH_NAME
+  field:  SH_TYPE
+  field:  SH_FLAGS
+  field:  SH_ADDR
+  field:  SH_OFFSET
+  field:  SH_SIZE
+  field:  SH_LINK
+  field:  SH_INFO
+  field:  SH_ALIGN
+  field:  SH_ENTSIZE
+END-STRUCTURE
 
 \ Defining word for creating an elf section header
 
-: section-header CREATE  section-header% %allot drop ;
+: section-header CREATE section-header% allot ;
 
-struct
-   cell%  field  ST_NAME
-   cell%  field  ST_VALUE
-   cell%  field  ST_SIZE
-   char%  field  ST_INFO
-   char%  field  ST_OTHER
-   short% field  ST_SHNDX
-end-struct elf-symbol%
+BEGIN-STRUCTURE elf-symbol%
+   field:  ST_NAME
+   field:  ST_VALUE
+   field:  ST_SIZE
+  cfield:  ST_INFO
+  cfield:  ST_OTHER
+  +wfield  ST_SHNDX
+END-STRUCTURE
 
 \ Defining word for creating an elf symbol table entry
 
-: elf-symbol  CREATE elf-symbol% %allot drop ;
+: elf-symbol  CREATE elf-symbol% allot ;
     
 \ ELF object file types
 
@@ -174,13 +177,13 @@ variable elf-id
 : close-elf-file ( -- ) elf-id @ close-file drop ;
 
 : read-elf-header ( -- nbytes) 
-    e1 elf-header% %size elf-id @ read-file drop ;
+    e1 elf-header% elf-id @ read-file drop ;
 
 : reposition@section-headers ( -- | reposition file ptr at section headers)
     e1 SHDRPOS @ 0 elf-id @ reposition-file drop ;
 
 : read-section-header ( addr -- nbytes)
-    section-header% %size elf-id @ read-file drop ;
+    section-header% elf-id @ read-file drop ;
 
 : show-elf-raw ( a u -- | open file, read header, and display it )
     open-elf-file
@@ -197,17 +200,17 @@ variable elf-id
 \ -----
 
 64 constant MAX_SEC_HDRS
-create shbuf section-header% %size MAX_SEC_HDRS * allot
+create shbuf section-header% MAX_SEC_HDRS * allot
 
 : [sh] ( n -- addr | return address of section header n)
-    section-header% %size * shbuf + ;
+    section-header% * shbuf + ;
 
 : read-all-section-hdrs ( -- )
     reposition@section-headers
     shbuf
     e1 SHDRCNT w@ MAX_SEC_HDRS min 0 ?DO
       dup read-section-header drop
-      section-header% %size +
+      section-header% +
     LOOP
     drop ;
 
@@ -236,7 +239,7 @@ create strings MAX_STRINGS 256 * allot
 	0= IF
 	  r@ SH_OFFSET @ 0 elf-id @ reposition-file drop
 	  r> SH_SIZE @ strings swap elf-id @ read-file 2drop
-	  unloop EXIT  
+	  ( unloop EXIT) LEAVE  
 	THEN
       THEN 
       r> drop
@@ -247,7 +250,7 @@ create strings MAX_STRINGS 256 * allot
     strings + dup strlen ;
 
 4096 constant MAX_SYMBOLS
-create symbols MAX_SYMBOLS elf-symbol% %size * allot
+create symbols MAX_SYMBOLS elf-symbol% * allot
 variable nSymbols
 
 : read-symbol-table ( -- | read the symbol table section)
@@ -256,8 +259,8 @@ variable nSymbols
       i [sh] SH_TYPE @ SHT_SYMTAB = IF
         i reposition@section
 	symbols i [sh] SH_SIZE @ elf-id @ read-file drop
-	elf-symbol% %size / nSymbols !
-	unloop EXIT
+	elf-symbol% / nSymbols !
+	( unloop EXIT) LEAVE
       THEN
     LOOP
 ;
@@ -273,7 +276,7 @@ variable nSymbols
     symbols
     nSymbols @ 0 ?DO
       dup ST_NAME @ get-symbol-name type CR
-      elf-symbol% %size +
+      elf-symbol% +
     LOOP
     drop
 ;
@@ -289,6 +292,4 @@ variable nSymbols
     show-sections
     show-symbols
 ;
-
-      
-    
+  
