@@ -2,19 +2,23 @@
 \
 \ Convert DOS text file into a Unix text file.
 \
-\ Copyright (c) 2000--2020 Krishna Myneni
+\ Copyright (c) 2000--2005 Krishna Myneni
 \
-\ This software is provided under the GNU Affero 
-\   General Public License (AGPL) v 3.0 or later.
+\ This software is provided under the GNU General Public
+\   License.
 \
 \ Required files:
-\       ans-words.4th
 \	strings.4th
-\	files.4th
+\	files(w).4th
 \
 \ Usage:
 \	dos2unix	-- user is prompted to enter input and output names
 \	d2u filename	-- output file will be named filename.u
+\
+\ Revisions:
+\
+\	12-21-2000  fixed null line problem  KM
+\       09-28-2005  updated line-by-line due to fix for read-line in files.4th  KM
 \
 include strings
 include files

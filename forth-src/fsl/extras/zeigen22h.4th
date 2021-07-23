@@ -67,22 +67,34 @@
       0 ?DO  DUP >R z! R> COMPLEX -  LOOP  drop ;
 [THEN]
 
+BEGIN-MODULE
+
+BASE @ DECIMAL
+
 : z22_root_part ( 'm -- r | intermediate step in calc)
 	>r
 	r@ 0 0 }} z@ real  r@ 1 1 }} z@ real  f- fdup f*
 	r> 0 1 }} z@ |z|^2 4e f*  f+ fsqrt
 ;
 
+fvariable temp
+
+Public:
+
 \ Return the real eigenvalues of the 2x2 Hermitian matrix m{{ 
 : }}eigenvalues22 ( 'm -- r1 r2 )
 	>r
 	r@ 0 0 }} z@ real  r@ 1 1 }} z@ real f+ .5e f*	
 	r>  z22_root_part  .5e  f*
-	fover fover f+ 2>r
-	f- 2r> ;
+	fover fover f+ temp f!
+	f- temp f@ ;
+
+Private:
 
 fvariable z22_phi2
 fvariable z22_theta2
+
+Public:
 
 \ Compute the eigenvectors of 2x2 Hermitian matrix m1{{ and
 \ place the eigenvectors in the columns of the complex matrix m2{{  
@@ -101,6 +113,8 @@ fvariable z22_theta2
 	z22_theta2 f@ fsin  z22_phi2 f@  polar>
 	r> 1 1 }} z! ;
 
+BASE !
+END-MODULE
 
 TEST-CODE? [IF]  \ ---------------------------------------------
 [undefined] T{ [IF] s" ttester.4th" included [THEN]

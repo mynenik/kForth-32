@@ -78,15 +78,21 @@
 
 include ans-words
 include modules
+1 cells 4 = [IF]
 include syscalls
 include mc
 include asm
 include fpu-x86
+[THEN]
 include strings
 include fsl/fsl-util
 include fsl/dynmem
 include fsl/polrat
+1 cells 4 = [IF]
 include fsl/extras/numerov_x86
+[ELSE]
+include fsl/extras/numerov
+[THEN]
 include fsl/extras/find
 include fsl/extras/read_xyfile
 include fsl/extras/array-utils0
@@ -118,8 +124,8 @@ variable Nmesh
 8192 9 setup-mesh Nmesh !
 
 \ Set the effective mass of the particle in the potential well
-m_p 2e F/ set-particle-mass  ( reduced mass in the B-O approx. )
-\ m_p m_e F+ 2e F/  set-particle-mass  \ reduced mass of H_2
+\ m_p 2e F/ set-particle-mass  ( reduced mass in the B-O approx. )
+m_p m_e F+ 2e F/  set-particle-mass  \ reduced mass of H_2
 
 -1e    fconstant V_inf   \ potential energy in Hartrees at R=infinity
                          \ (this is the energy of two separated H atoms)

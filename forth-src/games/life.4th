@@ -5,6 +5,7 @@
 \   kForth. Also, delays have been changed from 1000 ms to 
 \   100 ms for faster update --- K. Myneni, 12-26-2001
 \  
+include ans-words
 include strings
 include ansi
 \ MARKER Genesis

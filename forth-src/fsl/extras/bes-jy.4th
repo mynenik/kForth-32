@@ -892,7 +892,7 @@ TEST-CODE? [IF] \ --------------------------------------------------------
 0 constant USE_TTESTER-XF
 
 [UNDEFINED] T{  [IF] 
-USE_TTESTER-XF [IF] s" ttester-xf.fs" [ELSE] s" ttester.fs"  [THEN]
+USE_TTESTER-XF [IF] s" ttester-xf.4th" [ELSE] s" ttester.4th"  [THEN]
 included
 [THEN]
 

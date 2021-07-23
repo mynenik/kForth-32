@@ -29,18 +29,27 @@ include fsl/runge4
 
 : derivs() ( ft 'u 'dudt -- )
 
-       2SWAP FDROP     \ does not use t
+[ fp-stack? invert ] [IF] 2SWAP [THEN]
+      FDROP     \ does not use t
 
        >R	\ 'u
-       DUP DUP 1 } F@ ROT 0 } F@ F- sig F*
+       DUP DUP 1 } F@
+[ fp-stack? invert ] [IF] ROT [THEN]
+       0 } F@ F- sig F*
        R@ 0 } F!
 
        DUP 2DUP 2 } F@ FNEGATE r F+
-       ROT      0 } F@ F*
-       ROT      1 } F@ F-
+[ fp-stack? invert ] [IF] ROT [THEN]
+       0 } F@ F*
+[ fp-stack? invert ] [IF] ROT [THEN]
+       1 } F@ F-
        R@ 1 } F!
 
-       DUP 2DUP 0 } F@ ROT 1 } F@ F* ROT 2 } F@ bp F* F-
+       DUP 2DUP 0 } F@ 
+[ fp-stack? invert ] [IF] ROT [THEN]
+       1 } F@ F* 
+[ fp-stack? invert ] [IF] ROT [THEN]
+       2 } F@ bp F* F-
        R> 2 } F!
        DROP
 ;
@@ -48,8 +57,8 @@ include fsl/runge4
 
 : do_output ( t n 'x  -- )
        CR
-       2SWAP  F.
-       }fprint
+[ fp-stack? invert ] [IF] 2SWAP [THEN]
+       F. }fprint
 ;
 
 
@@ -68,10 +77,11 @@ FVARIABLE  _dt
      0e x{ 0 } F!   1e x{ 1 } F!   0e x{ 2 } F!     
      use( derivs() 3 )runge_kutta4_init
      CR
+     >R
      0e       \ initial time
      FDUP 3 x{  do_output
-          
-     ROT 0 DO
+
+     R> 0 DO
         dt x{ 1 runge_kutta4_integrate()
         FDUP 3 x{  do_output               
      LOOP

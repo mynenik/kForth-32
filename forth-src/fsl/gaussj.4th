@@ -122,7 +122,8 @@
 \    2010-10-11  km; put temporary variables in the private wordlist
 \    2011-09-16  km; use Neal Bridges' anonymous modules
 \    2012-02-19  km; use KM/DNW's modules library
-CR .( GAUSSJ & MATRICES V1.1c           19 February 2012 MH )
+\    2021-07-07  km; updated for use on separate fp stack system also
+CR .( GAUSSJ & MATRICES V1.1d           07 July     2021 MH,KM )
 
 BEGIN-MODULE
 
@@ -217,13 +218,29 @@ Public:
 \ the inverse matrix will be scrambled by columns.
 
     irow icol <> IF
-        n 0  DO  A{{ irow I }} DUP F@   A{{ icol I }} DUP F@   
-	  ( SWAP F! F!) 2>R F! 2R> ROT F!  LOOP
-        m 0 ?DO  B{{ irow I }} DUP F@   B{{ icol I }} DUP F@   
-	  ( SWAP F! F!) 2>R F! 2R> ROT F!  LOOP
+        n 0  DO  A{{ irow I }} DUP F@   A{{ icol I }} DUP F@
+[ fp-stack? ] [IF] 
+	  SWAP F! F!
+[ELSE]
+          2>R F! 2R> ROT F!
+[THEN]  
+        LOOP
+        m 0 ?DO  B{{ irow I }} DUP F@   B{{ icol I }} DUP F@
+[ fp-stack? ] [IF]
+	  SWAP F! F!
+[ELSE]
+          2>R F! 2R> ROT F!
+[THEN]
+        LOOP
     THEN
     irow indxr{ I } !  icol indxc{ I } ! 
-    A{{ icol DUP }} DUP F@ 2>R 1e ROT F! 2R> FDUP FABS smallestpivot F<
+    A{{ icol DUP }} DUP F@ 
+[ fp-stack? ] [IF]
+          1e F!
+[ELSE]
+          2>R 1e ROT F! 2R> 
+[THEN]
+          FDUP FABS smallestpivot F<
           IF & ipiv{ }free  & indxr{ }free  & indxc{ }free
              FDROP TRUE UNLOOP EXIT
         THEN
@@ -235,12 +252,24 @@ Public:
            <> IF
                 A{{ I icol }} DUP >R F@ ( -- dum) 0e R> F!
          
-       n 0  DO  A{{ J I }} DUP >R F@ FOVER R> A{{ icol I }} F@  
-	 ROT >R F* F- R> F! LOOP
-                m 0 ?DO  B{{ J I }} DUP >R F@ FOVER R> B{{ icol I }} F@ 
-		ROT >R F* F- R> F! LOOP
+                n 0  DO  
+                  A{{ J I }} DUP >R F@ FOVER R> A{{ icol I }} F@
+[ fp-stack? ] [IF]
+                 F* F- F!
+[ELSE]
+                  ROT >R F* F- R> F!
+[THEN]
+                LOOP
+                m 0 ?DO  
+                  B{{ J I }} DUP >R F@ FOVER R> B{{ icol I }} F@ 
+[ fp-stack? ] [IF]
+                  F* F- F!
+[ELSE]
+		  ROT >R F* F- R> F!
+[THEN]
+                LOOP
                 FDROP
-            THEN
+           THEN
       LOOP
 LOOP    ( end main loop over the columns to be reduced )
 
@@ -251,8 +280,12 @@ LOOP    ( end main loop over the columns to be reduced )
             <> IF
                  n 0 DO
                         A{{ I indxr{ J } @ }} DUP F@
-                        A{{ I indxc{ J } @ }} DUP F@ 
-			( SWAP F! F!) 2>R F! 2R> ROT F!
+                        A{{ I indxc{ J } @ }} DUP F@
+[ fp-stack? ] [IF]
+                        SWAP F! F!
+[ELSE] 
+			2>R F! 2R> ROT F!
+[THEN]
                    LOOP
              THEN
     -1 +LOOP
@@ -426,7 +459,9 @@ Public:
 
 : fillmat ( 'A r c fval -- )
         ( LOCALS| c1 r1 a{{ |)
-	2>R  TO c1  TO r1  TO a{{  2R>
+[ fp-stack? invert ] [IF] 2>R [THEN] 
+        TO c1  TO r1  TO a{{  
+[ fp-stack? invert ] [IF] 2R> [THEN]
         r1 0 DO  c1 0 DO FDUP a{{ J I }} F! LOOP LOOP FDROP ;
 
 \ solve ( 'A 'X 'Y MaxSteps n -- steps ) ( F: MaxError -- err cnv )
@@ -518,8 +553,8 @@ END-MODULE
 
 TEST-CODE? [IF] \ ---------------------------------------------------------
 [undefined] T{      [IF]  include ttester.4th  [THEN]    
-[undefined] CompareArrays [IF] include fsl-test-utils.4th [THEN]
-[undefined] hilbert [IF]  include hilbert.4th  [THEN]
+[undefined] CompareArrays [IF] include fsl/fsl-test-utils.4th [THEN]
+[undefined] hilbert [IF]  include fsl/hilbert.4th  [THEN]
 BASE @ DECIMAL
     
 \ Read ahead in a text file. This doesn't work with a terminal.

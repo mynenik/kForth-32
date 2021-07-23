@@ -47,8 +47,12 @@
 \   2020-01-21  km  added SYNONYM
 \   2020-01-25  km  revised defn. of VALUE for improved efficiency.
 \   2021-05-08  km  added defn. of F~ for 64-bit separate fp stack.
+\   2021-07-11  km  add DEFER@ and DEFER! and ACTION-OF.
+\                   use standard definition of IS .
+\   2021-07-13  km  added alignment words (for structures support).
 BASE @
 DECIMAL
+
 \ ============== From the CORE wordset
 
 : SPACE BL EMIT ;
@@ -61,7 +65,16 @@ CREATE PAD 512 ALLOT
 : TO ' >BODY STATE @ IF POSTPONE LITERAL POSTPONE ! ELSE ! THEN ; IMMEDIATE
 : VALUE CREATE 1 CELLS ?ALLOT ! IMMEDIATE DOES> POSTPONE LITERAL POSTPONE @ ;
 
+\ ============== Alignment words: from CORE and Extended Wordsets
+: UNITS-ALIGNED ( a xt -- a' )
+   >R ?DUP IF 
+     1- 1 R@ EXECUTE / 1+ R> EXECUTE 
+   ELSE R> DROP 0 THEN ;
 
+: ALIGNED   ( a -- a' ) ['] CELLS   UNITS-ALIGNED ;
+: FALIGNED  ( a -- a' ) ['] FLOATS  UNITS-ALIGNED ;
+: SFALIGNED ( a -- a' ) ['] SFLOATS UNITS-ALIGNED ;
+: DFALIGNED ( a -- a' ) ['] DFLOATS UNITS-ALIGNED ;
 
 \ ============ From the PROGRAMMING TOOLS wordset
 
@@ -178,16 +191,26 @@ variable handler
 \ ============= Forth 200x Standard Words
 
 : DEFER  ( "name" -- )
-      CREATE 1 CELLS ?ALLOT ['] ABORT SWAP ! DOES> A@ EXECUTE ;
+      CREATE 1 CELLS ?ALLOT ['] ABORT SWAP ! 
+      DOES> ( ... -- ... ) A@ EXECUTE ;
 
-: IS    ( xt "name" -- )
-      '
-      STATE @ IF
-        postpone LITERAL postpone >BODY postpone !
-      ELSE
-        >BODY !
-      THEN ; IMMEDIATE
+: DEFER@ ( xt1 -- xt2 )  >BODY A@ ;
+: DEFER! ( xt2 xt1 -- )  >BODY ! ;
 
+: IS  ( xt "name" -- )
+    STATE @ IF
+      POSTPONE ['] POSTPONE DEFER!
+    ELSE
+      ' DEFER!
+    THEN ; IMMEDIATE
+
+: ACTION-OF ( "name" -- xt )
+    STATE @ IF
+      POSTPONE ['] POSTPONE DEFER@
+    ELSE
+      ' DEFER@
+    THEN ; IMMEDIATE
+ 
 \ === Non-standard words commonly needed for kForth programs ===
 : PTR ( a "name" -- ) CREATE 1 CELLS ALLOT? ! DOES> A@ ;
 
