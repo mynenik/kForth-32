@@ -3,7 +3,7 @@ vmc.c
 
   C portion of the kForth Virtual Machine
 
-  Copyright (c) 1998--2020 Krishna Myneni, 
+  Copyright (c) 1998--2021 Krishna Myneni, 
   <krishna.myneni@ccreweb.org>
 
   This software is provided under the terms of the GNU
@@ -68,7 +68,6 @@ extern int  JumpTable[];
 extern char WordBuf[];
 extern char TIB[];
 extern char NumberBuf[];
-extern char ParseBuf[];
 
 /*  Provided by vmxx.s/vmxx-fast.s  */
 int L_dnegate();
@@ -671,7 +670,7 @@ int C_parse ()
   /* stack: ( n -- a u | parse string delimited by char n ) */
   DROP
   char delim = TOS;
-  char *dp = ParseBuf;
+  char *cp = pTIB;
   int count = 0;
   if (*pTIB)
     {
@@ -679,12 +678,12 @@ int C_parse ()
       while (*pTIB)
 	{
 	  if (*pTIB == delim) break;
-	  *dp++ = *pTIB++;
+	  ++pTIB;
 	  ++count;
 	}
       if (*pTIB) ++pTIB;  /* consume the delimiter */
     }
-  PUSH_ADDR((int) ParseBuf)
+  PUSH_ADDR((int) cp)
   PUSH_IVAL(count)
   return 0;
 }

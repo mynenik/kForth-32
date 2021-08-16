@@ -783,7 +783,6 @@ L_backslash:
 	.comm pTIB,4,4
 	.comm TIB,256,1
 	.comm WordBuf,256,1
-	.comm ParseBuf,1024,1
 	.comm NumberCount,4,4
 	.comm NumberBuf,256,1
 
