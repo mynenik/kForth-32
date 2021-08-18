@@ -37,7 +37,7 @@
 #define OP_CMOVEFROM             22
 #define OP_DOTPAREN              23
 #define OP_BRACKETSHARP          24
-
+#define OP_EXECUTE_BC            25
 #define OP_FSYNC                 26
 #define OP_SHARPBRACKET          27
 #define OP_SHARPS                28
@@ -283,7 +283,7 @@
 #define OP_CPUTEST              268
 #define OP_DSSTAR               269
 #define OP_COMPILECOMMA         270
-#define OP_BRACKETCOMPILE       271
+#define OP_COMPILENAME          271
 #define OP_POSTPONE             272
 #define OP_NONDEFERRED          273
 #define OP_FORGET               274
@@ -358,15 +358,19 @@
 #define OP_PREVIOUS             343
 #define OP_FORTH                344
 #define OP_ASSEMBLER            345
-
+#define OP_TRAVERSE_WORDLIST    346
+#define OP_NAME2STRING          347
+#define OP_NAME2INTERPRET       348
+#define OP_NAME2COMPILE         349
 #define OP_DEFINED              350
 #define OP_UNDEFINED            351
 #define OP_BRACKET_IF           352
 #define OP_BRACKET_ELSE         353
 #define OP_BRACKET_THEN         354
-
+#define OP_MYNAME               355
 #define OP_CATCH                356
 #define OP_THROW                357
+#define OP_USED                 358
 
 #define OP_PRECISION            360
 #define OP_SET_PRECISION        361
@@ -389,7 +393,10 @@
 #define OP_ZMUL                 378
 #define OP_ZDIV                 379
 #define OP_ZABS                 380
-
+#define OP_FDEPTH               381
+#define OP_FPFETCH              382
+#define OP_FPSTORE              383
+#define OP_FDOTS                384
 #define OP_FDUP                 385
 #define OP_FDROP                386
 #define OP_FSWAP                387
@@ -420,10 +427,15 @@
 #define OP_MSLASH_FLOORED       415
 #define OP_MSTARSLASH_FLOORED   416
 
+#define OP_SFLOATS              420
+#define OP_SFLOATPLUS           421
+#define OP_FLOATS               422
+#define OP_FLOATPLUS            423
+
 // Windows specific opcodes
-#define OP_VALLOC               420
-#define OP_VFREE                421
-#define OP_VPROTECT             422
+#define OP_VALLOC               450
+#define OP_VFREE                451
+#define OP_VPROTECT             452
 
 #endif
 
