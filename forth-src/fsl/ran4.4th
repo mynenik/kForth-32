@@ -50,12 +50,15 @@
 ( this code.                                                          )
 
 \ Rev. 2011-01-16 km; minor mods for use in kForth
+\ Rev. 2021-08-27 km; conditional defn of DXOR (defined in fsl-util.4th)
 
 BASE @  HEX 
 
 : DINVERT ( d--d)  SWAP INVERT  SWAP INVERT ;
 
+[UNDEFINED] DXOR [IF]
 : DXOR ( d d--d)  ROT XOR >R  XOR R> ; 
+[THEN]
 
 : FuncG ( d dc1 dc2--d) 
         >R >R DXOR  2DUP UM*  2SWAP DUP UM*  DINVERT
