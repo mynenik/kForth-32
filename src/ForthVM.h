@@ -1,6 +1,6 @@
 // ForthVM.h
 //
-// Copyright (c) 1996--2020, Krishna Myneni
+// Copyright (c) 1996--2021, Krishna Myneni
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -51,7 +51,7 @@ void OpsPushDouble (double);
 int OpsCompileByte ();
 int OpsCompileInt ();
 int OpsCompileDouble ();
-void PrintVM_Error (int);
+void PrintVM_Error (long int);
 int ForthVM (vector<byte>*, long int**, byte**);
 
 // The following C++ functions have C linkage

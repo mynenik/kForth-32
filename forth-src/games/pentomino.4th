@@ -310,7 +310,7 @@ variable optr                           \ pointer into orients
     1 Soln +!  printbd ;
 
 \ find next piece that fits lead square
-: noname ( lead-sq -- )
+:noname ( lead-sq -- )
     1 Level +!                          \ next level, i.e. place a piece
     begin                               \ loop back here
         dup 1+ Bend > if                \ at end of board yet?
@@ -323,8 +323,7 @@ variable optr                           \ pointer into orients
     dup c@ 0= until                     \ loop until lead square is empty
     drop  -1 Level +!
 ; 
-
-' noname is next-piece
+is next-piece
 
 : solve
     0 Level !                           \ no pieces on board

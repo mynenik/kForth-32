@@ -47,13 +47,12 @@ decimal
 
 variable #errors    0 #errors !
 
-: noname  ( c-addr u -- )
+:noname  ( c-addr u -- )
 (
 Display an error message followed by the line that had the
 error.
 )
-  1 #errors +! error1 ;
-' noname error-xt !
+  1 #errors +! error1 ;  error-xt !
 
 [UNDEFINED] \\ [IF]
   : \\  ( -- )  -1 parse 2drop BEGIN refill 0= UNTIL ; [THEN]
@@ -84,8 +83,8 @@ false [IF]
 [THEN]
 
 verbose @ [IF]
-: noname  ( -- fp.separate? )
-  depth >r 1e depth >r fdrop 2r> = ;  ' noname execute
+:noname  ( -- fp.separate? )
+  depth >r 1e depth >r fdrop 2r> = ;  execute
 cr .( floating-point and data stacks )
 [IF] .( *separate*) [ELSE] .( *not separate*) [THEN]
 cr

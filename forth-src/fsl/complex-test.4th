@@ -213,8 +213,8 @@ decimal
   ENDCASE ?s. ; NONAME
 
 verbose @ [IF]
-: noname  ( -- fp.separate? )
-  depth >r 1e depth >r fdrop 2r> = ; noname
+:noname  ( -- fp.separate? )
+  depth >r 1e depth >r fdrop 2r> = ; execute
 cr .( Floating-point stack is )
 [IF] .( *separate*) [ELSE] .( *not separate*) [THEN]
 .(  from the data stack.)
@@ -228,12 +228,12 @@ near-defaults
 
 variable #errors   0 #errors !
 
-: noname  ( c-addr u -- )
+:noname  ( c-addr u -- )
 (
 Display an error message followed by the line that had the
 error.
 )
-  1 #errors +! error1 ; ' noname error-xt !
+  1 #errors +! error1 ;  error-xt !
 
  0.7853981633974483096157E0 FCONSTANT  pi/4
 -0.7853981633974483096157E0 FCONSTANT -pi/4
@@ -673,8 +673,8 @@ t{  rt2 -rt2 ?gauge z}t
 t{ -rt2  rt2 ?gauge z}t
 t{ -rt2 -rt2 ?gauge z}t
 
-: noname  ( f: z -- z^(1+i2)  1+i2 z^ ;          ' noname is func
-: noname  ( f: z -- z^(1+i2)  zln 1+i2 z* zexp ; ' noname is gauge
+:noname  ( f: z -- z^(1+i2)  1+i2 z^ ;           is func
+:noname  ( f: z -- z^(1+i2)  zln 1+i2 z* zexp ;  is gauge
 t{  1+i0     ?gauge z}t
 t{ -1+i0     ?gauge z}t
 t{  0+i1     ?gauge z}t
@@ -751,7 +751,7 @@ t{  1E -pi/4 zcoth -> zcothB z}t
 t{ -1E  pi/4 zcoth -> zcothB -z z}t
 t{ -1E -pi/4 zcoth -> zcothA -z z}t
 
-: noname  -i* zcos ; ' noname is func
+:noname  -i* zcos ;  is func
 ' zcosh is gauge
 set-exact
 t{  0+i0     ?gauge z}t
@@ -764,8 +764,8 @@ t{  1E -pi/4 ?gauge z}t
 t{ -1E  pi/4 ?gauge z}t
 t{ -1E -pi/4 ?gauge z}t
 
-: noname  i* zsin ;  ' noname is func
-: noname  zsinh i* ; ' noname is gauge
+:noname  i* zsin ;   is func
+:noname  zsinh i* ;  is gauge
 set-near
 t{  0+i0     ?gauge z}t
 t{  1+i0     ?gauge z}t
@@ -777,8 +777,8 @@ t{  1E -pi/4 ?gauge z}t
 t{ -1E  pi/4 ?gauge z}t
 t{ -1E -pi/4 ?gauge z}t
 
-: noname  i* ztan ;  ' noname is func
-: noname  ztanh i* ; ' noname is gauge
+:noname  i* ztan ;  is func
+:noname  ztanh i* ; is gauge
 set-near
 t{  0+i0     ?gauge z}t
 t{  1+i0     ?gauge z}t
@@ -790,8 +790,8 @@ t{  1E -pi/4 ?gauge z}t
 t{ -1E  pi/4 ?gauge z}t
 t{ -1E -pi/4 ?gauge z}t
 
-: noname  i* zcot ;     ' noname is func
-: noname  zcoth -i* ;   ' noname is gauge
+:noname  i* zcot ;     is func
+:noname  zcoth -i* ;   is gauge
 set-near
 t{  1+i0     ?gauge z}t
 t{ -1+i0     ?gauge z}t

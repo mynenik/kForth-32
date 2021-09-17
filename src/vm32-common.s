@@ -2,7 +2,7 @@
 //
 // Common declarations and data for kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2020 Krishna Myneni,
+// Copyright (c) 1998--2021 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -110,7 +110,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long CPP_twoliteral, C_tonumber, C_numberquery, CPP_sliteral   # 296--299
            .long CPP_fliteral, CPP_twovariable, CPP_twoconstant, L_nop     # 300--303
            .long CPP_tofile, CPP_console, CPP_loop, CPP_plusloop           # 304--307
-           .long CPP_unloop, L_nop, L_nop, L_blank          # 308--311
+           .long CPP_unloop, CPP_noname, L_nop, L_blank     # 308--311
            .long L_slashstring, C_trailing, C_parse, L_nop  # 312--315
 	   .long L_nop, L_nop, L_nop, L_nop            # 316--319
            .long C_dlopen, C_dlerror, C_dlsym, C_dlclose # 320--323

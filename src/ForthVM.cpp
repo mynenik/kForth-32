@@ -3,7 +3,7 @@
 // The C++ portion of the kForth Virtual Machine to 
 // execute Forth byte code.
 //
-// Copyright (c) 1996--2020 Krishna Myneni,
+// Copyright (c) 1996--2021 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -454,7 +454,7 @@ int OpsCompileDouble ()
 }
 //----------------------------------------------------------------
 
-void PrintVM_Error (int ec)
+void PrintVM_Error (long int ec)
 {
     int ei = ec & 0xFF;
     int imax = (ec >> 8) ? MAX_C_ERR_MESSAGES : MAX_V_ERR_MESSAGES;
@@ -541,46 +541,62 @@ if (debug)  cout << "<ForthVM Sp: " << GlobalSp << " Rp: " << GlobalRp <<
 
 extern "C" {
 
+// COLD  ( -- )
+// Restart the Forth environment
+// Non-standard, appeared in LMI UR/Forth 
+int CPP_cold ()
+{
+    CloseForth();
+    OpenForth();
+    return 0;
+}
+
+// WORDLIST  ( -- wid )
+// Create a new empty wordlist
+// Forth-94 Search-Order Wordset 16.6.1.2460
 int CPP_wordlist()
 {
-    // Create a new wordlist
-    // stack: ( -- wid)
-    Vocabulary* pVoc = new Vocabulary(""); // create an unnamed vocabulary
+    // create an unnamed vocabulary
+    Vocabulary* pVoc = new Vocabulary("");
     PUSH_ADDR( (long int) pVoc )
     Dictionary.push_back(pVoc); 
     return 0;
 }
 
+// FORTH-WORDLIST ( -- wid )  
+// Return the Forth wordlist identifier
+// Forth-94 Search-Order Wordset 16.6.1.1595
 int CPP_forthwordlist()
 {
-    // Return the Forth wordlist
-    // stack: ( -- wid)
     PUSH_ADDR( (long int) &Voc_Forth )
     return 0;
 }
 
+// GET-CURRENT ( -- wid )  
+// Return the compilation (current) wordlist
+// Forth-94 Search-Order Wordset 16.6.1.1643
 int CPP_getcurrent()
 {
-    // Return the compilation (current) wordlist
-    // stack: ( -- wid)
     PUSH_ADDR( (long int) pCompilationWL )
     return 0;
 }
 
+// SET-CURRENT ( wid -- )
+// Set the compilation (current) wordlist
+// Forth-94 Search-Order Wordset 16.6.1.2195
 int CPP_setcurrent()
 {
-    // Set the compilation (current) wordlist
-    // stack: ( wid -- )
     DROP
     CHK_ADDR
     pCompilationWL = (WordList*) TOS;
     return 0;
 }
 
+// GET-ORDER  ( -- widn ... wid1 n)
+// Return the current search order
+// Forth-94 Search-Order Wordset 16.6.1.1647
 int CPP_getorder()
 {
-      // Return the current search order
-      // stack: ( -- widn ... wid1 n)
      vector<Vocabulary*>::iterator i;
 
      if (SearchOrder.size()) {
@@ -592,163 +608,214 @@ int CPP_getorder()
      return 0;
 }
 
+// SET-ORDER  ( widn ... wid1 n -- )
+// Set the search order
+// Forth-94 Search-Order Wordset 16.6.1.2197
 int CPP_setorder()
 {
-      // Set the search order
-      // stack: ( widn ... wid1 n -- )
-      DROP
-      long int nWL = TOS;
-      if (nWL == -1) 
-        CPP_only();
-      else
-      {
-        SearchOrder.clear();
-        for (int i = 0; i < nWL; i++) {
-          DROP
-	  CHK_ADDR
-	  SearchOrder.push_back((Vocabulary*) TOS);
-        }
+    DROP
+    long int nWL = TOS;
+    if (nWL == -1) 
+      CPP_only();
+    else
+    {
+      SearchOrder.clear();
+      for (int i = 0; i < nWL; i++) {
+        DROP
+        CHK_ADDR
+        SearchOrder.push_back((Vocabulary*) TOS);
       }
-      return 0;
+    }
+    return 0;
 }
 
+// SEARCH-WORDLIST  ( c-addr u wid -- 0 | xt 1 | xt -1)
+// Search for the word in the specified wordlist
+// Forth-94 Search-Order Wordset 16.6.1.2192
 int CPP_searchwordlist()
 {
-      // Search for the word in the specified wordlist
-      // stack: ( c-addr u wid -- 0 | xt 1 | xt -1)
-      DROP
-      CHK_ADDR
-      WordList* pWL = (WordList*) TOS;
-      DROP
-      long int len = TOS;
-      DROP
-      CHK_ADDR
-      char* cp = (char*) TOS;
-      if (len > 0) {
-	char* name = new char [len+1];
-        strncpy(name, cp, len);
-        name[len] =  0;
-	strupr(name);
-	WordListEntry w;
-        bool b = pWL->RetrieveFromName(name, &w);
-	delete [] name;
-        if (b) {
-          PUSH_ADDR((long int) w.Cfa)
-          PUSH_IVAL( (w.Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
-          return 0;
-	}
+    DROP
+    CHK_ADDR
+    WordList* pWL = (WordList*) TOS;
+    DROP
+    long int len = TOS;
+    DROP
+    CHK_ADDR
+    char* cp = (char*) TOS;
+    if (len > 0) {
+      char* name = new char [len+1];
+      strncpy(name, cp, len);
+      name[len] =  0;
+      strupr(name);
+      WordListEntry w;
+      bool b = pWL->RetrieveFromName(name, &w);
+      delete [] name;
+      if (b) {
+        PUSH_ADDR((long int) w.Cfa)
+        PUSH_IVAL( (w.Precedence & PRECEDENCE_IMMEDIATE) ? 1 : -1 )
+        return 0;
       }
-      PUSH_IVAL(0)
-      return 0;
+    }
+    PUSH_IVAL(0)
+    return 0;
 }
 
+// DEFINITIONS  ( -- )
+// Make the compilation wordlist the same as the first search order wordlist
+// Forth-94 Search-Order Wordset 16.6.1.1180
 int CPP_definitions()
 {
-     // Make the compilation wordlist the same as the first search order wordlist
-     // stack: ( -- )
-     if (SearchOrder.size()) pCompilationWL = SearchOrder.front();
-     return 0;
+    if (SearchOrder.size()) pCompilationWL = SearchOrder.front();
+    return 0;
 }
 
+// VOCABULARY  ( "name" -- )
+// Make a new vocabulary
+// Forth 83
 int CPP_vocabulary()
 {
-     // Make a new vocabulary
-     // stack: ( "name" -- )
-     CPP_create();
-     WordIndex iWord = pCompilationWL->end() - 1;
-     Vocabulary *pVoc = new Vocabulary(iWord->WordName);
-     Dictionary.push_back(pVoc);
+    CPP_create();
+    WordIndex iWord = pCompilationWL->end() - 1;
+    Vocabulary *pVoc = new Vocabulary(iWord->WordName);
+    Dictionary.push_back(pVoc);
 
-     iWord->Precedence = PRECEDENCE_NON_DEFERRED;
-     iWord->Pfa = NULL;
-     byte* bp = new byte[3*WSIZE+6];
-     iWord->Cfa = bp;
-     iWord->WordCode = OP_DEFINITION;
+    iWord->Precedence = PRECEDENCE_NON_DEFERRED;
+    iWord->Pfa = NULL;
+    byte* bp = new byte[3*WSIZE+6];
+    iWord->Cfa = bp;
+    iWord->WordCode = OP_DEFINITION;
     
-     // Execution behavior of new word:
-     // get-order nip pVoc swap set-order
-     bp[0] = OP_CALLADDR;
-     *((long int*)(bp+1)) = (long int) JumpTable[OP_GETORDER]; 
-     bp[WSIZE+1] = OP_NIP;
-     bp[WSIZE+2] = OP_ADDR;
-     *((long int*)(bp+WSIZE+3)) = (long int) pVoc;
-     bp[2*WSIZE+3] = OP_SWAP;
-     bp[2*WSIZE+4] = OP_CALLADDR;
-     *((long int*) (bp+2*WSIZE+5)) = (long int) JumpTable[OP_SETORDER];
-     bp[3*WSIZE+5] = OP_RET;
+    // Execution behavior of new word:
+    // get-order nip pVoc swap set-order
+    bp[0] = OP_CALLADDR;
+    *((long int*)(bp+1)) = (long int) JumpTable[OP_GETORDER]; 
+    bp[WSIZE+1] = OP_NIP;
+    bp[WSIZE+2] = OP_ADDR;
+    *((long int*)(bp+WSIZE+3)) = (long int) pVoc;
+    bp[2*WSIZE+3] = OP_SWAP;
+    bp[2*WSIZE+4] = OP_CALLADDR;
+    *((long int*) (bp+2*WSIZE+5)) = (long int) JumpTable[OP_SETORDER];
+    bp[3*WSIZE+5] = OP_RET;
 
-     return 0;
+    return 0;
 }
 
+// ONLY  ( -- )
+// Set the minimum search order: Root
+// Forth-94 Search-Order Extension Wordset 16.6.2.1965
 int CPP_only()
 {
-     // Make the Forth wordlist the current wordlist and the only
-     //   wordlist in the search order.
-     // stack: ( -- )
-     SearchOrder.clear();
-     SearchOrder.push_back(&Voc_Root);
-     return 0;
+    SearchOrder.clear();
+    SearchOrder.push_back(&Voc_Root);
+    return 0;
 }
 
+// ALSO  ( -- )
+// Add the first wordlist in the search order to the search order
+// Forth-94 Search-Order Extension Wordset 16.6.2.0715
 int CPP_also()
 {
-     // Duplicate the first wordlist in the search order
-     // stack: ( -- )
-     SearchOrder.insert(SearchOrder.begin(), SearchOrder.front());
-     return 0;
+    SearchOrder.insert(SearchOrder.begin(), SearchOrder.front());
+    return 0;
 }
 
+// ORDER  ( -- )
+// Display the wordlist search order, denoting the current compilation
+// wordlist in brackets
+// Forth-94 Search-Order Extension Wordset 16.6.2.1985
 int CPP_order()
 {
-     // Display the wordlist search order with the current compilation wordlist
-     //   in brackets
-     Vocabulary* pVoc;
-     vector<Vocabulary*>::iterator i;
-     const char* cp;
-     const char* pUnnamed = "Unnamed";
+    Vocabulary* pVoc;
+    vector<Vocabulary*>::iterator i;
+    const char* cp;
+    const char* pUnnamed = "Unnamed";
 
-     for ( i = SearchOrder.begin(); i < SearchOrder.end(); i++) {
-        pVoc = *i;
-        cp = pVoc->Name;
-        if (! *cp) cp = pUnnamed; 
-        if (pVoc == pCompilationWL)
-	  *pOutStream << "[" << cp << "]  ";
-	else         
-	  *pOutStream << cp << "  ";
-     }
-     return 0;
+    for ( i = SearchOrder.begin(); i < SearchOrder.end(); i++) {
+      pVoc = *i;
+      cp = pVoc->Name;
+      if (! *cp) cp = pUnnamed; 
+      if (pVoc == pCompilationWL)
+        *pOutStream << "[" << cp << "]  ";
+      else         
+        *pOutStream << cp << "  ";
+    }
+    return 0;
 }
 
+// PREVIOUS  ( -- )
+// Remove the first wordlist in the search order
+// Forth-94 Search-Order Extension Wordset 16.6.2.2037
 int CPP_previous()
 {
-     // Remove the first wordlist in the search order
-     SearchOrder.erase(SearchOrder.begin());
-     return 0;
+    SearchOrder.erase(SearchOrder.begin());
+    return 0;
 }
 
-
+// FORTH  ( -- )
+// Replace first wordlist in search with the Forth wordlist.
+// Ensure that the Root wordlist remains in the search order
+// Forth-94 Search-Order Extension Wordset 16.6.2.1590
 int CPP_forth()
 {
-     // Make the first wordlist in the search order be the Forth wordlist.
-     // Ensure that the Root wordlist remains in the search order
-     // stack: ( -- )
-     if (SearchOrder.size() == 1) CPP_also();
-     SearchOrder[0] = &Voc_Forth;
-     return 0;
+    if (SearchOrder.size() == 1) CPP_also();
+    SearchOrder[0] = &Voc_Forth;
+    return 0;
 }
 
+// ASSEMBLER ( -- )
+// Replace first wordlist in search order with Assembler wordlist.
+// Forth-94 Programming Tools Extension Wordset 15.6.2.0740
 int CPP_assembler()
 {
-    // stack: ( -- | make the Assembler wordlist the current wordlist)
     SearchOrder[0] = &Voc_Assembler;
     return 0;
 }
-//----------------------------------------------------------------
 
+// CREATE ( "name" -- )
+// Parse name and create a definition with default execution semantics
+// Forth-94 Core Wordset 6.1.1000
+int CPP_create ()
+{
+    char token[128];
+    pTIB = ExtractName(pTIB, token);
+    int nc = strlen(token);
+
+    if (nc)
+    {
+      WordListEntry NewWord;
+      strupr(token);
+      strcpy (NewWord.WordName, token);
+      NewWord.WordCode = OP_ADDR;
+      NewWord.Pfa = NULL;
+      NewWord.Cfa = NULL;
+      NewWord.Precedence = 0;
+
+      pCompilationWL->push_back(NewWord);
+      return 0;
+    }
+    else
+    {
+      return E_V_CREATE;  // create failed
+    }
+}
+
+// :NONAME ( -- )
+// Compile an anonymous definition
+// Forth-94 Core Extensions Wordset 6.2.0455
+int CPP_noname()
+{
+    State = TRUE;
+    strcpy(NewWord.WordName, "");
+    recursestack.erase(recursestack.begin(), recursestack.end());
+    pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+    return 0;
+}
+
+// : (colon)  ( "name" -- )
+// Parse name and create a definition for name
+// Forth-94 Core Wordset 6.1.0450
 int CPP_colon()
 {
-    // stack: ( -- | the colon compiler )
-
     char WordToken[256];
     State = TRUE;
     pTIB = ExtractName (pTIB, WordToken);
@@ -763,10 +830,11 @@ int CPP_colon()
     return 0;
 }
 
+// ; (semicolon)  ( -- )
+// End the current definition
+// Forth-94 Core Wordset 6.1.0460
 int CPP_semicolon()
 {
-  // stack: ( -- | terminate compilation of word )
-
   int ecode = 0;
 
   pCurrentOps->push_back(OP_RET);
@@ -776,31 +844,38 @@ int CPP_semicolon()
       // Check for incomplete control structures
 		    
       if (ifstack.size())                          ecode = E_C_INCOMPLETEIF;
-
       if (beginstack.size() || whilestack.size())  ecode = E_C_INCOMPLETEBEGIN;
-      
       if (dostack.size() || leavestack.size())     ecode = E_C_INCOMPLETELOOP;
-
       if (casestack.size() || ofstack.size())      ecode = E_C_INCOMPLETECASE;
-      
       if (ecode) return ecode;
 
-      // Add a new entry into the dictionary
-
       if (debug) OutputForthByteCode (pCurrentOps);
- 		  
-      NewWord.Pfa = new byte[pCurrentOps->size()];
-      NewWord.Cfa = NewWord.Pfa;
+      int nalloc = max( (int) pCurrentOps->size(), 2*WSIZE );
+      byte* lambda = new byte[ nalloc ];
+
+      if (strlen(NewWord.WordName)) {
+        // Add a new entry into the dictionary
+	NewWord.Pfa = lambda;
+        NewWord.Cfa = NewWord.Pfa;
+        WordListEntry d;
+        if (IsForthWord(NewWord.WordName, &d)) {
+          WordIndex wi = pCompilationWL->IndexOf( NewWord.WordName );
+          if (wi < pCompilationWL->end())
+	      *pOutStream << NewWord.WordName << " is redefined\n";
+        }
+        pCompilationWL->push_back(NewWord);
+      }
+      else {
+	// noname definition
+	PUSH_ADDR( (long int) lambda )
+      }
 
       // Resolve any self references (recursion)
-
       byte *bp, *dest;
       unsigned int i;
       vector<byte>::iterator ib;
-      WordListEntry d;
 
-
-      bp = (byte*) &NewWord.Pfa;
+      bp = (byte*) &lambda;
       while (recursestack.size())
 	{
 	  i = recursestack[recursestack.size() - 1];
@@ -809,15 +884,10 @@ int CPP_semicolon()
 	  recursestack.pop_back();
 	}
 
-      dest = (byte*) NewWord.Pfa;
+      dest = (byte*) lambda;
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *dest++ = *bp++;
-      if (IsForthWord(NewWord.WordName, &d)) {
-          WordIndex wi = pCompilationWL->IndexOf( NewWord.WordName );
-          if (wi < pCompilationWL->end())
-	      *pOutStream << NewWord.WordName << " is redefined\n";
-      }
-      pCompilationWL->push_back(NewWord);
+
       pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
       State = FALSE;
     }
@@ -829,12 +899,122 @@ int CPP_semicolon()
     
   return ecode;
 }
-//-----------------------------------------------------------------
 
+// COMPILE, ( xt -- )
+// Append the execution semantics of xt to the current definition.
+// Forth-94 Core Wordset 6.2.0945
+int CPP_compilecomma ()
+{
+    if (State == 0) pCurrentOps = pPreviousOps;
+    CPP_literal();
+    pCurrentOps->push_back(OP_EXECUTE);
+    if (State == 0) pCurrentOps = &tempOps;
+    return 0;  
+}
+
+// POSTPONE ( "name" -- )
+// Parse name, find name, and append compilation semantics of name
+//   to the current definition.
+// Forth-94 Core wordset 6.1.2033
+int CPP_postpone ()
+{
+    char token[128];
+    byte* bp;
+
+    pTIB = ExtractName (pTIB, token);
+    strupr(token);
+    WordListEntry w;
+    int found = SearchOrder.LocateWord(token, &w);
+    if (found) {
+      if (w.Precedence & PRECEDENCE_IMMEDIATE)
+	{
+	  CompileWord(w);
+	}
+      else
+	{
+	  int wc = (w.WordCode >> 8) ? OP_CALLADDR : w.WordCode;
+
+	  if (wc == OP_IVAL)
+	    {
+	      pCurrentOps->push_back(OP_IVAL);
+	      OpsPushInt (*((int*) w.Pfa));
+	      pCurrentOps->push_back(OP_LITERAL);
+	    }
+	  else if ((wc == OP_ADDR) || (wc == OP_PTR))
+	    {
+	      pCurrentOps->push_back(wc);
+	      OpsPushInt ((int) w.Pfa);
+	      pCurrentOps->push_back(OP_LITERAL);
+	    }
+	  else
+	    {
+	      pCurrentOps->push_back(OP_IVAL);
+	      OpsPushInt(wc);
+	      pCurrentOps->push_back(OP_CALLADDR);
+	      OpsPushInt((int) OpsCompileByte);
+
+	      switch (wc)
+		{
+		case OP_DEFINITION:
+		  pCurrentOps->push_back(OP_ADDR);
+		  OpsPushInt((int) w.Cfa);
+		  pCurrentOps->push_back(OP_CALLADDR);
+		  OpsPushInt((int) OpsCompileInt);
+		  break;
+		case OP_CALLADDR:
+		  pCurrentOps->push_back(OP_ADDR);
+		  bp = (byte*) w.Cfa; ++bp;
+		  OpsPushInt(*((int*)bp));
+		  pCurrentOps->push_back(OP_CALLADDR);
+		  OpsPushInt((int) OpsCompileInt);
+		  break;
+		case OP_FVAL:
+	          pCurrentOps->push_back(OP_FVAL);
+	          OpsPushDouble (*((double*) w.Pfa));
+	          pCurrentOps->push_back(OP_CALLADDR);
+	          OpsPushInt((int) OpsCompileDouble);
+		  break;
+		default:
+		  ;
+		}
+	    } 
+	}
+      if (State && (w.Precedence & PRECEDENCE_NON_DEFERRED)) 
+	NewWord.Precedence |= PRECEDENCE_NON_DEFERRED;
+    }
+    return 0;
+}
+
+// WORDS ( -- ) 
+// List the definition names in the first wordlist of the search order
+// Forth-94 Programming Tools wordset 15.6.1.2465
+int CPP_words ()
+{
+  char *cp, field[16];
+  int nc;
+  Vocabulary* pVoc = SearchOrder.front();
+  *pOutStream << pVoc->size() << " words.\n";
+  WordIndex i;
+  int j = 0;
+  for (i = pVoc->begin(); i < pVoc->end(); i++)
+    {
+      memset (field, 32, 16);
+      field[15] = '\0';
+      cp = i->WordName;
+      nc = strlen(cp);
+      strncpy (field, cp, (nc > 15) ? 15 : nc);
+      *pOutStream << field;
+      if ((++j) % 5 == 0) *pOutStream << '\n';
+    }
+  return 0;
+}
+
+// (  ( "text" -- )
+// Parse comment text delimited by right parenthesis and discard.
+// pTIB is advanced past end of the comment.
+// Forth-94 Core Wordset 6.1.0080
 int CPP_lparen()
 {
-  // stack: ( -- | advance pTIB past end of comment )
-
   while (TRUE)
     {
       while ((pTIB < (TIB + 255)) && (! (*pTIB == ')')) && *pTIB) ++pTIB;
@@ -854,12 +1034,12 @@ int CPP_lparen()
 
   return 0;
 }
-//---------------------------------------------------------------
 
+// .(  ( "text" -- )
+// Parse and display text delimited by right parenthesis.
+// Forth-94 Core Extensions Wordset 6.2.0200
 int CPP_dotparen()
 {
-  // stack: ( -- | display comment and advance pTIB past end of comment )
-
   while (TRUE)
     {
       while ((pTIB < (TIB + 255)) && (! (*pTIB == ')')) && *pTIB) 
@@ -886,12 +1066,12 @@ int CPP_dotparen()
 
   return 0;
 }
-//---------------------------------------------------------------
 
+// .  ( n -- )
+// Display n in current base
+// Forth-94 Core Wordset 6.1.0180
 int CPP_dot ()
 {
-  // stack: ( n -- | print n in current base ) 
-
   DROP
   if (GlobalSp > BottomOfStack) 
     return E_V_STK_UNDERFLOW;
@@ -901,7 +1081,7 @@ int CPP_dot ()
       if (n < 0)
 	{
 	  *pOutStream << '-';
-	  TOS = abs(n);
+	  TOS = labs(n);
 	}
       DEC_DSP
       DEC_DTSP
@@ -909,12 +1089,12 @@ int CPP_dot ()
     }
   return 0;
 }
-//--------------------------------------------------------------
 
+// .R  ( n1 n2 -- )
+// Display n1 in current base, right justified in field width n2.
+// Forth-94 Core Extension Wordset 6.2.0210
 int CPP_dotr ()
 {
-  // stack: ( n1 n2 -- | print n1 in field n2 wide )
-
   DROP
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
   
@@ -949,11 +1129,12 @@ int CPP_dotr ()
   pOutStream->flush();
   return i;
 }
-//---------------------------------------------------------------
 
+// U.R  ( u n -- )
+// Print unsigned single in current base, right-justified in field width n.
+// Forth-94 Core Extensions Wordset 6.2.2330
 int CPP_udotr ()
 {
-  // stack: ( u n -- | print unsigned in field width n )
   if ((GlobalSp+2) > BottomOfStack) return E_V_STK_UNDERFLOW;
   DROP
   long int i, ndig, nfield;
@@ -1008,12 +1189,12 @@ int CPP_udot0 ()
     }
   return 0;
 }
-//--------------------------------------------------------------
 
+// U.  ( u -- )
+// Display unsigned single in current base, followed by space
+// Forth-94 Core Wordset 6.1.2320
 int CPP_udot ()
 {
-  // stack: ( u -- | print unsigned single in current base followed by space )
-
   int e = CPP_udot0();
   if (e)
     return e;
@@ -1024,12 +1205,12 @@ int CPP_udot ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// UD.  ( ud -- )
+// Print unsigned double in current base
+// Non-standard
 int CPP_uddot ()
 {
-  // stack: ( ud -- | print unsigned double in current base )
-
   if ((GlobalSp + 2) > BottomOfStack) return E_V_STK_UNDERFLOW;
   
   unsigned long int u1 = *(GlobalSp + 1);
@@ -1049,8 +1230,10 @@ int CPP_uddot ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// UD.R  ( ud n -- )
+// Display unsigned double, right-justified in field of width n
+// Non-standard
 int CPP_uddotr ()
 {
   if ((GlobalSp + 3) > BottomOfStack) return E_V_STK_UNDERFLOW;
@@ -1066,12 +1249,12 @@ int CPP_uddotr ()
   pOutStream->flush();
   return 0;
 }
-//---------------------------------------------------------------
 
+// D.  ( d -- )
+// Print signed double length number in current base.
+// Forth-94 Double Number Wordset 8.6.1.1060
 int CPP_ddot ()
 {
-  // stack: ( d -- | print signed double length number )
-
   if ((GlobalSp + 2) > BottomOfStack) 
     return E_V_STK_UNDERFLOW;
   else
@@ -1086,8 +1269,10 @@ int CPP_ddot ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// D.R ( d n -- )
+// Print signed double length number, right justified in field width n
+// Forth-94 Double Number Wordset 8.6.1.1070
 int CPP_ddotr ()
 {
   if ((GlobalSp + 3) > BottomOfStack) return E_V_STK_UNDERFLOW;
@@ -1109,12 +1294,12 @@ int CPP_ddotr ()
   pOutStream->flush();
   return 0;
 }
-//---------------------------------------------------------------
 
+// F.  ( r -- )
+// Print floating point number from the stack.
+// Forth-94 Floating Point Extensions Wordset 12.6.2.1427
 int CPP_fdot ()
 {
-  // stack: ( f -- | print floating point number )
-
   DROP
   DROP
   if (GlobalSp > BottomOfStack)
@@ -1128,12 +1313,12 @@ int CPP_fdot ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// FS.  ( r -- )
+// Print floating point number in scientific notation.
+// Forth-94 Floating Point Extensions Wordset 12.6.2.1613
 int CPP_fsdot ()
 {
-  // stack: ( f -- | print floating point number )
-
   DROP
   DROP
   if (GlobalSp > BottomOfStack)
@@ -1152,8 +1337,10 @@ int CPP_fsdot ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// .S  ( i*x -- i*x )
+// Display the contents of the data stack
+// Forth-94 Programming Tools Wordset 15.6.1.0220
 int CPP_dots ()
 {
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
@@ -1203,13 +1390,12 @@ int CPP_dots ()
 
   return 0;
 }
-//---------------------------------------------------------------
 
+// ' (tick) ( "name" -- xt )
+// Find "name" and return its execution token. If not found, throw exception.
+// Forth-94 Core Wordset 6.1.0070
 int CPP_tick ()
 {
-    // stack: ( "name" -- xt )
-    // Return error if "name" is not found in current search order
-
     char name[128];
     pTIB = ExtractName(pTIB, name);
     strupr(name);
@@ -1224,28 +1410,36 @@ int CPP_tick ()
     return 0;
 }
 
+// [DEFINED]  ( "name" -- flag )
+// Return true if "name" can be found in search order.
+// Forth-94 Programming Tools Extensions 15.6.2.2530.30
 int CPP_defined ()
 {
-   // stack: ( "name" -- flag)
    int not_found = CPP_tick();
    if ( ! not_found ) { DROP }
    PUSH_IVAL(not_found ? FALSE : TRUE)
    return 0;
 }
 
+// [UNDEFINED]  ( "name" -- flag )
+// Return true if "name" cannot be found in search order.
+// Forth-94 Programming Tools Extensions 15.6.2.2534
 int CPP_undefined ()
 {
-   // stack: ( "name" -- flag)
    int not_found = CPP_tick();
    if ( ! not_found ) { DROP }
    PUSH_IVAL(not_found ? TRUE : FALSE)
    return 0;
 }
 
+// FIND  ( ^str -- ^str 0 | xt 1 | xt -1 )
+// Find dictionary word represented by counted string.
+// If found return execution token and either 1 for an
+// immediate word or -1 for default compilation semantics;
+// Return ^str and 0 if word cannot be found in search order.
+// Forth-94 Core Wordset 6.1.1550
 int CPP_find ()
 {
-  // stack: ( ^str -- ^str 0 | xt_addr 1 | xt_addr -1 )
-
   DROP
   CHK_ADDR
   unsigned char* s = *((unsigned char**) GlobalSp);
@@ -1269,14 +1463,13 @@ int CPP_find ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// EMIT  ( n -- )
+// Display character with ASCII code n
+// Forth-94 Core Wordset 6.1.1320
 int CPP_emit ()
 {
-  // stack: ( n -- | display character with ascii code n )
-
   DROP
-
   if (GlobalSp > BottomOfStack)
     return E_V_STK_UNDERFLOW;
   else
@@ -1286,18 +1479,21 @@ int CPP_emit ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// CR  ( -- )
+// Begin output on a new line.
+// Forth-94 Core Wordset 6.1.0990
 int CPP_cr ()
 {
   *pOutStream << '\n';
   return 0;
 }
-//---------------------------------------------------------------
 
+// SPACES  ( n -- )
+// Display n spaces
+// Forth-94 Core Wordset 6.1.2230
 int CPP_spaces ()
 {
-
   DROP
   if (GlobalSp > BottomOfStack) 
     return E_V_STK_UNDERFLOW;
@@ -1310,11 +1506,12 @@ int CPP_spaces ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
+// TYPE  ( c-addr u -- )
+// Display character string 
+// Forth-94 Core Wordset 6.1.2310
 int CPP_type ()
 {
-
   DROP
   if (GlobalSp > BottomOfStack) 
     return E_V_STK_UNDERFLOW;
@@ -1331,34 +1528,12 @@ int CPP_type ()
     }
   return 0;
 }
-//---------------------------------------------------------------
 
-int CPP_words ()
-{
-  char *cp, field[16];
-  int nc;
-  Vocabulary* pVoc = SearchOrder.front();
-  *pOutStream << pVoc->size() << " words.\n";
-  WordIndex i;
-  int j = 0;
-  for (i = pVoc->begin(); i < pVoc->end(); i++)
-    {
-      memset (field, 32, 16);
-      field[15] = '\0';
-      cp = i->WordName;
-      nc = strlen(cp);
-      strncpy (field, cp, (nc > 15) ? 15 : nc);
-      *pOutStream << field;
-      if ((++j) % 5 == 0) *pOutStream << '\n';
-    }
-  return 0;
-}
-//---------------------------------------------------------------
-
+// ALLOCATE  ( u -- a ior )
+// Allocate u bytes and return address and i/o result
+// Forth-94 Memory Allocation Wordset 14.6.1.0707
 int CPP_allocate()
 {
-    // stack: ( u -- a ior | allocate u bytes and return address and success)
-
   DROP
   if (GlobalSp > BottomOfStack) 
     return E_V_STK_UNDERFLOW;
@@ -1375,10 +1550,11 @@ int CPP_allocate()
   return 0;
 }
 
-
+// FREE  ( a -- ior )
+// Free the previously allocated region at address a; return i/o result.
+// Forth-94 Memory Allocation Wordset 14.6.1.1605
 int CPP_free()
 {
-    // stack: ( a -- ior | free the allocated region at address a )
     DROP
     CHK_ADDR
     byte *p = (byte*) TOS; 
@@ -1387,10 +1563,11 @@ int CPP_free()
     return 0;
 }
 
-
+// RESIZE  ( a unew -- anew ior )
+// Change allocation size of region at address a to unew bytes.
+// Forth-94 Memory Allocation Wordset 14.6.1.2145
 int CPP_resize()
 {
-    // stack: ( a unew -- anew ior )
     DROP
     unsigned long unew = TOS;
     DROP
@@ -1406,8 +1583,13 @@ int CPP_resize()
 
     return 0;
 }
-//----------------------------------------------------------------
 
+// ALLOT  ( n -- )
+// Reserve n bytes of memory
+// Forth-94 Core Wordset 6.1.0710
+// System-specific: if n <= 0, ALLOT does not do anything.
+// All memory is dynamically allocated in kForth (see ALLOT?).
+// ALLOT must only be used following CREATE.
 int CPP_allot ()
 {
   DROP
@@ -1442,12 +1624,12 @@ int CPP_allot ()
 
   return 0;
 }
-//--------------------------------------------------------------
 
+// ALLOT?  ( n -- a )
+// Perform ALLOT and return starting address of allotted region.
+// Non-standard
 int CPP_queryallot ()
 {
-  // stack: ( u -- a | allot u bytes and leave starting address on the stack )
-
   int e = CPP_allot();
   if (!e)
     {
@@ -1458,40 +1640,13 @@ int CPP_queryallot ()
     }
   return e;
 }
-//---------------------------------------------------------------
 
-int CPP_create ()
-{
-
-  // stack: ( -- | create dictionary entry using next word in input stream )
-
-  char token[128];
-  pTIB = ExtractName(pTIB, token);
-  int nc = strlen(token);
-
-  if (nc)
-    {
-      WordListEntry NewWord;
-      strupr(token);
-      strcpy (NewWord.WordName, token);
-      NewWord.WordCode = OP_ADDR;
-      NewWord.Pfa = NULL;
-      NewWord.Cfa = NULL;
-      NewWord.Precedence = 0;
-
-      pCompilationWL->push_back(NewWord);
-      return 0;
-    }
-  else
-    {
-      return E_V_CREATE;  // create failed
-    }
-}
-//-----------------------------------------------------------------
-
+// ALIAS  ( xt "name" -- )
+// Create a new dictionary entry for "name" with execution
+// semantics defined by xt.
+// Non-standard
 int CPP_alias ()
 {
-    // stack: ( xt "name" -- )
     DROP
     void* cfa = (void*) TOS;
     CHK_ADDR
@@ -1514,31 +1669,32 @@ int CPP_alias ()
 
     return 0;
 }
-//-----------------------------------------------------------------
 
+// VARIABLE ( "name" -- )
+// Create a dictionary entry for "name" and allot 1 cell.
+// Forth-94
 int CPP_variable ()
 {
-  // stack: ( -- | create dictionary entry and allot space )
-
   if (CPP_create()) return E_V_CREATE;
   PUSH_IVAL( sizeof(long int) )
   return( CPP_allot() );
 }
-//-----------------------------------------------------------------
 
+// 2VARIABLE ( "name" -- )
+// Create a dictionary entry for "name" and allot 2 cells.
+// Forth-94
 int CPP_twovariable ()
 {
-  // stack: ( -- | create dictionary entry and allot space )
   if (CPP_create()) return E_V_CREATE;
   PUSH_IVAL( 2*sizeof(long int) )
   return( CPP_allot() );
 }
-//-----------------------------------------------------------------
 
+// FVARIABLE  ( "name" -- )
+// Create dictionary entry for "name" and allot space for 1 dfloat.
+// Forth-94
 int CPP_fvariable ()
 {
-  // stack: ( -- | create dictionary entry and allot space )
-
   if (CPP_create()) return E_V_CREATE;  
   PUSH_IVAL( sizeof(double) )
   return( CPP_allot() );
@@ -1636,92 +1792,11 @@ int CPP_brackettick ()
   return CPP_literal();  
 }
 //-------------------------------------------------------------------
-
-int CPP_compilecomma ()
-{
-  // stack: xt --
-  if (State == 0) pCurrentOps = pPreviousOps;
-  CPP_literal();
-  pCurrentOps->push_back(OP_EXECUTE);
-  if (State == 0) pCurrentOps = &tempOps;
-  return 0;  
-}
-// -----------------------------------------------------------------
-
-int CPP_postpone ()
-{
-  char token[128];
-  byte* bp;
-
-  pTIB = ExtractName (pTIB, token);
-  strupr(token);
-  WordListEntry w;
-  int found = SearchOrder.LocateWord(token, &w);
-  if (found) {
-      if (w.Precedence & PRECEDENCE_IMMEDIATE)
-	{
-	  CompileWord(w);
-	}
-      else
-	{
-	  int wc = (w.WordCode >> 8) ? OP_CALLADDR : w.WordCode;
-
-	  if (wc == OP_IVAL)
-	    {
-	      pCurrentOps->push_back(OP_IVAL);
-	      OpsPushInt (*((int*) w.Pfa));
-	      pCurrentOps->push_back(OP_LITERAL);
-	    }
-	  else if ((wc == OP_ADDR) || (wc == OP_PTR))
-	    {
-	      pCurrentOps->push_back(wc);
-	      OpsPushInt ((int) w.Pfa);
-	      pCurrentOps->push_back(OP_LITERAL);
-	    }
-	  else
-	    {
-	      pCurrentOps->push_back(OP_IVAL);
-	      OpsPushInt(wc);
-	      pCurrentOps->push_back(OP_CALLADDR);
-	      OpsPushInt((int) OpsCompileByte);
-
-	      switch (wc)
-		{
-		case OP_DEFINITION:
-		  pCurrentOps->push_back(OP_ADDR);
-		  OpsPushInt((int) w.Cfa);
-		  pCurrentOps->push_back(OP_CALLADDR);
-		  OpsPushInt((int) OpsCompileInt);
-		  break;
-		case OP_CALLADDR:
-		  pCurrentOps->push_back(OP_ADDR);
-		  bp = (byte*) w.Cfa; ++bp;
-		  OpsPushInt(*((int*)bp));
-		  pCurrentOps->push_back(OP_CALLADDR);
-		  OpsPushInt((int) OpsCompileInt);
-		  break;
-		case OP_FVAL:
-	          pCurrentOps->push_back(OP_FVAL);
-	          OpsPushDouble (*((double*) w.Pfa));
-	          pCurrentOps->push_back(OP_CALLADDR);
-	          OpsPushInt((int) OpsCompileDouble);
-		  break;
-		default:
-		  ;
-		}
-	    } 
-	}
-      if (State && (w.Precedence & PRECEDENCE_NON_DEFERRED)) 
-	NewWord.Precedence |= PRECEDENCE_NON_DEFERRED;
-
-    }
-
-
-  return 0;
-  
-}
-// -----------------------------------------------------------------
-
+// FORGET  ( "<spaces>name" -- )
+// Parse "name", find "name" in the compilation wordlist, then delete 
+//   "name" from the dictionary along with all words added to the 
+//   compilation wordlist after "name".
+// Forth-94 Tools Extensions Wordset 15.6.2.1580
 int CPP_forget ()
 {
   char token[128];
@@ -1745,17 +1820,6 @@ int CPP_forget ()
   return 0;
 }
 //-------------------------------------------------------------------
-
-int CPP_cold ()
-{
-  // stack: ( -- | restart the Forth environment )
-
-  CloseForth();
-  OpenForth();
-
-  return 0;
-}
-//--------------------------------------------------------------------
 
 int CPP_bye ()
 {
@@ -2170,12 +2234,12 @@ int CPP_if()
   OpsPushInt(0);   // placeholder for jump count
   return 0;
 }
-//------------------------------------------------------------------
 
+// ELSE  ( -- )
+// Build IF ... ELSE ... THEN block
+// Forth-94
 int CPP_else()
 {
-  // stack: ( -- | build the if-else-then block )
-
   pCurrentOps->push_back(OP_JMP);
   OpsPushInt(0);  // placeholder for jump count
 
@@ -2188,12 +2252,12 @@ int CPP_else()
 
   return 0;
 }
-//-------------------------------------------------------------------
 
+// THEN  ( -- )
+// Complete the current IF ... THEN or IF ... ELSE ... THEN block.
+// Forth-94
 int CPP_then()
 {
-  // stack: ( -- | complete the if-then or if-else-then block )
-
   if (ifstack.empty()) 
     return E_V_THEN_NO_IF;  // THEN without matching IF or IF-ELSE
 
@@ -2204,21 +2268,21 @@ int CPP_then()
 
   return 0;
 }
-//-------------------------------------------------------------------
 
+// CASE  ( n -- )
+// Begin a CASE ... ENDCASE control structure
+// Forth-94
 int CPP_case()
 {
-  // stack: ( n -- | mark the beginning of a case...endcase structure)
-
   casestack.push_back(-1);
   return 0;
 }
-//-----------------------------------------------------------------
 
+// ENDCASE  ( -- )
+// Terminate a CASE ... ENDCASE control structure
+// Forth-94
 int CPP_endcase()
 {
-  // stack: ( -- | terminate the case...endcase structure)
-
   if (casestack.size() == 0) return E_V_NO_CASE;  // ENDCASE without matching CASE
   pCurrentOps->push_back(OP_DROP);
 
@@ -2236,12 +2300,12 @@ int CPP_endcase()
 
   return 0;
 }
-//----------------------------------------------------------------
 
+// OF  ( -- )
+// Begin an OF ... ENDOF control block.
+// Forth-94
 int CPP_of()
 {
-  // stack: ( -- | generate start of an of...endof block)
-
   pCurrentOps->push_back(OP_OVER);
   pCurrentOps->push_back(OP_EQ);
   pCurrentOps->push_back(OP_JZ);
@@ -2250,12 +2314,12 @@ int CPP_of()
   pCurrentOps->push_back(OP_DROP);
   return 0;
 }
-//-----------------------------------------------------------------
 
+// ENDOF  ( -- )
+// Complete an OF ... ENDOF control block.
+// Forth-94
 int CPP_endof()
 {
-  // stack: ( -- | complete an of...endof block)
-
   pCurrentOps->push_back(OP_JMP);
   casestack.push_back(pCurrentOps->size());
   OpsPushInt(0);   // placeholder for jump count
@@ -2270,8 +2334,10 @@ int CPP_endof()
 
   return 0;
 }
-//-----------------------------------------------------------------
 
+// RECURSE  ( -- )
+//
+// Forth-94
 int CPP_recurse()
 {
   pCurrentOps->push_back(OP_ADDR);
@@ -2288,8 +2354,10 @@ int CPP_recurse()
   pCurrentOps->push_back(OP_EXECUTE);
   return 0;
 }
-//---------------------------------------------------------------------
 
+// [  "left-bracket" ( -- )
+// Enter interpretation state.
+// Forth-94 Core Wordset 6.1.2500
 int CPP_lbracket()
 {
   State = FALSE;
@@ -2298,16 +2366,20 @@ int CPP_lbracket()
   pCurrentOps = &tempOps;
   return 0;
 }
-//--------------------------------------------------------------------
 
+// ]  "right-bracket" ( -- )
+// Enter compilation state.
+// Forth-94 Core Wordset 6.1.2540
 int CPP_rbracket()
 {
   State = TRUE;
   pCurrentOps = pPreviousOps;
   return 0;
 }
-//-------------------------------------------------------------------
 
+// DOES>  ( -- )
+//
+// Forth-94
 int CPP_does()
 {
   // Allocate new opcode array
@@ -2334,35 +2406,32 @@ int CPP_does()
   L_ret();
   return 0;
 }
-//-------------------------------------------------------------------
 
+// IMMEDIATE  ( -- )
+// Mark the most recently defined word as immediate.
+// Forth-94 Core Wordset
 int CPP_immediate ()
 {
-  // Mark the most recently defined word as immediate.
-  // stack: ( -- )
-
   WordIndex id = pCompilationWL->end() - 1;
   id->Precedence |= PRECEDENCE_IMMEDIATE;
   return 0;
 }
-//-------------------------------------------------------------------
 
+// NONDEFERRED  ( -- )
+// Mark the most recently defined word as non-deferred.
+// Non-standard word (see kForth Manual)
 int CPP_nondeferred ()
 {
-  // Mark the most recently defined word as non-deferred.
-  // stack: ( -- )
-
   WordIndex id = pCompilationWL->end() - 1;
   id->Precedence |= PRECEDENCE_NON_DEFERRED;
   return 0;
 }
-//-------------------------------------------------------------------
 
+// EVALUATE  ( i*x c-addr u -- j*x )
+// Evaluate a character string containing Forth source
+// Forth-94 Core Wordset
 int CPP_evaluate ()
 {
-  // Evaluate a Forth source string
-  // ( ... a u -- ? )
-
   char s[256], s2[256];
   DROP
   long int nc = TOS; int ec = 0;

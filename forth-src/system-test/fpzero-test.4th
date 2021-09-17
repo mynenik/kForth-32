@@ -27,8 +27,8 @@ decimal
 
 variable #errors    0 #errors !
 
-: noname  ( c-addr u -- | Keep a cumulative error count )
-  1 #errors +! error1 ;  ' noname error-xt !
+:noname  ( c-addr u -- | Keep a cumulative error count )
+  1 #errors +! error1 ;  error-xt !
 
 -0E 0E 0E F~ [IF]
   cr cr .( ** System does not support floating point signed zero. **)

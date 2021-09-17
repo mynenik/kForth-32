@@ -87,21 +87,19 @@ object class
        method   pa-setcolors
 end-class pattern
 
-: noname ( ... o -- )
+:noname ( ... o -- )
     PATTERN_HEIGHT 0 ?do 
       nip dup pa-text i PATTERN_WIDTH * + rot swap PATTERN_WIDTH cmove
     loop drop ;
+pattern defines pa-init
 
-' noname pattern defines pa-init
-
-: noname ( col row o -- )
+:noname ( col row o -- )
     PATTERN_HEIGHT 0 ?do
       -rot 2dup i + at-xy rot
       dup pa-text i PATTERN_WIDTH * + PATTERN_WIDTH type
     loop
     drop 2drop ;
-
-' noname pattern defines pa-draw
+pattern defines pa-draw
   
 pattern new cross
 S"              *             "

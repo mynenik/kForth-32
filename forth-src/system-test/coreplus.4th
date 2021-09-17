@@ -72,8 +72,6 @@ T{ -20 31 -10 gd7 -> 31 21 11 1 -9 -19 6 }T
 T{ -20 29 -10 gd7 -> 29 19 9 -1 -11 5 }T
 
 \ ----------------------------------------------------------------------------
-COMMENT Skipping RECURSE tests with :NONAME
-0 [IF]
 Testing RECURSE with :NONAME
 
 T{ :NONAME ( n -- 0,1,..n ) DUP IF DUP >R 1- RECURSE R> THEN ;
@@ -97,7 +95,6 @@ T{  1 rn2 EXECUTE -> 0 }T
 T{  2 rn2 EXECUTE -> 11 0 }T
 T{  4 rn2 EXECUTE -> 33 22 11 0 }T
 T{ 25 rn2 EXECUTE -> 33 22 11 0 }T
-[THEN]
 
 \ -----------------------------------------------------------------------------
 

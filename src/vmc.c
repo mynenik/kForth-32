@@ -664,10 +664,11 @@ int C_word ()
   return 0;
 }
 
-
+// PARSE  ( char "ccc<char>" -- c-addr u )
+// Parse text delimited by char; return string address and count.
+// Forth-94 Core Extensions wordset 6.2.2008
 int C_parse ()
 {
-  /* stack: ( n -- a u | parse string delimited by char n ) */
   DROP
   char delim = TOS;
   char *cp = pTIB;
@@ -683,7 +684,7 @@ int C_parse ()
 	}
       if (*pTIB) ++pTIB;  /* consume the delimiter */
     }
-  PUSH_ADDR((int) cp)
+  PUSH_ADDR((long int) cp)
   PUSH_IVAL(count)
   return 0;
 }

@@ -148,7 +148,7 @@ f:  xmax        The largest finite floating-point number.
 \ strange-looking algebra in the stack comments tries to mimic
 \ the original Fortran, to minimize translation errors.
 
-: noname  ( -- 2^u )
+:noname  ( -- 2^u )
 (
 Calculate 2^U, the smallest positive integer power of 2
 unaffected by the floating point addition of 1.
@@ -160,10 +160,10 @@ unaffected by the floating point addition of 1.
      fover f- 1e f-  ( A [[A+1]-A]-1)
      f0= 0=
    UNTIL
-   ( A) ;  ( execute) noname
+   ( A) ;  execute
 fconstant 2^u
 
-: noname  ( -- beta )
+:noname  ( -- beta )
 (
 Find the floating point radix beta.  The algorithm adds to 2^U
 the smallest power of 2 that increases its next to lowest digit,
@@ -178,10 +178,10 @@ the radix as the difference.
      f+ 2^u f-                 ( B [A+B]-A)
      f>s dup 0=
    WHILE drop REPEAT ( B) >r fdrop r>
-   ( radix) ; ( execute) noname
+   ( radix) ; execute
 ( radix) dup constant ibeta   s>f fconstant beta
 
-: noname  ( -- #digits )
+:noname  ( -- #digits )
 (
 Calculate #digits, the number of base BETA digits in the fp
 significand.  Uses BETA.
@@ -193,14 +193,14 @@ significand.  Uses BETA.
      fdup fdup 1e f+
          fswap f- 1e f-        ( #digs B [B+1]-B]-1)
      f0= 0=
-   UNTIL ( #digs B) fdrop ; ( execute) noname
+   UNTIL ( #digs B) fdrop ; execute
 constant #digits
 
 (
 Calculate a preliminary determination of the rounding type
 as PRE-IRND.  Uses BETA and 2^U.
 )
-: noname
+:noname
    beta f2/   fdup 2^u         ( beta/2 beta/2 A=2^u)
    f+ 2^u f-                   ( beta/2 [A+beta/2]-A])
    f0= 0=
@@ -211,13 +211,13 @@ as PRE-IRND.  Uses BETA and 2^U.
      fswap f-                  ( [[A+beta]+beta/2]-[A+beta])
      f0=
      IF 0 ELSE 2 THEN      ( rnd.enum=0|2)
-   THEN ( rnd.enum) ; noname
+   THEN ( rnd.enum) ; execute 
 constant pre-irnd
 
 #digits 3 +  constant #digs+3
 1e beta f/  fconstant 1/beta
 
-: noname  ( -- [1/beta]^[#digits+3] )
+:noname  ( -- [1/beta]^[#digits+3] )
 (
 Calculate [1/BETA]^[#DIGITS+3].
 )
@@ -226,10 +226,10 @@ Calculate [1/BETA]^[#DIGITS+3].
    DO
      fover f*                  ( 1/beta A*1/beta)
    LOOP fnip                   ( B=[1/beta]^[#digs+3])
-   ; ( execute) noname
+   ;  execute
 fconstant [1/beta]^[#digits+3]
 
-: noname  ( -- negeps epsneg )
+:noname  ( -- negeps epsneg )
 (
 Calculate NEGEPS and EPSNEG.  Uses #DIGITS, and EPSLB.
 )
@@ -242,10 +242,10 @@ Calculate NEGEPS and EPSNEG.  Uses #DIGITS, and EPSLB.
      2>r 1- 2r>                 ( negep=negep-1 -A)
    REPEAT
    fnegate
-   2>r negate 2r> ; ( execute) noname
+   2>r negate 2r> ;  execute
 fconstant epsneg   constant negeps
 
-: noname  ( -- macheps eps )
+:noname  ( -- macheps eps )
 (
 Calculate MACHEPS and EPS.  Uses #DIGITS, BETA, and EPSLB.
 )
@@ -257,20 +257,20 @@ Calculate MACHEPS and EPS.  Uses #DIGITS, BETA, and EPSLB.
      beta f*                   ( macheps A=A*beta)
      2>r 1+ 2r>                ( macheps=macheps+1 A)
    REPEAT                      ( macheps eps)
-   ; ( execute) noname
+   ;  execute
 fconstant eps   constant macheps
 
 (
 Calculate NGRD.  Uses EPS and PRE-IRND.
 )
-: noname ( -- ngrd )
+:noname ( -- ngrd )
    1e eps f+ 1e f* 1e f-       ( [1+eps]*1-1)
    f0= 0=   pre-irnd 0= and
-   IF 1 ELSE 0 THEN ; noname
+   IF 1 ELSE 0 THEN ;  execute
 constant ngrd
 
 fvariable pre-xmin
-: noname  ( -- maxnu 2^maxnu )
+:noname  ( -- maxnu 2^maxnu )
 (
 Calculate MAXNU and 2^MAXNU, where MAXNU is the largest integer
 such that [1/BETA]^[2^MAXNU] does not underflow.
@@ -296,10 +296,10 @@ Uses BETA and EPS.
      fover f= r> or            ( I K Z flag.or.R=Z)
    0= WHILE  \ no underflow
      2>r swap 1+ swap dup + 2r>  ( I=I+1 K=K+K Z)
-   REPEAT  ( I K Z) fdrop ; ( execute) noname
+   REPEAT  ( I K Z) fdrop ;  execute
 constant 2^maxnu   constant maxnu
 
-: noname  ( -- pre.exp mx )
+:noname  ( -- pre.exp mx )
 (
 Calculate  PRE-IEXP and MX, part of MAXEXP - MINEXP.  Uses
 IBETA, MAXNU, and 2^MAXNU.
@@ -317,12 +317,12 @@ IBETA, MAXNU, and 2^MAXNU.
    ELSE
      maxnu 1+ ( pre.exp)
      2^maxnu 2* ( mx)
-   THEN ; ( execute) noname
+   THEN ;  execute
 constant mx   constant pre-iexp
 
 0 value nxres
 fvariable xmin/beta   fvariable xmin/beta*1
-: noname  ( -- minexp )
+:noname  ( -- minexp )
 (
 Calculate MINEXP and XMIN.  Set XMIN/BETA, XMIN/BETA*1, and
 NXRES, the partial underflow adjustment to the IRND enumeration.
@@ -355,7 +355,7 @@ Uses BETA, 2^MAXNU, and PRE-XMIN = [1/BETA]^[2*MAXNU].
     THEN
    REPEAT
    xmin/beta f!
-   negate ( minexp) ; ( execute) noname
+   negate ( minexp) ;  execute
 constant minexp   pre-xmin f@ fconstant xmin
 
 variable pre-maxexp
@@ -363,7 +363,7 @@ variable pre-maxexp
 Calculate IEXP and a PRE-MAXEXP.  Uses MINEXP, IBETA, MX, and
 PRE-IEXP.
 )
-: noname ( -- iexp )
+:noname ( -- iexp )
    mx dup                      ( MX MX)
    minexp negate 2* 3 - >      ( MX flag=MX>[K+K-3])
    ibeta 10 = or               ( MX flag.or.[ibeta=10])
@@ -372,7 +372,7 @@ PRE-IEXP.
    ELSE
      pre-iexp                  ( MX iexp=pre.iexp)
    THEN
-   swap ( iexp MX) minexp + pre-maxexp ! ;  noname
+   swap ( iexp MX) minexp + pre-maxexp ! ;  execute
 constant iexp
 
 (
@@ -384,8 +384,8 @@ nxres pre-irnd + constant irnd
 (
 Adjust PRE-MAXEXP for IEEE-style machines.  Uses IRND.
 )
-: noname ( -- )
-   irnd 2 >= IF -2 pre-maxexp +! THEN ; noname
+:noname ( -- )
+   irnd 2 >= IF -2 pre-maxexp +! THEN ; execute
 
 (
 Calculate MAXEXP from the IEEE-adjusted PRE-MAXEXP, by adjusting
@@ -394,7 +394,7 @@ significand, and machines with radix point at the extreme right
 of the significand.  Uses MINEXP, IBETA, XMIN/BETA, and
 XMIN/BETA*1.
 )
-: noname ( -- maxexp )
+:noname ( -- maxexp )
    pre-maxexp @                ( pm=pre.maxexp)
    dup minexp +                ( pm I=maxexp+minexp)
    dup 0=   ibeta 2 = and      ( p I I=0.and.beta=2)
@@ -408,10 +408,10 @@ XMIN/BETA*1.
    xmin/beta f@   xmin/beta*1 f@ f<>
    IF
      2 -                       ( pm=pm-2)
-   THEN ;  noname
+   THEN ;  execute
 constant maxexp
 
-: noname  ( -- xmax )
+:noname  ( -- xmax )
 (
 Calculate XMAX.  Uses MAXEXP, MINEXP, EPSNEG, BETA, and XMIN.
 )
@@ -435,7 +435,7 @@ Calculate XMAX.  Uses MAXEXP, MINEXP, EPSNEG, BETA, and XMIN.
        THEN
      LOOP
    THEN
-   ( XMAX) ; ( execute) noname
+   ( XMAX) ;  execute
 fconstant xmax
 
 

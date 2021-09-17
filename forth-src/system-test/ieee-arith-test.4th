@@ -40,12 +40,12 @@ true verbose !
 
 variable #errors    0 #errors !
 
-: noname  ( c-addr u -- )
+:noname  ( c-addr u -- )
 (
 Display an error message followed by the line that had the
 error.
 )
-  1 #errors +! error1 ; ' noname error-xt !
+  1 #errors +! error1 ; error-xt !
 
 : ?.errors  ( -- )  verbose @ IF ." #ERRORS: " #errors @ . THEN ;
 
