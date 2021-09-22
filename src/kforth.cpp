@@ -2,7 +2,7 @@
 //
 // The kForth environment
 //
-// Copyright (c) 1998--2020 Krishna Myneni, 
+// Copyright (c) 1998--2021 Krishna Myneni, 
 //   <krishna.myneni@ccreweb.org>
 // 
 // This software is provided under the terms of the GNU 
@@ -39,13 +39,8 @@ const char* build=BUILD_DATE;
 #include <sstream>
 #include <string>
 #include <vector>
-using std::istream;
-using std::ostream;
-using std::cout;
-using std::endl;
-using std::istringstream;
-using std::ostringstream;
-using std::vector;
+using namespace std;
+
 extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +63,7 @@ extern "C" {
     void echo_off(void);
 }
 
-int debug = 0;
+int debug = false;
 
 int main(int argc, char *argv[])
 {
@@ -89,7 +84,7 @@ int main(int argc, char *argv[])
 
 	while (i < argc) {
 	  if (!strcmp(argv[i], "-D")) {
-	    debug = -1;
+	    debug = true;
 	  }
 	  else if (!strcmp(argv[i], "-e")) {
 	    if (argc > i) {
@@ -161,5 +156,4 @@ int main(int argc, char *argv[])
         op.erase(op.begin(), op.end());
     }
 }
-//---------------------------------------------------------------
 
