@@ -1029,15 +1029,14 @@ int CPP_create ()
 // Forth 2012 Core Extensions Wordset 6.2.0455
 int CPP_noname()
 {
-    if (PendingDefStack.size()) {
-      PendingOps.push(pCurrentOps);
-      pCurrentOps = new vector<byte>;
-    }
+    PendingOps.push(pCurrentOps);
+    pCurrentOps = new vector<byte>;
+// fixme: push recursion stack and allocate new one
+    while (!recursestack.empty()) recursestack.pop();
     State = TRUE;
+
     pNewWord = NULL;
     PendingDefStack.push(pNewWord);
-    while (!recursestack.empty()) recursestack.pop();
-    // pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
     return 0;
 }
 
@@ -1046,19 +1045,24 @@ int CPP_noname()
 // Forth 2012 Core Wordset 6.1.0450
 int CPP_colon()
 {
-    char WordToken[256];
+    PendingOps.push(pCurrentOps);
+    pCurrentOps = new vector<byte>;
+// fixme: push recursion stack and allocate new one
+    while (!recursestack.empty()) recursestack.pop();
     State = TRUE;
+
+    char WordToken[256];
     pTIB = ExtractName (pTIB, WordToken);
     strupr(WordToken);
+
     pNewWord = new WordListEntry;
-    PendingDefStack.push(pNewWord);
     strcpy (pNewWord->WordName, WordToken);
     pNewWord->WordCode = OP_DEFINITION;
     pNewWord->Precedence = PRECEDENCE_NONE;
     pNewWord->Pfa = NULL;
     pNewWord->Cfa = NULL;
-    while (!recursestack.empty()) recursestack.pop();
-    pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+
+    PendingDefStack.push(pNewWord);
     return 0;
 }
 
@@ -1103,7 +1107,6 @@ int CPP_semicolon()
         *((byte**) pLambda) = lambda;
         PUSH_ADDR( (long int) pLambda )
       }
-      // PendingDefStack.pop();
 
       // Resolve any self references (recursion)
 
@@ -1119,19 +1122,13 @@ int CPP_semicolon()
          recursestack.pop();
       }
 
+// fixme: delete recursion stack and pop old one back.
+ 
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *lambda++ = *bp++;
-
-      pNewWord = PendingDefStack.top();
-      PendingDefStack.pop();
-      if ((pNewWord == NULL) && (PendingDefStack.size())) {
-         delete pCurrentOps;
-	 pCurrentOps = PendingOps.top();
-	 PendingOps.pop();
-      }
-      else {
-        pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
-      }
+      delete pCurrentOps;
+      pCurrentOps = PendingOps.top(); PendingOps.pop();
+      pNewWord = PendingDefStack.top(); PendingDefStack.pop();
       State = FALSE;
     }
   else
@@ -2205,17 +2202,12 @@ int CPP_sliteral ()
   DROP
   CHK_ADDR
   char *cp = (char*) TOS;
+  char* str = new char[u + 1];
+  strncpy(str, cp, u);
+  str[u] = '\0';
+  StringTable.push_back(str);
   pCurrentOps->push_back(OP_ADDR);
-  // If string is not already in the string table, put it there
-  if (! InStringTable(cp-1)) 
-  {
-    char* str = new char[u + 1];
-    strncpy(str, cp, u);
-    str[u] = '\0';
-    StringTable.push_back(str);
-    cp = str;
-  }
-  OpsPushInt((long int) cp);
+  OpsPushInt((long int) str);
   pCurrentOps->push_back(OP_IVAL);
   OpsPushInt(u);
 
