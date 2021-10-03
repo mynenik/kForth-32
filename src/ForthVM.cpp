@@ -1916,23 +1916,18 @@ int CPP_twoliteral ()
 
 int CPP_sliteral ()
 {
-  // stack: ( c-addr u -- | place string or copy of string in compiled opcodes )
+  // stack: ( c-addr u -- | store copy of string and compile string literal )
   DROP
   unsigned long int u = TOS;
   DROP
   CHK_ADDR
   char *cp = (char*) TOS;
+  char* str = new char[u + 1];
+  strncpy(str, cp, u);
+  str[u] = '\0';
+  StringTable.push_back(str);
   pCurrentOps->push_back(OP_ADDR);
-  // If string is not already in the string table, put it there
-  if (! InStringTable(cp-1)) 
-  {
-    char* str = new char[u + 1];
-    strncpy(str, cp, u);
-    str[u] = '\0';
-    StringTable.push_back(str);
-    cp = str;
-  }
-  OpsPushInt((long int) cp);
+  OpsPushInt((long int) str);
   pCurrentOps->push_back(OP_IVAL);
   OpsPushInt(u);
 
