@@ -346,7 +346,7 @@ L_quit:
 	movl BottomOfReturnTypeStack, %eax
 	movl %eax, GlobalRtp
   .endif
-	movl $8, %eax		# exit the virtual machine
+	movl $E_QUIT, %eax		# exit the virtual machine
 	ret
 L_abort:
 	movl BottomOfStack, %eax
@@ -394,9 +394,6 @@ L_calladdr:
 	addl $3, %ebp
 	movl %ebp, GlobalIp
         jmpl *(%ecx)
-#	call *(%ecx)
-#	movl GlobalIp, %ebp
-#	ret
 
 L_binary:
 	movl $Base, %ecx
