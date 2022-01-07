@@ -2,7 +2,7 @@
 //
 // Common declarations and data for kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2021 Krishna Myneni,
+// Copyright (c) 1998--2022 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -18,13 +18,17 @@
 .equ OP_RET,	238
 .equ SIGN_MASK,	0x80000000
 	
-// Error Codes
+// Error Codes must be same as those in VMerrors.h
 
-.equ E_NOT_ADDR,	1
-.equ E_DIV_ZERO,	4
-.equ E_RET_STK_CORRUPT,	5
-.equ E_UNKNOWN_OP,	6
-.equ E_DIV_OVERFLOW,   20
+.equ E_DIV_ZERO,          -10
+.equ E_ARG_TYPE_MISMATCH, -12
+.equ E_QUIT,              -56
+.equ E_NOT_ADDR,          -256
+.equ E_RET_STK_CORRUPT,   -258
+.equ E_BAD_OPCODE,        -259
+.equ E_DIV_OVERFLOW,      -270
+
+// .equ E_UNKNOWN_OP,	6
 	
 .data
 NDPcw: .int 0
@@ -121,8 +125,8 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long CPP_only, CPP_also, CPP_order, CPP_previous                 # 340--343
            .long CPP_forth, CPP_assembler, L_nop, L_nop        # 344--347
            .long L_nop, L_nop, CPP_defined, CPP_undefined      # 348--351
-           .long L_nop, L_nop, L_nop, L_nop            # 352--355
-           .long L_nop, L_nop, L_nop, L_nop            # 356--359
+           .long L_nop, L_nop, L_nop, L_nop           # 352--355
+           .long L_nop, L_nop, L_nop, L_vmthrow       # 356--359
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
 	   .long L_nop, L_nop, C_fexpm1, C_flnp1      # 364--367
 	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup  # 368--371
@@ -309,6 +313,14 @@ E_div_overflow:
 	movl $E_DIV_OVERFLOW, %eax
 	ret
 
+L_vmthrow:      # throw VM error (used as default exception handler)
+        LDSP
+        INC_DSP
+        INC_DTSP
+        movl (%ebx), %eax
+        STSP
+        ret
+
 L_cputest:
 	ret
 
@@ -324,7 +336,7 @@ L_initfpu:
 	ret
 
 L_nop:
-        movl $E_UNKNOWN_OP, %eax   # unknown operation
+        movl $E_BAD_OPCODE, %eax   # unknown operation
         ret
 L_quit:
 	movl BottomOfReturnStack, %eax	# clear the return stacks

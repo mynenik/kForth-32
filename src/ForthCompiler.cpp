@@ -25,6 +25,8 @@
 using namespace std;
 #include "fbc.h"
 #include "ForthCompiler.h"
+#include "VMerrors.h"
+#include "kfmacros.h"
 
 const int IMMEDIATE   = PRECEDENCE_IMMEDIATE;
 const int NONDEFERRED = PRECEDENCE_NON_DEFERRED;
@@ -105,25 +107,6 @@ vector<byte>* pCurrentOps;
 // The word currently being compiled (needs to be global)
 
 WordListEntry NewWord;
-//---------------------------------------------------------------
-
-
-const char* C_ErrorMessages[] =
-{
-	"",
-	"",
-	"End of definition with no beginning",
-	"End of string",	 
-        "Not allowed inside colon definition",
-	"Error opening file",
-	"Incomplete IF...THEN structure",
-	"Incomplete BEGIN structure",
-	"Unknown word",
-	"No matching DO",
-	"Incomplete DO loop",
-	"Incomplete CASE structure",
-	"VM returned error"
-};
 //---------------------------------------------------------------
 
 bool IsForthWord (char* name, WordListEntry* pE)
@@ -279,7 +262,7 @@ int ForthCompiler (vector<byte>* pOpCodes, long int* pLc)
 	{
 	  if (State)
 	    {
-	      ecode = E_C_ENDOFSTREAM;  // reached end of stream before end of definition
+	      ecode = E_V_END_OF_STREAM;  // end of stream before end of definition
 	      break;
 	    }
 	  break;    // end of stream reached
@@ -350,7 +333,7 @@ int ForthCompiler (vector<byte>* pOpCodes, long int* pLc)
 	      else
 		{
 		  *pOutStream << endl << WordToken << endl;
-		  ecode = E_C_UNKNOWNWORD;  // unknown keyword
+		  ecode = E_V_UNDEFINED_WORD;  // unknown keyword
 		  goto endcompile;
 		}
 	     }
@@ -370,7 +353,7 @@ int ForthCompiler (vector<byte>* pOpCodes, long int* pLc)
 
 endcompile:
   
-  if ((ecode != E_C_NOERROR) && (ecode != E_C_ENDOFSTREAM))
+  if ((ecode != E_V_NOERROR) && (ecode != E_V_END_OF_STREAM))
     {
       // A compiler or vm error occurred; reset to interpreter mode and
       //   clear all flow control stacks.

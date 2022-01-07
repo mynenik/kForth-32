@@ -2,7 +2,7 @@
 //
 // The kForth environment
 //
-// Copyright (c) 1998--2021 Krishna Myneni, 
+// Copyright (c) 1998--2022 Krishna Myneni, 
 //   <krishna.myneni@ccreweb.org>
 // 
 // This software is provided under the terms of the GNU 
@@ -50,9 +50,9 @@ extern "C" {
 #include "fbc.h"
 #include "ForthCompiler.h"
 #include "ForthVM.h"
+#include "VMerrors.h"
 
 extern vector<WordList> Dictionary;
-extern char* C_ErrorMessages[];
 
 extern "C" long int* JumpTable;
 extern "C" long int* BottomOfStack;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
     if (argc < 2) {
 	cout << "kForth-32 v " << version << "\t (Build: " << build << ")" << endl;
-	cout << "Copyright (c) 1998--2021 Krishna Myneni" << endl;
+	cout << "Copyright (c) 1998--2022 Krishna Myneni" << endl;
         cout << "Contributions by: dpw gd mu bk abs tn cmb bg dnw" << endl;
 	cout << "Provided under the GNU Affero General Public License, v3.0 or later" 
 	  << endl << endl;
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 	    delete pSS;
 	    pSS = NULL;
 
-        } while (ec == E_C_ENDOFSTREAM) ;   // test for premature end of input
+        } while (ec == E_V_END_OF_STREAM) ; // test for premature end of input
                                             //   that spans multiple lines
         if (ec) {
 	    cout << "Line " << line_num << ": "; PrintVM_Error(ec);

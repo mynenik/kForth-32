@@ -1,7 +1,7 @@
 #
 # Makefile for kForth-32
 #
-# Copyright (c) 1998--2021 Krishna Myneni, 
+# Copyright (c) 1998--2022 Krishna Myneni, 
 #   <krishna.myneni@ccreweb.org>
 #
 # This software is provided under the terms of the GNU 
@@ -25,7 +25,7 @@
 # Invoke "make debug" if you want to create an executable
 # that contains debugging information for the GNU debugger (gdb).
 
-VERSION = 1.7.1u1
+VERSION = 1.7.2
 DEF_DIR_VAR=KFORTH_DIR
 BUILD_DATE=`date +%F`
 DEBUG = 
@@ -66,22 +66,23 @@ clean:
 debug:
 	make kforth32 "DEBUG = -g"
 
-kforth.o: kforth.cpp ForthVM.h ForthCompiler.h
+kforth.o: kforth.cpp ForthVM.h ForthCompiler.h VMerrors.h
 	${CPP} ${CPPFLAGS} ${DEBUG} -DVERSION=\"${VERSION}\" \
 	-DBUILD_DATE=\"${BUILD_DATE}\" kforth.cpp
 
-kforth-fast.o: kforth.cpp ForthVM.h ForthCompiler.h
+kforth-fast.o: kforth.cpp ForthVM.h ForthCompiler.h VMerrors.h
 	${CPP} ${CPPFLAGS} ${DEBUG} -DVERSION=\"${VERSION}\" \
 	-DBUILD_DATE=\"${BUILD_DATE}\" ${FAST} -o kforth-fast.o kforth.cpp
 
-ForthCompiler.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h
+ForthCompiler.o: ForthCompiler.cpp ForthCompiler.h fbc.h ForthWords.h \
+	VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} ${DEBUG} ForthCompiler.cpp
 
-ForthVM.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h kfmacros.h
+ForthVM.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} -DDIR_ENV_VAR=\"${DEF_DIR_VAR}\" \
         ${DEBUG} ForthVM.cpp
 
-ForthVM-fast.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h kfmacros.h
+ForthVM-fast.o: ForthVM.cpp ForthVM.h fbc.h ForthCompiler.h VMerrors.h kfmacros.h
 	${CPP} ${CPPFLAGS} -DDIR_ENV_VAR=\"${DEF_DIR_VAR}\" \
         ${DEBUG} ${FAST} -o ForthVM-fast.o ForthVM.cpp
 

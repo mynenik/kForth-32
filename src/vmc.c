@@ -3,7 +3,7 @@ vmc.c
 
   C portion of the kForth Virtual Machine
 
-  Copyright (c) 1998--2021 Krishna Myneni, 
+  Copyright (c) 1998--2022 Krishna Myneni, 
   <krishna.myneni@ccreweb.org>
 
   This software is provided under the terms of the GNU
@@ -31,16 +31,12 @@ vmc.c
 #include <string.h>
 #include <math.h>
 #include "fbc.h"
+#include "VMerrors.h"
 #include "kfmacros.h"
 
 #define WSIZE 4
 #define TRUE -1
 #define FALSE 0
-#define E_V_NOTADDR 1
-#define E_V_BADCODE 6
-#define E_V_STK_UNDERFLOW   7
-#define E_V_QUIT  8
-#define E_V_DBL_OVERFLOW   21
 
 #define byte unsigned char
 
@@ -1355,7 +1351,7 @@ int C_forth_signal ()
         PUSH_ADDR( (int) oldxt )
     }
     else
-	return E_V_BADCODE;
+	return E_V_BAD_OPCODE;
 
     return 0;
 }
