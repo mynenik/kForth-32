@@ -1,7 +1,7 @@
 # kForth-32
 32-bit Forth System for x86-GNU/Linux
 
-Copyright &copy; 1998--2020 Krishna Myneni, <krishna.myneni@ccreweb.org>
+Copyright &copy; 1998--2022 Krishna Myneni, <krishna.myneni@ccreweb.org>
 
 ## LICENSE
 
