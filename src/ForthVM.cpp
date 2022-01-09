@@ -544,14 +544,19 @@ int OpsCompileDouble ()
 
 void PrintVM_Error (long int ec)
 {
-    int ei = labs(ec);
-    int imax = (ei >> 8) ? MAX_V_SYS_DEFINED : MAX_V_RESERVED;
-    const char *pMsg = (ei >> 8) ? V_SysDefinedMessages[ei-256] :
-        V_ThrowMessages[ei];
-    ei = (ei >> 8) ? ei-256: ei;
-
-    if ((ei >= 0) && (ei < imax))
-        *pOutStream << " VM Error(" << ec << "): " << pMsg << endl;
+    if (ec) {
+      const char *pMsg = "?";
+      if (ec < 0) {
+        int ei = labs(ec);
+        bool b = ei > 255;
+        int imax = b ? MAX_V_SYS_DEFINED : MAX_V_RESERVED;
+        int ioffs = b ? ei - 256 : ei;
+        if (ioffs < imax)
+          pMsg = b ? V_SysDefinedMessages[ioffs] :
+              V_ThrowMessages[ioffs];
+      }
+      *pOutStream << " VM Error(" << ec << "): " << pMsg << endl;
+    }
 }
 //---------------------------------------------------------------
 
@@ -581,7 +586,7 @@ if (debug)  cout << ">ForthVM Sp: " << GlobalSp << " Rp: " << GlobalRp << endl;
 
   ecode = vm (ip);
 
-  if (ecode & 0xff)
+  if (ecode)
     {
       if (debug) cout << "vm Error: " << ecode << endl; // "  Offending OpCode: " << ((int) *(GlobalIp-1)) << endl;
       ClearControlStacks();
@@ -2670,11 +2675,6 @@ int CPP_state()
 int CPP_spstore()
 {
     // stack: ( addr -- | make the stack ptr point to a new address)
-
-// cout << "GlobalSp = " << GlobalSp << "  ForthStack = " << ForthStack << endl;
-// #ifndef __FAST__
-// cout << "GlobalTp = " << (void *) GlobalTp << "  ForthTypeStack = " << (void *) ForthTypeStack << endl;
-// #endif
 
     DROP
     CHK_ADDR

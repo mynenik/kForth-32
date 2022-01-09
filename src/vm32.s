@@ -2,7 +2,7 @@
 //
 // The assembler portion of kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2020 Krishna Myneni,
+// Copyright (c) 1998--2022 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -439,7 +439,7 @@ next:
 	movl GlobalIp, %ebp      # resync ip (possibly changed in call)
 	incl %ebp		 # increment the Forth instruction ptr
 	movl %ebp, GlobalIp
-	cmpb $0, %al		 # check for error
+	cmpl $0, %eax		 # check for error
 	jz next        
 exitloop:
         cmpl $OP_RET, %eax       # return from vm?
