@@ -1131,9 +1131,16 @@ int CPP_semicolon()
  
       bp = (byte*) &(*pCurrentOps)[0]; // ->begin();
       while ((vector<byte>::iterator) bp < pCurrentOps->end()) *lambda++ = *bp++;
-      delete pCurrentOps;
-      pCurrentOps = PendingOps.top(); PendingOps.pop();
-      pNewWord = PendingDefStack.top(); PendingDefStack.pop();
+      pNewWord = PendingDefStack.top();
+      PendingDefStack.pop();
+      if (PendingDefStack.size()) {
+         delete pCurrentOps;
+         pCurrentOps = PendingOps.top();
+         PendingOps.pop();
+      }
+      else {
+         pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+      }
       State = FALSE;
     }
   else
@@ -2201,7 +2208,7 @@ int CPP_twoliteral ()
 
 int CPP_sliteral ()
 {
-  // stack: ( c-addr u -- | place string or copy of string in compiled opcodes )
+  // stack: ( c-addr u -- | store copy of string and compile string literal )
   DROP
   unsigned long int u = TOS;
   DROP
@@ -2742,18 +2749,18 @@ int CPP_evaluate ()
 	  strcpy (s2, pTIB);  // save remaining part of input line in TIB
 	  pSS = new istringstream(s);
 	  SetForthInputStream(*pSS);
-	  vector<byte> op, *pOps, *pOldOps;
 	  
-	  pOldOps = pCurrentOps;
-	  pOps = State ? pCurrentOps : &op;
+          vector<byte>* pSaveOps = pCurrentOps;
+          if (State == 0) pCurrentOps = new vector<byte>;
 
 	  --linecount;
-	  ec = ForthCompiler(pOps, &linecount);
+	  ec = ForthCompiler(pCurrentOps, &linecount);
 	  if ( State && (ec == E_V_END_OF_STREAM)) ec = 0;
 
 	  // Restore the opcode vector, the input stream, and the input buffer
 
-	  pCurrentOps = pOldOps;
+	  if (State == 0) delete pCurrentOps;
+          pCurrentOps = pSaveOps;
 	  SetForthInputStream(*pOldStream);  // restore old input stream
 	  strcpy(TIB, s2);  // restore TIB with remaining input line
 	  pTIB = TIB;      // restore ptr
