@@ -105,7 +105,7 @@ ply      nodes  time score  pv
 \ ============= end ANS Forth definitions =========
 
 [UNDEFINED] CELL [IF] 1 CELLS CONSTANT CELL [THEN]
-[UNDEFINED] CELL- [IF] : CELL- POSTPONE CELL POSTPONE - ; IMMEDIATE
+[UNDEFINED] CELL- [IF] : CELL- POSTPONE CELL POSTPONE - ; IMMEDIATE [THEN]
 
 : table ( v1 ... vn n -- )
 	CREATE DUP CELLS allot? OVER 1- CELLS + SWAP
