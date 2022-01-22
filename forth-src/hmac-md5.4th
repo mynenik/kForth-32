@@ -13,9 +13,13 @@
 \               HMAC-TESTS will produce correct output on big
 \		endian systems (e.g. kForth ppc-osx port).  km
 \   2020-02-06  fixed defn of ]L for ANS-Forth compatibility.  km
+\   2022-01-22  modified to work on both 32-bit and 64-bit
+\               little-endian systems ( the word BYTES>< needs to
+\               be updated to work on big-endian systems).  
+\               CELLSIZE renamed to VCELLSIZE . km
 \
 \ ============== kForth requirements =========================
-\ Requires kForth 1.2.2 or later, and the following libraries:
+\ Requires kForth 1.7.2 or later, and the following libraries:
 \   ans-words.4th
 \   strings.4th
 \   files.4th
@@ -32,119 +36,138 @@
 
 : ]L ] POSTPONE LITERAL ; IMMEDIATE
 
+32 constant VCELLSIZE
+MACRO VCELLS " [ VCELLSIZE 8 / ]L * "
+MACRO VCELL+ " [ VCELLSIZE 8 / ]L + "
+
+HEX
+
+\ FIXME: byte reversal for 64-bit needed. 
 : bytes>< ( m -- w )  \ Reverse bytes of cell on stack
-  [ HEX ]  DUP >R  18 LSHIFT  R@  FF00 AND  8 LSHIFT  OR
-  R@  FF0000 AND  8 RSHIFT  OR  R>  18 RSHIFT  OR  [ DECIMAL ]
+  DUP >R  18 LSHIFT  R@  FF00 AND  8 LSHIFT  OR
+  R@  FF0000 AND  8 RSHIFT  OR  R>  18 RSHIFT  OR
 ;
 
 1 a !     \ for endian testing
 a C@ [IF] \ if little ENDIAN cpu (e.g. Intel x86 
-       MACRO endian@  " @ "
-       MACRO endian!  " ! "
+       MACRO endian@  " sl@ "
+       MACRO endian!  " l! "
 
 [ELSE] \ big ENDIAN cpus (e.g. Power PCs)
-
-       MACRO endian@  " @  bytes>< "
-       MACRO endian!  " SWAP  bytes><  SWAP  ! "
+cr .( Not ported yet for Big-Endian Systems! ) cr ABORT
+       MACRO endian@  " sl@  bytes>< "
+       MACRO endian!  " SWAP  bytes><  SWAP  l! "
 [THEN]
 
+1 CELLS 8 = [IF]
+FFFFFFFF 20 LSHIFT CONSTANT SE64
+MACRO >SL  "   DUP 80000000 AND IF SE64 OR ELSE FFFFFFFF AND THEN "
+MACRO SEXT " \ >SL " 
+MACRO SL+  " >SL SWAP >SL + "
+MACRO rol\ " FFFFFFFF AND DUP [ VCELLSIZE \ TUCK - ]L RSHIFT SWAP LITERAL LSHIFT OR "
+MACRO sl+! " tuck sl@ SL+ swap l! "
+[ELSE]
+MACRO >SL  "  "
+MACRO SEXT " \ "
+MACRO SL+  " + "
+MACRO rol\ " DUP [ VCELLSIZE \ TUCK - ]L RSHIFT SWAP LITERAL LSHIFT OR "
+MACRO sl+! " +! "
+[THEN]
+
+MACRO M[]+ " R@  \  VCELLS +  ENDIAN@  SL+ "
+
 \ Macros inserts 4 variable names at the '\' locations
-MACRO F() " \ @ DUP >R INVERT \ @ AND R> \ @ AND OR \ @ + "
-MACRO G() " \ @ DUP >R INVERT \ @ AND R> \ @ AND OR \ @ + "
-MACRO H() " \ @ \ @ XOR \ @ XOR \ @ + "
-MACRO I() " \ @ INVERT \ @ OR \ @ XOR \ @ + "
+MACRO F() " \ sl@ DUP >R INVERT \ sl@ AND R> \ sl@ AND OR \ sl@ SL+ "
+MACRO G() " \ sl@ DUP >R INVERT \ sl@ AND R> \ sl@ AND OR \ sl@ SL+ "
+MACRO H() " \ sl@ \ sl@ XOR \ sl@ XOR \ sl@ SL+ "
+MACRO I() " \ sl@ INVERT \ sl@ OR \ sl@ XOR \ sl@ SL+ "
 
-  32 CONSTANT CELLSIZE
-MACRO rol\ " DUP [ CELLSIZE \ TUCK - ]L RSHIFT SWAP LITERAL LSHIFT OR "
-MACRO M[]+ " R@  \  CELLS +  ENDIAN@  + "
-
- HEX
 : MD5 ( adr -- )
-  >R  a @  d @  c @  b @
+  >R  a sl@  d sl@  c sl@  b sl@
 
 \ round1 ( -- )   F(b,c,d) = (b&c)|(~b&d)
-  F() b d c a  0d76aa478 +  M[]+ 00  rol\ 07  b @ +  a !  \ 1
-  F() a c b d  0e8c7b756 +  M[]+ 01  rol\ 0C  a @ +  d !  \ 2
-  F() d b a c  0242070db +  M[]+ 02  rol\ 11  d @ +  c !  \ 3
-  F() c a d b  0c1bdceee +  M[]+ 03  rol\ 16  c @ +  b !  \ 4
-  F() b d c a  0f57c0faf +  M[]+ 04  rol\ 07  b @ +  a !  \ 5
-  F() a c b d  04787c62a +  M[]+ 05  rol\ 0C  a @ +  d !  \ 6
-  F() d b a c  0a8304613 +  M[]+ 06  rol\ 11  d @ +  c !  \ 7
-  F() c a d b  0fd469501 +  M[]+ 07  rol\ 16  c @ +  b !  \ 8
-  F() b d c a  0698098d8 +  M[]+ 08  rol\ 07  b @ +  a !  \ 9
-  F() a c b d  08b44f7af +  M[]+ 09  rol\ 0C  a @ +  d !  \ 10
-  F() d b a c  0ffff5bb1 +  M[]+ 0A  rol\ 11  d @ +  c !  \ 11
-  F() c a d b  0895cd7be +  M[]+ 0B  rol\ 16  c @ +  b !  \ 12
-  F() b d c a  06b901122 +  M[]+ 0C  rol\ 07  b @ +  a !  \ 13
-  F() a c b d  0fd987193 +  M[]+ 0D  rol\ 0C  a @ +  d !  \ 14
-  F() d b a c  0a679438e +  M[]+ 0E  rol\ 11  d @ +  c !  \ 15
-  F() c a d b  049b40821 +  M[]+ 0F  rol\ 16  c @ +  b !  \ 16
+  F() b d c a  0d76aa478 SL+  M[]+ 00  rol\ 07  b sl@ SL+  a l!  \ 1
+  F() a c b d  0e8c7b756 SL+  M[]+ 01  rol\ 0C  a sl@ SL+  d l!  \ 2
+  F() d b a c  0242070db SL+  M[]+ 02  rol\ 11  d sl@ SL+  c l!  \ 3
+  F() c a d b  0c1bdceee SL+  M[]+ 03  rol\ 16  c sl@ SL+  b l!  \ 4
+  F() b d c a  0f57c0faf SL+  M[]+ 04  rol\ 07  b sl@ SL+  a l!  \ 5
+  F() a c b d  04787c62a SL+  M[]+ 05  rol\ 0C  a sl@ SL+  d l!  \ 6
+  F() d b a c  0a8304613 SL+  M[]+ 06  rol\ 11  d sl@ SL+  c l!  \ 7
+  F() c a d b  0fd469501 SL+  M[]+ 07  rol\ 16  c sl@ SL+  b l!  \ 8
+  F() b d c a  0698098d8 SL+  M[]+ 08  rol\ 07  b sl@ SL+  a l!  \ 9
+  F() a c b d  08b44f7af SL+  M[]+ 09  rol\ 0C  a sl@ SL+  d l!  \ 10
+  F() d b a c  0ffff5bb1 SL+  M[]+ 0A  rol\ 11  d sl@ SL+  c l!  \ 11
+  F() c a d b  0895cd7be SL+  M[]+ 0B  rol\ 16  c sl@ SL+  b l!  \ 12
+  F() b d c a  06b901122 SL+  M[]+ 0C  rol\ 07  b sl@ SL+  a l!  \ 13
+  F() a c b d  0fd987193 SL+  M[]+ 0D  rol\ 0C  a sl@ SL+  d l!  \ 14
+  F() d b a c  0a679438e SL+  M[]+ 0E  rol\ 11  d sl@ SL+  c l!  \ 15
+  F() c a d b  049b40821 SL+  M[]+ 0F  rol\ 16  c sl@ SL+  b l!  \ 16
 
 \ round2 ( -- )   G(b,c,d) = (d&b)|(~d&c)
-  G() d c b a  0f61e2562 +  M[]+ 01  rol\ 05  b @ +  a !  \ 1
-  G() c b a d  0c040b340 +  M[]+ 06  rol\ 09  a @ +  d !  \ 2
-  G() b a d c  0265E5A51 +  M[]+ 0B  rol\ 0E  d @ +  c !  \ 3
-  G() a d c b  0e9b6c7aa +  M[]+ 00  rol\ 14  c @ +  b !  \ 4
-  G() d c b a  0d62f105d +  M[]+ 05  rol\ 05  b @ +  a !  \ 5
-  G() c b a d  002441453 +  M[]+ 0A  rol\ 09  a @ +  d !  \ 6
-  G() b a d c  0d8a1e681 +  M[]+ 0F  rol\ 0E  d @ +  c !  \ 7
-  G() a d c b  0e7d3fbc8 +  M[]+ 04  rol\ 14  c @ +  b !  \ 8
-  G() d c b a  021e1cde6 +  M[]+ 09  rol\ 05  b @ +  a !  \ 9
-  G() c b a d  0c33707d6 +  M[]+ 0E  rol\ 09  a @ +  d !  \ 10
-  G() b a d c  0f4d50d87 +  M[]+ 03  rol\ 0E  d @ +  c !  \ 11
-  G() a d c b  0455a14ed +  M[]+ 08  rol\ 14  c @ +  b !  \ 12
-  G() d c b a  0a9e3e905 +  M[]+ 0D  rol\ 05  b @ +  a !  \ 13
-  G() c b a d  0fcefa3f8 +  M[]+ 02  rol\ 09  a @ +  d !  \ 14
-  G() b a d c  0676f02d9 +  M[]+ 07  rol\ 0E  d @ +  c !  \ 15
-  G() a d c b  08d2a4c8a +  M[]+ 0C  rol\ 14  c @ +  b !  \ 16
+  G() d c b a  0f61e2562 SL+  M[]+ 01  rol\ 05  b sl@ SL+  a l!  \ 1
+  G() c b a d  0c040b340 SL+  M[]+ 06  rol\ 09  a sl@ SL+  d l!  \ 2
+  G() b a d c  0265E5A51 SL+  M[]+ 0B  rol\ 0E  d sl@ SL+  c l!  \ 3
+  G() a d c b  0e9b6c7aa SL+  M[]+ 00  rol\ 14  c sl@ SL+  b l!  \ 4
+  G() d c b a  0d62f105d SL+  M[]+ 05  rol\ 05  b sl@ SL+  a l!  \ 5
+  G() c b a d  002441453 SL+  M[]+ 0A  rol\ 09  a sl@ SL+  d l!  \ 6
+  G() b a d c  0d8a1e681 SL+  M[]+ 0F  rol\ 0E  d sl@ SL+  c l!  \ 7
+  G() a d c b  0e7d3fbc8 SL+  M[]+ 04  rol\ 14  c sl@ SL+  b l!  \ 8
+  G() d c b a  021e1cde6 SL+  M[]+ 09  rol\ 05  b sl@ SL+  a l!  \ 9
+  G() c b a d  0c33707d6 SL+  M[]+ 0E  rol\ 09  a sl@ SL+  d l!  \ 10
+  G() b a d c  0f4d50d87 SL+  M[]+ 03  rol\ 0E  d sl@ SL+  c l!  \ 11
+  G() a d c b  0455a14ed SL+  M[]+ 08  rol\ 14  c sl@ SL+  b l!  \ 12
+  G() d c b a  0a9e3e905 SL+  M[]+ 0D  rol\ 05  b sl@ SL+  a l!  \ 13
+  G() c b a d  0fcefa3f8 SL+  M[]+ 02  rol\ 09  a sl@ SL+  d l!  \ 14
+  G() b a d c  0676f02d9 SL+  M[]+ 07  rol\ 0E  d sl@ SL+  c l!  \ 15
+  G() a d c b  08d2a4c8a SL+  M[]+ 0C  rol\ 14  c sl@ SL+  b l!  \ 16
 
 \ round3 ( -- )   H(b,c,d) = b^c^d
-  H() b c d a  0fffa3942 +  M[]+ 05  rol\ 04  b @ +  a !  \ 1
-  H() a b c d  08771f681 +  M[]+ 08  rol\ 0B  a @ +  d !  \ 2
-  H() d a b c  06d9d6122 +  M[]+ 0B  rol\ 10  d @ +  c !  \ 3
-  H() c d a b  0fde5380c +  M[]+ 0E  rol\ 17  c @ +  b !  \ 4
-  H() b c d a  0a4beea44 +  M[]+ 01  rol\ 04  b @ +  a !  \ 5
-  H() a b c d  04bdecfa9 +  M[]+ 04  rol\ 0B  a @ +  d !  \ 6
-  H() d a b c  0f6bb4b60 +  M[]+ 07  rol\ 10  d @ +  c !  \ 7
-  H() c d a b  0bebfbc70 +  M[]+ 0A  rol\ 17  c @ +  b !  \ 8
-  H() b c d a  0289b7ec6 +  M[]+ 0D  rol\ 04  b @ +  a !  \ 9
-  H() a b c d  0eaa127fa +  M[]+ 00  rol\ 0B  a @ +  d !  \ 10
-  H() d a b c  0d4ef3085 +  M[]+ 03  rol\ 10  d @ +  c !  \ 11
-  H() c d a b  004881d05 +  M[]+ 06  rol\ 17  c @ +  b !  \ 12
-  H() b c d a  0d9d4d039 +  M[]+ 09  rol\ 04  b @ +  a !  \ 13
-  H() a b c d  0e6db99e5 +  M[]+ 0C  rol\ 0B  a @ +  d !  \ 14
-  H() d a b c  01fa27cf8 +  M[]+ 0F  rol\ 10  d @ +  c !  \ 15
-  H() c d a b  0c4ac5665 +  M[]+ 02  rol\ 17  c @ +  b !  \ 16
+  H() b c d a  0fffa3942 SL+  M[]+ 05  rol\ 04  b sl@ SL+  a l!  \ 1
+  H() a b c d  08771f681 SL+  M[]+ 08  rol\ 0B  a sl@ SL+  d l!  \ 2
+  H() d a b c  06d9d6122 SL+  M[]+ 0B  rol\ 10  d sl@ SL+  c l!  \ 3
+  H() c d a b  0fde5380c SL+  M[]+ 0E  rol\ 17  c sl@ SL+  b l!  \ 4
+  H() b c d a  0a4beea44 SL+  M[]+ 01  rol\ 04  b sl@ SL+  a l!  \ 5
+  H() a b c d  04bdecfa9 SL+  M[]+ 04  rol\ 0B  a sl@ SL+  d l!  \ 6
+  H() d a b c  0f6bb4b60 SL+  M[]+ 07  rol\ 10  d sl@ SL+  c l!  \ 7
+  H() c d a b  0bebfbc70 SL+  M[]+ 0A  rol\ 17  c sl@ SL+  b l!  \ 8
+  H() b c d a  0289b7ec6 SL+  M[]+ 0D  rol\ 04  b sl@ SL+  a l!  \ 9
+  H() a b c d  0eaa127fa SL+  M[]+ 00  rol\ 0B  a sl@ SL+  d l!  \ 10
+  H() d a b c  0d4ef3085 SL+  M[]+ 03  rol\ 10  d sl@ SL+  c l!  \ 11
+  H() c d a b  004881d05 SL+  M[]+ 06  rol\ 17  c sl@ SL+  b l!  \ 12
+  H() b c d a  0d9d4d039 SL+  M[]+ 09  rol\ 04  b sl@ SL+  a l!  \ 13
+  H() a b c d  0e6db99e5 SL+  M[]+ 0C  rol\ 0B  a sl@ SL+  d l!  \ 14
+  H() d a b c  01fa27cf8 SL+  M[]+ 0F  rol\ 10  d sl@ SL+  c l!  \ 15
+  H() c d a b  0c4ac5665 SL+  M[]+ 02  rol\ 17  c sl@ SL+  b l!  \ 16
 
 \ round4 ( -- )   I(b,c,d) = c^(b|~d)
-  I() d b c a  0f4292244 +  M[]+ 00  rol\ 06  b @ +  a !  \ 1
-  I() c a b d  0432aff97 +  M[]+ 07  rol\ 0A  a @ +  d !  \ 2
-  I() b d a c  0ab9423a7 +  M[]+ 0E  rol\ 0F  d @ +  c !  \ 3
-  I() a c d b  0fc93a039 +  M[]+ 05  rol\ 15  c @ +  b !  \ 4
-  I() d b c a  0655b59c3 +  M[]+ 0C  rol\ 06  b @ +  a !  \ 5
-  I() c a b d  08f0ccc92 +  M[]+ 03  rol\ 0A  a @ +  d !  \ 6
-  I() b d a c  0ffeff47d +  M[]+ 0A  rol\ 0F  d @ +  c !  \ 7
-  I() a c d b  085845dd1 +  M[]+ 01  rol\ 15  c @ +  b !  \ 8
-  I() d b c a  06fa87e4f +  M[]+ 08  rol\ 06  b @ +  a !  \ 9
-  I() c a b d  0fe2ce6e0 +  M[]+ 0F  rol\ 0A  a @ +  d !  \ 10
-  I() b d a c  0a3014314 +  M[]+ 06  rol\ 0F  d @ +  c !  \ 11
-  I() a c d b  04e0811a1 +  M[]+ 0D  rol\ 15  c @ +  b !  \ 12
-  I() d b c a  0f7537e82 +  M[]+ 04  rol\ 06  b @ +  a !  \ 13
-  I() c a b d  0bd3af235 +  M[]+ 0B  rol\ 0A  a @ +  d !  \ 14
-  I() b d a c  02ad7d2bb +  M[]+ 02  rol\ 0F  d @ +  c !  \ 15
-  I() a c d b  0eb86d391 +  M[]+ 09  rol\ 15  c @ +  b !  \ 16
+  I() d b c a  0f4292244 SL+  M[]+ 00  rol\ 06  b sl@ SL+  a l!  \ 1
+  I() c a b d  0432aff97 SL+  M[]+ 07  rol\ 0A  a sl@ SL+  d l!  \ 2
+  I() b d a c  0ab9423a7 SL+  M[]+ 0E  rol\ 0F  d sl@ SL+  c l!  \ 3
+  I() a c d b  0fc93a039 SL+  M[]+ 05  rol\ 15  c sl@ SL+  b l!  \ 4
+  I() d b c a  0655b59c3 SL+  M[]+ 0C  rol\ 06  b sl@ SL+  a l!  \ 5
+  I() c a b d  08f0ccc92 SL+  M[]+ 03  rol\ 0A  a sl@ SL+  d l!  \ 6
+  I() b d a c  0ffeff47d SL+  M[]+ 0A  rol\ 0F  d sl@ SL+  c l!  \ 7
+  I() a c d b  085845dd1 SL+  M[]+ 01  rol\ 15  c sl@ SL+  b l!  \ 8
+  I() d b c a  06fa87e4f SL+  M[]+ 08  rol\ 06  b sl@ SL+  a l!  \ 9
+  I() c a b d  0fe2ce6e0 SL+  M[]+ 0F  rol\ 0A  a sl@ SL+  d l!  \ 10
+  I() b d a c  0a3014314 SL+  M[]+ 06  rol\ 0F  d sl@ SL+  c l!  \ 11
+  I() a c d b  04e0811a1 SL+  M[]+ 0D  rol\ 15  c sl@ SL+  b l!  \ 12
+  I() d b c a  0f7537e82 SL+  M[]+ 04  rol\ 06  b sl@ SL+  a l!  \ 13
+  I() c a b d  0bd3af235 SL+  M[]+ 0B  rol\ 0A  a sl@ SL+  d l!  \ 14
+  I() b d a c  02ad7d2bb SL+  M[]+ 02  rol\ 0F  d sl@ SL+  c l!  \ 15
+  I() a c d b  0eb86d391 SL+  M[]+ 09  rol\ 15  c sl@ SL+  b l!  \ 16
 
-  b +!  c +!  d +!  a +!  R> DROP  \ Update hash values
+  b sl+!  c sl+!  d sl+!  a sl+!  R> DROP  \ Update hash values
 ;
 
 : MD5int ( -- )
-  067452301 a !  0efcdab89 b !  098badcfe c !  010325476 d !
+  067452301 a l!  0efcdab89 b l!  098badcfe c l!  010325476 d l!
 ;
 
  DECIMAL
 
 : setlen ( -- )
-  MD5len @  DUP  [ CELLSIZE 3 - ]L  RSHIFT  
+  MD5len @  DUP  [ VCELLSIZE 3 - ]L  RSHIFT  
   [ buf[] 60 CHARS + ]L endian!
   3 LSHIFT  [ buf[] 56 CHARS + ]L endian!
 ;
@@ -178,10 +201,14 @@ MACRO M[]+ " R@  \  CELLS +  ENDIAN@  + "
  CREATE oarray  64 CHARS  ALLOT
 
 : hash>mackey  ( - )  \ Store hash values in mackey array 
-  d @  c @  b @  a @  mackey  4 0 DO TUCK  endian!  CELL+  LOOP  DROP ;
+  d sl@  c sl@  b sl@  a sl@  
+  mackey  4 0 DO TUCK  endian!  VCELL+  LOOP  DROP ;
 
 : keyxor ( #pad  kadr  iadr - )  
-  16 0 DO  >R  2DUP  endian@  XOR  R@  endian!  CELL+  R>  CELL+  LOOP
+  16 0 DO  
+    >R  2DUP  endian@  XOR  R@  endian!  
+    VCELL+  R>  VCELL+  
+  LOOP
   2DROP  DROP
 ;
 
