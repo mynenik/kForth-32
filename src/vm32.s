@@ -2,7 +2,7 @@
 //
 // The assembler portion of kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2020 Krishna Myneni,
+// Copyright (c) 1998--2022 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -1948,25 +1948,11 @@ L_plusstore:
 	cmpb $OP_ADDR, %al
 	jnz  E_not_addr
 	LDSP
-#	push %ebx
-#	push %ebx
-#	push %ebx
-        movl %ebx, %ecx
-	movl WSIZE(%ebx), %ebx
+        INC_DSP
+        movl (%ebx), %edx  # edx = addr
+        INC_DSP
 	movl (%ebx), %eax
-#	pop %ebx
-        movl %ecx, %ebx
-	movl 2*WSIZE(%ebx), %ebx
-	addl %ebx, %eax
-#	pop %ebx
-        movl %ecx, %ebx
-	movl WSIZE(%ebx), %ebx
-	movl %eax, (%ebx)
-#	pop %ebx
-        movl %ecx, %ebx
-	movl $WSIZE, %eax
-	sall $1, %eax
-	addl %eax, %ebx
+	addl %eax, (%edx)
 	STSP
 	INC2_DTSP
 	xor %eax, %eax
