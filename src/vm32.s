@@ -1880,21 +1880,11 @@ L_plusstore:
 	cmpb $OP_ADDR, %al
 	jnz  E_not_addr
 	LDSP
-	push %ebx
-	push %ebx
-	push %ebx
-	movl WSIZE(%ebx), %ebx
+        INC_DSP
+	movl (%ebx), %edx  # edx = addr
+	INC_DSP
 	movl (%ebx), %eax
-	pop %ebx
-	movl 2*WSIZE(%ebx), %ebx
-	addl %ebx, %eax
-	pop %ebx
-	movl WSIZE(%ebx), %ebx
-	movl %eax, (%ebx)
-	pop %ebx
-	movl $WSIZE, %eax
-	sall $1, %eax
-	addl %eax, %ebx
+	addl %eax, (%edx)
 	STSP
 	INC2_DTSP
 	xor %eax, %eax

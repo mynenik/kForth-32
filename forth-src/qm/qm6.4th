@@ -225,7 +225,7 @@ include zeigen22h
 	zmat-copy ;
 
 : initialized-zmatrix ( z1 ... zn  rows cols <name> -- | create an initialized zmatrix)
-        create 2dup * zfloats 2 cells + ?allot dup >r mat_size! r> s! ;
+        create 2dup * zfloats 2 cells + allot? dup >r mat_size! r> s! ;
 	  
 : spinor ( z1 z2 <name> -- | create and initialize a new spinor)  
 	2 1 initialized-zmatrix ;
