@@ -1891,40 +1891,50 @@ L_add:
         NEXT
 
 L_div:
-	movl $WSIZE, %eax
-        addl %eax, GlobalSp
-        INC_DTSP
         LDSP
-        movl (%ebx), %eax
-        cmpl $0, %eax
-        jz  E_div_zero	
 	INC_DSP
-        movl (%ebx), %eax
-	cdq
-        idivl -WSIZE(%ebx)
+        DIV
         movl %eax, (%ebx)
+        DEC_DSP
+        STSP
+        INC_DTSP
 	xor %eax, %eax
-divexit:
-        ret
+        NEXT
 
 L_mod:
-	call L_div
-	cmpl $0, %eax
-	jnz  divexit
+	LDSP
+        INC_DSP
+        DIV
 	movl %edx, (%ebx)
+        DEC_DSP
+	STSP
+	INC_DTSP
+	xor %eax, %eax
 	NEXT
 
 L_slashmod:
-	call L_div
-	cmpl $0, %eax
-	jnz  divexit
-	DEC_DSP
+	LDSP
+	INC_DSP
+        DIV
 	movl %edx, (%ebx)
 	DEC_DSP
+        movl %eax, (%ebx)
+        DEC_DSP
 	STSP
-	DEC_DTSP
-	SWAP
+        xor %eax, %eax
 	NEXT
+
+L_udivmod:
+        LDSP
+        INC_DSP
+        UDIV
+        mov %edx, (%ebx)
+        DEC_DSP
+        mov %eax, (%ebx)
+        DEC_DSP
+        STSP
+        xor %eax, %eax
+        NEXT
 
 L_starslash:
         LDSP
@@ -2072,6 +2082,34 @@ L_umslashmod:
 	INC_DTSP
 	xor %eax, %eax		
 	NEXT
+
+L_uddivmod:
+# Divide unsigned double length by unsigned single length to
+# give unsigned double quotient and single remainder.
+        LDSP
+        movl $WSIZE, %eax
+        add %eax, %ebx
+        mov (%ebx), %ecx
+        cmpl $0, %ecx
+        jz E_div_zero
+        add %eax, %ebx
+        movl $0, %edx
+        mov (%ebx), %eax
+        divl %ecx
+        push %edi
+        mov %eax, %edi  # %edi = hi quot
+        INC_DSP
+        mov (%ebx), %eax
+        divl %ecx
+        mov %edx, (%ebx)
+        DEC_DSP
+        mov %eax, (%ebx)
+        DEC_DSP
+        mov %edi, (%ebx)
+        pop %edi
+        DEC_DSP
+        xor %eax, %eax
+        ret
 
 L_mstar:
 	LDSP
@@ -2350,12 +2388,11 @@ L_mstarslash:
 	movl (%ebx), %eax  # eax = n1
 	INC_DSP            
 	xorl (%ebx), %eax  
-	shrl $31, %eax     # eax = sign(n1) xor sign(d1)
+	shrl $8*WSIZE-1, %eax  # eax = sign(n1) xor sign(d1)
 	pushl %eax	   # keep sign of result -- negative is nonzero
 	subl $2*WSIZE, %ebx
 	INC_DTSP
 	_ABS               # abs(n1)
-        STSP
 	INC_DSP           
 	STSP               
 	INC_DTSP
@@ -2432,7 +2469,7 @@ L_smslashrem:
 	DEC_DSP
 	movl %eax, (%ebx)
 	INC_DTSP
-	xor %eax, %eax		
+	xor %eax, %eax
 	NEXT
 
 L_stof:
