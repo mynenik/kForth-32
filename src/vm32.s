@@ -219,22 +219,6 @@
 .endm
 	
 
-// use algorithm from DNW's vm-osxppc.s
-.macro _ABS	
-	LDSP
-	INC_DSP
-	movl (%ebx), %ecx
-	xorl %eax, %eax
-	cmpl %eax, %ecx
-	setl %al
-	negl %eax
-	movl %eax, %edx
-	xorl %ecx, %edx
-	subl %eax, %edx
-	movl %edx, (%ebx)
-	xorl %eax, %eax
-.endm
-	
 // Dyadic relational operators (single length numbers) 
 	
 .macro REL_DYADIC setx
@@ -357,62 +341,7 @@
 	movl %eax, GlobalTp	
 	xorl %eax, %eax
 .endm
-			
-.macro DNEGATE
-	LDSP
-	INC_DSP
-	movl %ebx, %ecx
-	INC_DSP
-	movl (%ebx), %eax
-	notl %eax
-	clc
-	addl $1, %eax
-	movl %eax, (%ebx)
-	movl %ecx, %ebx
-	movl (%ebx), %eax
-	notl %eax
-	adcl $0, %eax
-	movl %eax, (%ebx)
-	xor %eax, %eax	
-.endm
-	
-.macro STARSLASH
-	movl $2*WSIZE, %eax
-        addl %eax, GlobalSp
-        LDSP
-        movl WSIZE(%ebx), %eax
-        imull (%ebx)
-	idivl -WSIZE(%ebx)
-	movl %eax, WSIZE(%ebx)
-	INC2_DTSP
-	xor %eax, %eax
-.endm
-	
 
-.macro TNEG
-	LDSP
-	movl $WSIZE, %eax
-	addl %eax, %ebx
-	movl (%ebx), %edx
-	addl %eax, %ebx
-	movl (%ebx), %ecx
-	addl %eax, %ebx
-	movl (%ebx), %eax
-	notl %eax
-	notl %ecx
-	notl %edx
-	clc
-	addl $1, %eax
-	adcl $0, %ecx
-	adcl $0, %edx
-	movl %eax, (%ebx)
-	movl $WSIZE, %eax
-	subl %eax, %ebx
-	movl %ecx, (%ebx)
-	subl %eax, %ebx
-	movl %edx, (%ebx)
-	xor %eax, %eax	
-.endm
 
 // VIRTUAL MACHINE 
 						
@@ -1698,6 +1627,7 @@ L_dfstore:
 	NEXT
 
 L_abs:
+        LDSP
 	_ABS
         NEXT
 
@@ -1826,46 +1756,59 @@ L_add:
         NEXT
 
 L_div:
-	movl $WSIZE, %eax
-        addl %eax, GlobalSp
-        INC_DTSP
-        LDSP
-        movl (%ebx), %eax
-        cmpl $0, %eax
-        jz  E_div_zero	
-	INC_DSP
-        movl (%ebx), %eax
-	cdq
-        idivl -WSIZE(%ebx)
+	LDSP
+        INC_DSP
+        DIV
         movl %eax, (%ebx)
+        DEC_DSP
+        STSP
+        INC_DTSP
 	xor %eax, %eax
-divexit:
-        ret
+        NEXT
 
 L_mod:
-	call L_div
-	cmpl $0, %eax
-	jnz  divexit
+        LDSP
+	INC_DSP
+        DIV
 	movl %edx, (%ebx)
+        DEC_DSP
+        STSP
+        INC_DTSP
+        xor %eax, %eax
 	NEXT
 
 L_slashmod:
-	call L_div
-	cmpl $0, %eax
-	jnz  divexit
-	DEC_DSP
+        LDSP
+	INC_DSP
+	DIV
 	movl %edx, (%ebx)
 	DEC_DSP
+        movl %eax, (%ebx)
+        DEC_DSP
 	STSP
-	DEC_DTSP
-	SWAP
+        xor %eax, %eax
 	NEXT
 
+L_udivmod:
+        LDSP
+        INC_DSP
+        UDIV
+        mov %edx, (%ebx)
+        DEC_DSP
+        mov %eax, (%ebx)
+        DEC_DSP
+        STSP
+        xor %eax, %eax
+        NEXT
+
 L_starslash:
-	STARSLASH	
+        LDSP
+	STARSLASH
+        STSP	
 	NEXT
 
 L_starslashmod:
+        LDSP
 	STARSLASH
 	movl %edx, (%ebx)
 	DEC_DSP
@@ -1914,6 +1857,7 @@ dabs_go:
 	ret
 
 L_dnegate:
+	LDSP
 	DNEGATE
 #	NEXT	
 	ret
@@ -1956,8 +1900,8 @@ L_dsstar:
 	xorb %ah, %al      # sign of result
 	andl $1, %eax
 	pushl %eax
+        LDSP
 	_ABS
-	LDSP
 	INC_DSP
 	STSP
 	INC_DTSP
@@ -2002,6 +1946,34 @@ L_umslashmod:
 	INC_DTSP
 	xor %eax, %eax		
 	NEXT
+
+L_uddivmod:
+# Divide unsigned double length by unsigned single length to
+# give unsigned double quotient and single remainder.
+        LDSP
+        movl $WSIZE, %eax
+        add %eax, %ebx
+        mov (%ebx), %ecx
+        cmpl $0, %ecx
+        jz E_div_zero
+        add %eax, %ebx
+        movl $0, %edx
+        mov (%ebx), %eax
+        divl %ecx
+        push %edi
+        mov %eax, %edi  # %edi = hi quot
+        INC_DSP
+        mov (%ebx), %eax
+        divl %ecx
+        mov %edx, (%ebx)
+        DEC_DSP
+        mov %eax, (%ebx)
+        DEC_DSP
+        mov %edi, (%ebx)
+        pop %edi
+        DEC_DSP
+        xor %eax, %eax
+        ret
 
 L_mstar:
 	LDSP
@@ -2135,6 +2107,8 @@ L_stsslashrem:
 # rule for symmetric division.
 	LDSP
 	INC_DSP
+        INC_DTSP
+        STSP
 	movl (%ebx), %ecx		# divisor in ecx
 	cmpl $0, %ecx
 	jz   E_div_zero
@@ -2151,11 +2125,14 @@ L_stsslashrem:
 	negl %eax
 	xorl %eax, %edx			# sign of quotient
 	pushl %edx
-	STSP
 	call L_tabs
-	subl $WSIZE, GlobalSp
+        LDSP
+	DEC_DSP
+        DEC_DTSP
+        STSP
 	_ABS
 	call L_utsslashmod
+        LDSP
 	popl %edx
 	cmpl $0, %edx
 	jz stsslashrem1
@@ -2164,7 +2141,6 @@ stsslashrem1:
 	popl %eax
 	cmpl $0, %eax
 	jz stsslashrem2
-	LDSP
 	addl $4*WSIZE, %ebx
 	negl (%ebx)	
 stsslashrem2:
@@ -2269,24 +2245,24 @@ utmslash6:
 L_mstarslash:
 	LDSP
 	INC_DSP
+        movl (%ebx), %eax   # eax = +n2
+        cmpl $0, %eax
+        jz E_div_zero 
 	INC_DSP
-	movl (%ebx), %eax
+	movl (%ebx), %eax   # eax = n1
 	INC_DSP
 	xorl (%ebx), %eax
-	shrl $31, %eax
+	shrl $8*WSIZE-1, %eax  # eax = sign(n1) xor sign(d1)
 	pushl %eax	# keep sign of result -- negative is nonzero
-	LDSP
-	INC_DSP
-	STSP
-	INC_DTSP
-	_ABS
-	LDSP
-	INC_DSP
-	STSP
+        subl $2*WSIZE, %ebx
+        INC_DTSP
+	_ABS            # abs(n1)
+        INC_DSP
+        STSP
 	INC_DTSP
 	call L_dabs
 	LDSP
-	DEC_DSP
+	DEC_DSP        # TOS = +n2
 	STSP
 	DEC_DTSP
 	call L_udmstar

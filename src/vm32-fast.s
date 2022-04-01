@@ -151,21 +151,6 @@
 	LOGIC_DYADIC xorl
 .endm
 
-
-// use algorithm from DNW's vm-osxppc.s
-.macro _ABS	
-	movl WSIZE(%ebx), %ecx
-	xorl %eax, %eax
-	cmpl %eax, %ecx
-	setl %al
-	negl %eax
-	movl %eax, %edx
-	xorl %ecx, %edx
-	subl %eax, %edx
-	movl %edx, WSIZE(%ebx)
-	xorl %eax, %eax
-.endm
-
 // Dyadic relational operators (single length numbers) 
 	
 .macro REL_DYADIC setx
@@ -240,60 +225,6 @@
 .endm
 
 		
-.macro DNEGATE
-	INC_DSP
-	movl %ebx, %ecx
-	INC_DSP
-	movl (%ebx), %eax
-	notl %eax
-	clc
-	addl $1, %eax
-	movl %eax, (%ebx)
-	movl %ecx, %ebx
-	movl (%ebx), %eax
-	notl %eax
-	adcl $0, %eax
-	movl %eax, (%ebx)
-	DEC_DSP
-	xor %eax, %eax
-.endm
-
-
-.macro STARSLASH
-	movl $2*WSIZE, %eax
-        addl %eax, %ebx
-        movl WSIZE(%ebx), %eax
-        imull (%ebx)
-	idivl -WSIZE(%ebx)
-	movl %eax, WSIZE(%ebx)
-	xor %eax, %eax
-.endm
-
-.macro TNEG
-	movl $WSIZE, %eax
-	addl %eax, %ebx
-	movl (%ebx), %edx
-	addl %eax, %ebx
-	movl (%ebx), %ecx
-	addl %eax, %ebx
-	movl (%ebx), %eax
-	notl %eax
-	notl %ecx
-	notl %edx
-	clc
-	addl $1, %eax
-	adcl $0, %ecx
-	adcl $0, %edx
-	movl %eax, (%ebx)
-	movl $WSIZE, %eax
-	subl %eax, %ebx
-	movl %ecx, (%ebx)
-	subl %eax, %ebx
-	movl %edx, (%ebx)
-	movl GlobalSp, %ebx
-	xor %eax, %eax	
-.endm
-
 // VIRTUAL MACHINE 
 					
 .global vm
@@ -1327,37 +1258,40 @@ L_add:
         NEXT
 
 L_div:
-	movl $WSIZE, %eax
-        addl %eax, %ebx
-        movl (%ebx), %eax
-        cmpl $0, %eax
-	jz   E_div_zero
-	INC_DSP
-        movl (%ebx), %eax
-	cdq
-        idivl -WSIZE(%ebx)
+        INC_DSP
+        DIV
         movl %eax, (%ebx)
 	DEC_DSP
 	xorl %eax, %eax
-divexit:
-	movl %ebx, GlobalSp
-        ret
+        NEXT
 
 L_mod:
-	call L_div
-	cmpl $0, %eax
-	jnz  divexit
-	movl %edx, WSIZE(%ebx)
+	INC_DSP
+        DIV
+	movl %edx, (%ebx)
+        DEC_DSP
+        xor %eax, %eax
 	NEXT
 
 L_slashmod:
-	call L_div
-	cmpl $0, %eax
-	jnz  divexit
+	INC_DSP
+        DIV
 	movl %edx, (%ebx)
 	DEC_DSP
-	SWAP
+	movl %eax, (%ebx)
+        DEC_DSP
+        xor %eax, %eax
 	NEXT
+
+L_udivmod:
+        INC_DSP
+        UDIV
+        mov %edx, (%ebx)
+        DEC_DSP
+        mov %eax, (%ebx)
+        DEC_DSP
+        xor %eax, %eax
+        NEXT
 
 L_starslash:
 	STARSLASH	
@@ -1413,7 +1347,7 @@ L_dnegate:
 	movl GlobalSp, %ebx
 	DNEGATE
 #	NEXT
-	movl %ebx, GlobalSp
+        movl %ebx, GlobalSp
 	ret
 
 L_dplus:
@@ -1500,6 +1434,35 @@ L_umslashmod:
 	DEC_DSP
 	xorl %eax, %eax		
 	NEXT
+
+L_uddivmod:
+# Divide unsigned double length by unsigned single length to
+# give unsigned double quotient and single remainder.
+        movl GlobalSp, %ebx
+        movl $WSIZE, %eax
+        add %eax, %ebx
+        mov (%ebx), %ecx
+        cmpl $0, %ecx
+        jz E_div_zero
+        add %eax, %ebx
+        movl $0, %edx
+        mov (%ebx), %eax
+        divl %ecx
+        push %edi
+        mov %eax, %edi  # %edi = hi quot
+        INC_DSP
+        mov (%ebx), %eax
+        divl %ecx
+        mov %edx, (%ebx)
+        DEC_DSP
+        mov %eax, (%ebx)
+        DEC_DSP
+        mov %edi, (%ebx)
+        pop %edi
+        DEC_DSP
+        movl %ebx, GlobalSp
+        xor %eax, %eax
+        ret
 
 L_mstar:
 	movl $WSIZE, %eax

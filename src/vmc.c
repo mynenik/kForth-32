@@ -722,40 +722,25 @@ int C_sharp()
 {
   /* stack: ( ud1 -- ud2 | convert one digit of ud1 ) */
 
-  unsigned int u1, u2, rem;
+  unsigned long int uq1, uq2, urem;
   char ch;
 
-  *GlobalSp = *(GlobalSp+2); --GlobalSp;
-  *GlobalSp = *(GlobalSp+2); --GlobalSp;  /* 2dup */
-#ifndef __FAST__
-  *GlobalTp = *(GlobalTp+2); --GlobalTp;
-  *GlobalTp = *(GlobalTp+2); --GlobalTp;  /*  "  */
-#endif
-  TOS = 0; /* pad to triple length */
-  DEC_DSP
-  DEC_DTSP
   TOS = Base;
   DEC_DSP
   DEC_DTSP
-
-  L_utmslash();
-  u1 = *(GlobalSp + 1);  /* quotient */
-  u2 = *(GlobalSp + 2);
-
-  /* quotient is on the stack; we need the remainder */
-
-  TOS = Base;
-  DEC_DSP
-  DEC_DTSP
-  L_udmstar();
+  L_uddivmod();
   DROP
-
-  L_dminus();
-  rem = *(GlobalSp + 2);  /* get the remainder */
-
-  *(GlobalSp + 1) = u1;   /* replace rem with quotient on the stack */
-  *(GlobalSp + 2) = u2;
-  ch = (rem < 10) ? (rem + 48) : (rem + 55);
+  uq1  = TOS;   /* quotient: uq1,uq2 */
+  INC_DSP
+  uq2  = TOS;
+  INC_DSP
+  urem = TOS;   /* remainder */
+  TOS = uq2;
+  DEC_DSP
+  TOS = uq1;
+  DEC_DSP
+	
+  ch = (urem < 10) ? (urem + 48) : (urem + 55);
   ++NumberCount;
   NumberBuf[255 - NumberCount] = ch;
 

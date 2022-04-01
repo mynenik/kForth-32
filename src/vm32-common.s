@@ -140,13 +140,15 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_nop, L_nop, L_nop, L_nop           # 400--403   
            .long L_nop, L_uwfetch, L_ulfetch, L_slfetch  # 404--407
            .long L_lstore, L_nop, L_nop, L_nop        # 408--411
+           .long L_nop, L_nop, L_nop, L_nop           # 412--415
+           .long L_nop, L_udivmod, L_uddivmod, L_nop  # 416--419
 
 .text
 	.align 4
 .global JumpTable
 .global L_initfpu, L_depth, L_quit, L_abort, L_ret
 .global L_dabs, L_dplus, L_dminus, L_dnegate
-.global L_mstarslash, L_udmstar, L_utmslash
+.global L_mstarslash, L_udmstar, L_uddivmod, L_utmslash
 
 .macro LDSP                      # load stack ptr into ebx reg
   .ifndef __FAST__
@@ -252,6 +254,22 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	notl WSIZE(%ebx)
 .endm
 
+// use algorithm from DNW's vm-osxppc.s
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro _ABS
+        movl WSIZE(%ebx), %ecx
+        xorl %eax, %eax
+        cmpl %eax, %ecx
+        setl %al
+        negl %eax
+        movl %eax, %edx
+        xorl %ecx, %edx
+        subl %eax, %edx
+        movl %edx, WSIZE(%ebx)
+        xorl %eax, %eax
+.endm
 
 .macro STOD
 	LDSP
@@ -294,6 +312,99 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	STSP
 	INC2_DTSP
 	xor %eax, %eax
+.endm
+
+// signed single division
+// Regs: eax, ebx, ecx, edx
+// In: ebx = TOS
+// Out: eax = quot, edx = rem, ebx = TOS
+.macro DIV
+       mov (%ebx), %ecx
+       cmpl $0, %ecx
+       jz E_div_zero
+       INC_DSP
+       mov (%ebx), %eax
+       cdq
+       idivl %ecx
+.endm
+
+// unsigned single division
+// Regs: eax, ebx, ecx, edx
+// In: ebx = TOS
+// Out: eax = quot, edx = rem, ebx = TOS
+.macro UDIV
+       mov (%ebx), %ecx
+       cmpl $0, %ecx
+       jz E_div_zero
+       INC_DSP
+       mov (%ebx), %eax
+       movl $0, %edx
+       divl %ecx
+.endm
+
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro DNEGATE
+        INC_DSP
+        movl %ebx, %ecx
+        INC_DSP
+        movl (%ebx), %eax
+        notl %eax
+        clc
+        addl $1, %eax
+        movl %eax, (%ebx)
+        movl %ecx, %ebx
+        movl (%ebx), %eax
+        notl %eax
+        adcl $0, %eax
+        movl %eax, (%ebx)
+        DEC_DSP
+        xor %eax, %eax
+.endm
+
+// Regs: eax, ebx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro STARSLASH
+        cmpl $0, WSIZE(%ebx)
+        jz E_div_zero
+        INC2_DSP
+        movl WSIZE(%ebx), %eax
+        imull (%ebx)
+        idivl -WSIZE(%ebx)
+        movl %eax, WSIZE(%ebx)
+        INC2_DTSP
+        xor %eax, %eax
+.endm
+
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro TNEG
+        push %ebx
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        movl (%ebx), %edx
+        addl %eax, %ebx
+        movl (%ebx), %ecx
+        addl %eax, %ebx
+        movl (%ebx), %eax
+        notl %eax
+        notl %ecx
+        notl %edx
+        clc
+        addl $1, %eax
+        adcl $0, %ecx
+        adcl $0, %edx
+        movl %eax, (%ebx)
+        movl $WSIZE, %eax
+        subl %eax, %ebx
+        movl %ecx, (%ebx)
+        subl %eax, %ebx
+        movl %edx, (%ebx)
+        pop %ebx
+        xor %eax, %eax
 .endm
 
 // Error jumps
