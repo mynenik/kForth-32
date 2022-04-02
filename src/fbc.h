@@ -426,10 +426,17 @@
 #define OP_STARSLASHMOD_FLOORED 414
 #define OP_MSLASH_FLOORED       415
 #define OP_MSTARSLASH_FLOORED   416
+#define OP_UDIVMOD              417
+#define OP_UDDIVMOD             418
 
 #define OP_SFLOATS              420
 #define OP_SFLOATPLUS           421
 #define OP_FLOATS               422
 #define OP_FLOATPLUS            423
+
+// Windows specific opcodes
+#define OP_VALLOC               450
+#define OP_VFREE                451
+#define OP_VPROTECT             452
 
 #endif

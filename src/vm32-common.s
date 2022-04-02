@@ -128,22 +128,25 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
 	   .long L_nop, L_nop, C_fexpm1, C_flnp1	    # 364--367
 	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup   # 368--371
-           .long L_nop, L_nop, L_nop, L_nop                 # 372--375
-           .long L_nop, L_nop, L_nop, L_nop                 # 376--379
-           .long L_nop, L_nop, L_nop, L_nop                 # 380--383
-           .long L_nop, L_nop, L_nop, L_nop                 # 384--387
-           .long L_nop, L_nop, L_nop, L_nop                 # 388--391
-           .long L_nop, L_nop, L_nop, L_nop                 # 392--395
-           .long L_nop, L_nop, L_nop, L_nop                 # 396--399
+           .long L_nop, L_nop, L_nop, L_nop           # 372--375
+           .long L_nop, L_nop, L_nop, L_nop           # 376--379
+           .long L_nop, L_nop, L_nop, L_nop           # 380--383
+           .long L_nop, L_nop, L_nop, L_nop           # 384--387
+           .long L_nop, L_nop, L_nop, L_nop           # 388--391
+           .long L_nop, L_nop, L_nop, L_nop           # 392--395
+           .long L_nop, L_nop, L_nop, L_nop           # 396--399
            .long L_bool_not, L_bool_and, L_bool_or, L_bool_xor  # 400--403   
            .long L_boolean_query, L_uwfetch, L_ulfetch, L_slfetch  # 404--407
-           .long L_lstore, L_nop, L_nop, L_nop                  # 408--411
+           .long L_lstore, L_nop, L_nop, L_nop        # 408--411
+           .long L_nop, L_nop, L_nop, L_nop           # 412--415
+           .long L_nop, L_udivmod, L_uddivmod, L_nop  # 416--419
+
 .text
 	.align WSIZE
 .global JumpTable
 .global L_initfpu, L_depth, L_quit, L_abort, L_ret
 .global L_dabs, L_dplus, L_dminus, L_dnegate
-.global L_mstarslash, L_udmstar, L_utmslash
+.global L_mstarslash, L_udmstar, L_uddivmod, L_utmslash
 
 // Regs: ebx
 // In: none
@@ -344,6 +347,34 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	STSP
 	INC2_DTSP
 	xor %eax, %eax
+.endm
+
+// signed single division
+// Regs: eax, ebx, ecx, edx
+// In: ebx = TOS
+// Out: eax = quot, edx = rem, ebx = TOS
+.macro DIV
+       mov (%ebx), %ecx
+       cmpl $0, %ecx
+       jz E_div_zero
+       INC_DSP
+       mov (%ebx), %eax
+       cdq
+       idivl %ecx
+.endm
+
+// unsigned single division
+// Regs: eax, ebx, ecx, edx
+// In: ebx = TOS
+// Out: eax = quot, edx = rem, ebx = TOS
+.macro UDIV
+       mov (%ebx), %ecx
+       cmpl $0, %ecx
+       jz E_div_zero
+       INC_DSP
+       mov (%ebx), %eax
+       movl $0, %edx
+       divl %ecx
 .endm
 
 // Regs: eax, ebx, ecx
