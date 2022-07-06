@@ -66,6 +66,19 @@
     F>S
 ;
 
+fp-stack? [IF]
+: normalize  ( f: x xx -- y yy) ( n -- n')
+    ddabs                       ( f: |x+xx| )
+    DUP  dd10  dd^n  dd/        ( f: [|x|+|xx|]/10^n ) ( n)
+
+  \ make sure it's between 1 and 10
+    BEGIN   FOVER   10e0  F>
+    WHILE   dd10  dd/   1 +  REPEAT
+
+    BEGIN   FOVER   1e0   F<
+    WHILE   dd10  dd*   1 -  REPEAT
+;   ( f: [y+yy] = [x+xx]/10^n' )    ( n')
+[ELSE]
 variable temp
 : normalize  ( f: x xx -- y yy) ( n -- n')
     temp !
@@ -80,7 +93,17 @@ variable temp
     WHILE   dd10  dd*   -1 temp +!  REPEAT
     temp @
 ;   ( f: [y+yy] = [x+xx]/10^n' )    ( n')
+[THEN]
 
+fp-stack? [IF]
+: peelDigit ( f: y yy -- y' yy')    ( -- digit)
+    FOVER                           ( f: y yy y)
+    1e-10 F+                        ( f: y yy y+epsilon)
+                                    \ fixes rounding problem
+    F>D   2DUP  D>F  0e0  dd-
+    D>S
+;
+[ELSE]
 : peelDigit ( f: y yy -- y' yy')    ( -- digit)
     FOVER                           ( f: y yy y)
     1e-10 F+                        ( f: y yy y+epsilon)
@@ -88,6 +111,7 @@ variable temp
     F>D  2DUP  2>R  D>F  0e0  dd- 
     2R>  D>S
 ;
+[THEN]
 
 \ ******** bug in peelDigit fixed Wednesday, March 08 2006 by JVN
 \          thanks to M. Hendrix for finding it
@@ -97,6 +121,32 @@ variable temp
 \ Convert a double double to a string
 
 create ddout_digits 128 allot
+fp-stack? [IF]
+: dd>$ ( F: x xx -- ) ( -- caddr u )
+    FOVER   F0=  IF  dddrop s" 0.0 DD 0"  EXIT  THEN   \ handle 0
+    getSign
+    getPower normalize
+    S>D  SWAP  OVER  DABS       \ convert exponent
+    <#  #S  ROT SIGN            \ append  digits of exponent
+    BL       HOLD
+    [char] d HOLD
+    [char] d HOLD
+    BL       HOLD    \ append dd
+    PRECISION 1- 0 ?DO
+      peelDigit
+      ddout_digits PRECISION 1- + I - c!
+      shiftBy10
+    LOOP  peelDigit ddout_digits c!
+    PRECISION 1- 0 ?DO
+      ddout_digits I + c@
+      S>D   #  2DROP
+    LOOP
+    [char] .  HOLD
+    ddout_digits PRECISION 1- + c@ S>D  #  2DROP
+    ROT  IF  [char] -  ELSE  [char] +  THEN   HOLD
+    #> f2drop
+;
+[ELSE]
 : dd>$ ( x xx -- caddr u )
     FOVER   F0=  IF  dddrop s" 0.0 DD 0"  EXIT  THEN   \ handle 0
     getSign >R
@@ -122,7 +172,8 @@ create ddout_digits 128 allot
     ROT  IF  [char] -  ELSE  [char] +  THEN   HOLD
     #> 2>R f2drop 2R>
 ;
-    
+[THEN]
+
 : ddfs.     ( f: x xx -- )  \ display double-double in E-format
     dd>$ type ;
 
