@@ -9,18 +9,19 @@
 \ binary fields:
 \
 \   MAKE-IEEE-DFLOAT ( signbit udfraction uexp -- r nerror )
+\                    ( signbit udfraction uexp -- nerror ) ( F: -- r)
 \
 \ Binary fields of IEEE 754 floating point values
 \
-\   FSIGNBIT    ( r -- minus? )
-\   FEXPONENT   ( r -- uexp )
-\   FFRACTION   ( r -- udfraction )
+\   FSIGNBIT    ( F: r -- ) ( -- minus? )
+\   FEXPONENT   ( F: r -- ) ( -- uexp )
+\   FFRACTION   ( F: r -- ) ( -- udfraction )
 \
-\   FINITE?     ( r -- flag )
-\   FNORMAL?    ( r -- flag )
-\   FSUBNORMAL? ( r -- flag )
-\   FINFINITE?  ( r -- flag )
-\   FNAN?       ( r -- flag )
+\   FINITE?     ( F: r -- ) ( -- flag )
+\   FNORMAL?    ( F: r -- ) ( -- flag )
+\   FSUBNORMAL? ( F: r -- ) ( -- flag )
+\   FINFINITE?  ( F: r -- ) ( -- flag )
+\   FNAN?       ( F: r -- ) ( -- flag )
 \
 \ Exception flag words
 \
@@ -29,20 +30,20 @@
 \
 \ IEEE 754 special values:
 \
-\   +INF        ( -- r )
-\   -INF        ( -- r )
-\   +NAN        ( -- r )
-\   -NAN        ( -- r )
+\   +INF        ( F: -- r )
+\   -INF        ( F: -- r )
+\   +NAN        ( F: -- r )
+\   -NAN        ( F: -- r )
 \
 \ To be implemented:
 \
-\   FCOPYSIGN     ( r1 r2 -- r3 )
-\   FNEARBYINT    ( r1 -- r2 )
-\   FNEXTUP       ( r1 -- r2 )
-\   FNEXTDOWN     ( r1 -- r2 )
-\   FSCALBN       ( r n -- r*2^n )
-\   FLOGB         ( r -- e )    
-\   FREMAINDER    ( x y -- r q )
+\   FCOPYSIGN     ( F: r1 r2 -- r3 )
+\   FNEARBYINT    ( F: r1 -- r2 )
+\   FNEXTUP       ( F: r1 -- r2 )
+\   FNEXTDOWN     ( F: r1 -- r2 )
+\   FSCALBN       ( n -- ) ( F: r -- r*2^n )
+\   FLOGB         ( F: r -- e )    
+\   FREMAINDER    ( F: x y -- r q )
 \   CLEAR-FFLAGS  ( excepts -- )
 \   SET-FFLAGS    ( excepts -- )
 \   FENABLE       ( excepts -- )
@@ -55,7 +56,7 @@
 \ are not part of the proposals in Ref. 1.
 \
 \ K. Myneni, 2020-08-20
-\ Rev. 2020-08-27
+\ Revs. 2020-08-27, 2022-08-02
 \
 \ References:
 \ 1. David N. Williams, Proposal Drafts for Optional IEEE 754
@@ -67,7 +68,6 @@ DECIMAL
 0e fconstant F=ZERO
 HEX
 
-1 cells 4 = [IF]
 
 \ Make an IEEE 754 double precision floating point value from
 \ the specified bits for the sign, binary fraction, and exponent.
@@ -83,28 +83,28 @@ fvariable temp
     dup 100000 u< invert IF 
       r> 2drop 2drop F=ZERO 2 EXIT 
     THEN
-    r> or [ temp cell+ ] literal ! temp !
+    r> or [ temp 4 + ] literal L! temp L!
     drop temp df@ 0 ;
 
-: FSIGNBIT ( r -- minus? )
-    temp df! [ temp cell+ ] literal @ 80000000 and 0<> ;
+: FSIGNBIT ( F: r -- ) ( -- minus? )
+    temp df! [ temp 4 + ] literal UL@ 80000000 and 0<> ;
 
-: FEXPONENT ( r -- u )
-    temp df! [ temp cell+ ] literal @ 14 rshift 7FF and ;
+: FEXPONENT ( F: r -- ) ( -- u )
+    temp df! [ temp 4 + ] literal UL@ 14 rshift 7FF and ;
 
-: FFRACTION ( r -- ud )
-    temp df! temp @  [ temp cell+ ] literal @ 000FFFFF and ;
+: FFRACTION ( F: r -- ) ( -- ud )
+    temp df! temp UL@  [ temp 4 + ] literal UL@ 000FFFFF and ;
 
-: FINITE?  ( r -- [normal|subnormal]? ) fexponent 7FF <> ;
+: FINITE?  ( F: r -- ) ( -- [normal|subnormal]? ) fexponent 7FF <> ;
 
-: FNORMAL? ( r -- normal? )  fexponent 0<> ;
+: FNORMAL? ( F: r -- ) ( -- normal? )  fexponent 0<> ;
 
-: FSUBNORMAL? ( r -- subnormal? )  fexponent 0= ;
+: FSUBNORMAL? ( F: r -- ) ( -- subnormal? )  fexponent 0= ;
 
-: FINFINITE? ( r -- [+/-]Inf? )
-   temp df! temp @ 7FFF and 0<> [ temp cell+ ] literal @ 0= and 0<> ; 
+: FINFINITE? ( F: r -- ) ( -- [+/-]Inf? )
+   finite? invert ; 
 
-: FNAN? ( r -- nan? ) 
+: FNAN? ( F: r -- ) ( -- nan? ) 
    fdup FEXPONENT 7FF = >r FFRACTION D0= invert r> and ; 
 
 
@@ -118,6 +118,8 @@ fvariable temp
 
 FINVALID FDIVBYZERO or FOVERFLOW or FUNDERFLOW or FINEXACT or  
 constant ALL-FEXCEPTS
+
+1 cells 4 = [IF]
 
 : GET-FFLAGS ( excepts -- flags )
     getFPUstatusX86 fpu-status @ and ;
@@ -136,30 +138,30 @@ constant ALL-FEXCEPTS
 : FDISABLE ( excepts -- )
 ;
 
-: FCOPYSIGN ( r1 r2 -- r3 )
+: FCOPYSIGN ( F: r1 r2 -- r3 )
 ;
 
-: FNEARBYINT ( r1 -- r2 )
+: FNEARBYINT ( F: r1 -- r2 )
 ;
 
-: FNEXTUP ( r1 -- r2 )
+: FNEXTUP ( F: r1 -- r2 )
 ;
 
-: FNEXTDOWN ( r1 -- r2 )
+: FNEXTDOWN ( F: r1 -- r2 )
 ;
 
 : FSCALBN ( r n -- r*2^n )
 ;
 
-: FLOGB ( r -- e )
+: FLOGB ( F: r -- e )
 ;
 
-: FREMAINDER ( x y -- r q )
+: FREMAINDER ( F: x y -- r q )
 
 ;
 
 [ELSE]
-cr .( 32-bit system only! ) cr
+cr .( Some functions are for 32-bit system only! ) cr
 [THEN]
 
 \ Constants representing  -INF  +INF  -NAN  +NAN
