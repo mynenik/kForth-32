@@ -11,7 +11,9 @@ vmc.c
 
 */
 
+#ifndef _WIN32_
 #define _GNU_SOURCE
+#endif
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -40,7 +42,6 @@ vmc.c
 
 #define byte unsigned char
 
-
 /*  Provided by ForthVM.cpp  */
 extern int* GlobalSp;
 extern byte* GlobalIp;
@@ -66,21 +67,26 @@ extern char TIB[];
 extern char NumberBuf[];
 
 /*  Provided by vmxx.s/vmxx-fast.s  */
-int L_dnegate();
-int L_dplus();
-int L_dminus();
-int L_udmstar();
-int L_utmslash();
-int L_quit();
-int L_abort();
-int vm(byte*);
+extern int L_dnegate();
+extern int L_dplus();
+extern int L_dminus();
+extern int L_udmstar();
+extern int L_utmslash();
+extern int L_uddivmod();
+extern int L_quit();
+extern int L_abort();
+extern int vm(byte*);
 
+#ifdef _WIN32_
+unsigned long int ForthStartTime;
+#else
 struct timeval ForthStartTime;
 struct termios tios0;
+char key_query_char = 0;
+#endif
 double* pf;
 double f;
 char temp_str[256];
-char key_query_char = 0;
 
 /*  signal dispatch table  */
 
@@ -122,6 +128,35 @@ void* signal_xtmap [32] =
 
 static void forth_signal_handler (int, siginfo_t*, void*); 
 
+#define DOUBLE_FUNC(x)   pf = (double*)(GlobalSp+1); *pf=x(*pf);
+  
+int C_ftan  () { DOUBLE_FUNC(tan)  return 0; }
+int C_facos () { DOUBLE_FUNC(acos) return 0; }
+int C_fasin () { DOUBLE_FUNC(asin) return 0; }
+int C_fatan () { DOUBLE_FUNC(atan) return 0; }
+int C_fsinh () { DOUBLE_FUNC(sinh) return 0; }
+int C_fcosh () { DOUBLE_FUNC(cosh) return 0; }
+int C_ftanh () { DOUBLE_FUNC(tanh) return 0; }
+int C_fasinh () { DOUBLE_FUNC(asinh) return 0; }
+int C_facosh () { DOUBLE_FUNC(acosh) return 0; }
+int C_fatanh () { DOUBLE_FUNC(atanh) return 0; }
+int C_fexp  () { DOUBLE_FUNC(exp)   return 0; }
+int C_fexpm1() { DOUBLE_FUNC(expm1) return 0; }
+int C_fln   () { DOUBLE_FUNC(log)   return 0; }
+int C_flnp1 () { DOUBLE_FUNC(log1p) return 0; }
+int C_flog  () { DOUBLE_FUNC(log10) return 0; }
+#ifndef _WIN32_
+int C_falog () { DOUBLE_FUNC(exp10) return 0; }
+#else
+int C_falog ()
+{
+     pf = (double*)(GlobalSp + 1);
+     f = *pf;
+     *pf = pow(10., f);
+     return 0;
+}
+#endif
+
 // powA  is copied from the source of the function pow() in paranoia.c,
 //   at  http://www.math.utah.edu/~beebe/software/ieee/ 
 double powA(double x, double y) /* return x ^ y (exponentiation) */
@@ -150,25 +185,6 @@ double powA(double x, double y) /* return x ^ y (exponentiation) */
     if (flip) { xy = 1. / xy; ey = -ey; }
     return ldexp(xy, ey);
 } 
-
-#define DOUBLE_FUNC(x)   pf = (double*)(GlobalSp+1); *pf=x(*pf);
-  
-int C_ftan  () { DOUBLE_FUNC(tan)  return 0; }
-int C_facos () { DOUBLE_FUNC(acos) return 0; }
-int C_fasin () { DOUBLE_FUNC(asin) return 0; }
-int C_fatan () { DOUBLE_FUNC(atan) return 0; }
-int C_fsinh () { DOUBLE_FUNC(sinh) return 0; }
-int C_fcosh () { DOUBLE_FUNC(cosh) return 0; }
-int C_ftanh () { DOUBLE_FUNC(tanh) return 0; }
-int C_fasinh () { DOUBLE_FUNC(asinh) return 0; }
-int C_facosh () { DOUBLE_FUNC(acosh) return 0; }
-int C_fatanh () { DOUBLE_FUNC(atanh) return 0; }
-int C_fexp  () { DOUBLE_FUNC(exp)   return 0; }
-int C_fexpm1() { DOUBLE_FUNC(expm1) return 0; }
-int C_fln   () { DOUBLE_FUNC(log)   return 0; }
-int C_flnp1 () { DOUBLE_FUNC(log1p) return 0; }
-int C_flog  () { DOUBLE_FUNC(log10) return 0; }
-int C_falog () { DOUBLE_FUNC(exp10) return 0; }
 
 int C_fpow ()
 {
@@ -851,6 +867,45 @@ int C_tonumber ()
 }
 /*-----------------------------------------------------------*/
  
+int C_numberquery ()
+{
+  /* stack: ( ^str -- d b | translate characters into number using current base ) */
+
+  char *pStr;
+  int b, sign, nc;
+
+  b = FALSE;
+  sign = FALSE;
+
+  DROP
+  if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
+  CHK_ADDR
+  pStr = *((char**)GlobalSp);
+  PUSH_IVAL(0)
+  PUSH_IVAL(0)
+  nc = *pStr;
+  ++pStr;
+
+  if (*pStr == '-') {
+    sign = TRUE; ++pStr; --nc;
+  }
+  if (nc > 0) {
+        PUSH_ADDR((int) pStr)
+        PUSH_IVAL(nc)
+        C_tonumber();
+	DROP
+        b = TOS;
+	DROP
+	b = (b == 0) ? TRUE : FALSE ;
+  }
+
+  if (sign) L_dnegate();
+
+  PUSH_IVAL(b)
+  return 0;
+}
+/*----------------------------------------------------------*/
+
 int C_tofloat ()
 {
   /* stack: ( a u -- f true | false ; convert string to floating point number ) */
@@ -931,44 +986,6 @@ int C_tofloat ()
 }
 /*-------------------------------------------------------------*/
 
-int C_numberquery ()
-{
-  /* stack: ( ^str -- d b | translate characters into number using current base ) */
-
-  char *pStr;
-  int b, sign, nc;
-
-  b = FALSE;
-  sign = FALSE;
-
-  DROP
-  if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
-  CHK_ADDR
-  pStr = *((char**)GlobalSp);
-  PUSH_IVAL(0)
-  PUSH_IVAL(0)
-  nc = *pStr;
-  ++pStr;
-
-  if (*pStr == '-') {
-    sign = TRUE; ++pStr; --nc;
-  }
-  if (nc > 0) {
-        PUSH_ADDR((int) pStr)
-        PUSH_IVAL(nc)
-        C_tonumber();
-	DROP
-        b = TOS;
-	DROP
-	b = (b == 0) ? TRUE : FALSE ;
-  }
-
-  if (sign) L_dnegate();
-
-  PUSH_IVAL(b)
-  return 0;
-}
-/*----------------------------------------------------------*/
 
 int C_syscall ()
 {
