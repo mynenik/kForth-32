@@ -96,7 +96,7 @@ END-CODE
 : modifyFPUStateX86 ( control mask -- )
     dup >r and
     getFPUStateX86 
-    fpu-control @ r> not and or fpu-control !
+    fpu-control @ r> invert and or fpu-control !
     setFPUStateX86
 ;
 

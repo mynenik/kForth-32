@@ -17,8 +17,9 @@
 \
 \ Notes:
 \
-\   1. This version is for an integrated data/fp stack. 
-
+\   1. This version may be used on both separate and
+\      unified data/fp stack systems. 
+\
 \   2. Some word names have been changed from JVN's original[1]:
 \
 \     REAL*16 --> DDVARIABLE
@@ -67,13 +68,23 @@
 \ is no recipe that can supply information that was not originally
 \ present.
 
+\ for conditional compilation with unified vs separate
+\ Floating Point Stack ( unified: 2 cells = 1 dfloat )
+[UNDEFINED] fp-stack? [IF]
+: fp-stack? [DEFINED] fdepth literal ;
+[THEN]
 
 \ ---------------------------------------- LOAD, STORE
 \ DD@ and DD! were originally called R128@ and R128! 
 \ in JVN's version -- km 2020-09-27
 
+fp-stack? [IF]
+: dd@  DUP  F@  FLOAT+  F@ ;
+: dd!  DUP  FLOAT+  F!  F! ;
+[ELSE]
 : dd@  DUP >r    F@  r> FLOAT+  F@ ;
 : dd!  DUP >r FLOAT+ F! r>  F! ;
+[THEN]
 \ ------------------------------------ END LOAD, STORE
 
 \ ----------------------------------- data types ----
@@ -116,9 +127,6 @@ FALSE [IF]    \ determine base and precision of fpu
 \ Exact multiplication
 
 134217729 S>F  FCONSTANT split
-
-
-
 
 : ftuck  FSWAP  FOVER  ;
 : f-rot    FROT  FROT  ;  
@@ -236,6 +244,20 @@ ddvariable  ddtemp   ddvariable  ddtemp1
 
 : dd^2     dddup  dd*  ;
 
+fp-stack? [IF]
+: dd^n      ( n -- ) ( f: x xx -- [x+xx]^n )
+    \ raise dd to integer power
+    \ return 1 if n=0, dd^{-|n|} if n<0
+       dd=1   ddswap        ( f: 1e0 0e0 x xx )
+       DUP  0=   IF  dddrop  drop  EXIT  THEN
+       DUP  0<   SWAP  ABS   ( -- sign |n| )
+         BEGIN   DUP  0>  WHILE
+                 DUP  1 AND   IF ddtuck  dd*  ddswap THEN dd^2
+                 2/
+         REPEAT  dddrop  DROP
+       IF  dd=1  ddswap  dd/  THEN
+;
+[ELSE]
 variable temp
 : dd^n  ( x xx n -- [x+xx]^n )    \ ( n -- ) ( f: x xx -- [x+xx]^n )
     \ raise dd to integer power
@@ -249,4 +271,4 @@ variable temp
          REPEAT  drop >r dddrop r>
        IF  dd=1  ddswap  dd/  THEN
 ;
-
+[THEN]
