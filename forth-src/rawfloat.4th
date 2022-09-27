@@ -2,10 +2,14 @@
               memory, and stack formats
        File:  rawfloat.fs
   Test file:  rawfloat-test.fs
-    Version:  0.9.1-b
+    Version:  0.9.1-c
     Revised:  Aug 03, 2009
      Author:  David N. Williams
     License:  LGPL
+
+Version 0.9.1-c
+26Sep22 * fixed some bugs which only manifest when running under 64-bit
+          Forth  km
 
 Version 0.9.1-b
 03Aug09 * adapted for kForth: changed immediate constant [LITTLE-ENDIAN] to 
@@ -200,12 +204,13 @@ bits/float 80 <> and  bits/float 128 <> and
 \ *** RAW FETCH/STORE
 
 : raw32@  ( sf-addr -- raw32 )
-  @ [ bits/cell 64 = ] [IF] HEX FFFFFFFF DECIMAL and [THEN] ;
+  @ [ bits/cell 64 = ] [IF] 
+  [ HEX FFFFFFFF DECIMAL ] literal and [THEN] ;
 
 : raw32!  ( raw32 sf-addr -- )
   [ bits/cell 32 = ]
   [IF]   ! 
-  [ELSE] >r HEX FFFFFFFF DECIMAL and
+  [ELSE] >r [ HEX FFFFFFFF DECIMAL ] literal and
          r@ @ [ HEX FFFFFFFF DECIMAL invert ] literal and or r> ! [THEN] ;
 
 : raw64@  ( df-addr -- raw64 )
