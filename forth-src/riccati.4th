@@ -28,8 +28,6 @@ include asm-x86
 include fpu-x86
 include ieee-754
 
-[UNDEFINED] ptr [IF] : ptr create 1 cells allot? ! does> a@ ; [THEN]
-
 [UNDEFINED] fsquare  [IF] : fsquare fdup f* ;      [THEN]
 [UNDEFINED] f2dup    [IF] : f2dup   fover fover ;  [THEN]
 [UNDEFINED] fround>s [IF] : fround>s fround f>s ;  [THEN]

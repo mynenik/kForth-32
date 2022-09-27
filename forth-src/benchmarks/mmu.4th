@@ -273,9 +273,6 @@ CR .( kForth )
 	INCLUDE fsl/fsl-util.4th
 	INCLUDE fsl/dynmem.4th
 
-: ptr ( a <name> -- | create an address constant ) 
-        create 1 cells ?allot ! does> a@ ;        \ address constants are special in kForth
-
 : DFVARIABLE FVARIABLE ;
 : 3DUP     ( n1 n2 n3 -- n1 n2 n3 n1 n2 n3 )  2 PICK 2 PICK 2 PICK ;
 : BOUNDS OVER + SWAP ;
