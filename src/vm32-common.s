@@ -134,12 +134,14 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_nop, L_nop, L_nop, L_nop           # 384--387
            .long L_nop, L_nop, L_nop, L_nop           # 388--391
            .long L_nop, L_nop, L_nop, L_nop           # 392--395
-           .long L_nop, L_nop, L_nop, L_nop           # 396--399
+           .long CPP_find_name_in, CPP_find_name, L_nop, L_nop  # 396--399
            .long L_bool_not, L_bool_and, L_bool_or, L_bool_xor  # 400--403   
            .long L_boolean_query, L_uwfetch, L_ulfetch, L_slfetch  # 404--407
            .long L_lstore, L_nop, L_nop, L_nop        # 408--411
            .long L_nop, L_nop, L_nop, L_nop           # 412--415
            .long L_nop, L_udivmod, L_uddivmod, L_nop  # 416--419
+           .long L_nop, L_nop, L_nop, L_nop           # 420--423
+           .long L_fplusstore, L_pi, L_fsquare, L_nop # 424--427
 
 .text
 	.align WSIZE
@@ -738,6 +740,13 @@ L_fsqrt:
 	fsqrt
 	fstpl WSIZE(%ebx)
 	NEXT
+
+L_fsquare: 
+        LDSP
+        fldl WSIZE(%ebx)
+        fmul %st 
+        fstpl WSIZE(%ebx)
+        NEXT
 
 L_degtorad:
 	LDSP

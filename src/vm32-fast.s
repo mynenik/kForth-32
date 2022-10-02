@@ -2093,3 +2093,25 @@ L_fsincos:
 	subl $2*WSIZE, %ebx	
 	NEXT
 
+L_pi:
+        LDSP
+        DEC_DSP
+        fldpi
+        fstpl (%ebx)
+        DEC_DSP
+        STSP
+        NEXT
+
+L_fplusstore:
+        LDSP
+        INC_DSP
+        movl (%ebx), %ecx
+        INC_DSP
+        fldl (%ebx)
+        INC_DSP
+        fldl (%ecx)
+        faddp
+        fstpl (%ecx)
+        STSP
+        NEXT
+

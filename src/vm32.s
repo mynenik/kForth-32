@@ -2656,3 +2656,43 @@ L_fsincos:
 	movl %ebx, GlobalTp	
 	NEXT
 
+L_pi:
+        LDSP
+        DEC_DSP
+        fldpi
+        fstpl (%ebx)
+        DEC_DSP
+        STSP
+        movl GlobalTp, %ebx
+        movb $OP_IVAL, (%ebx)
+        decl %ebx
+        movb $OP_IVAL, (%ebx)
+        decl %ebx
+        movl %ebx, GlobalTp
+        NEXT
+
+L_fplusstore:
+        movl GlobalTp, %ebx
+        inc %ebx
+        movb (%ebx), %al
+        cmpb $OP_ADDR, %al
+        jnz E_not_addr
+        movb $OP_IVAL, (%ebx)
+        inc %ebx
+        movb $OP_IVAL, (%ebx)
+        inc %ebx
+        movb $OP_IVAL, (%ebx)
+        movl %ebx, GlobalTp
+        LDSP
+        INC_DSP
+        mov (%ebx), %ecx
+        INC_DSP
+        fldl (%ebx)
+        INC_DSP
+        fldl (%ecx)
+        faddp
+        fstpl (%ecx)
+        STSP
+        xor %eax, %eax
+        NEXT
+

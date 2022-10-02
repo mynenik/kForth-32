@@ -47,7 +47,6 @@
 \   2009-11-19  km  factor common code between C-word and F-word
 
 [undefined] fcall [if] s" fcalls.4th" included [then]
-[undefined] ptr   [if] : ptr create 1 cells allot? ! does> a@ ; [then]
 
 base @
 decimal
