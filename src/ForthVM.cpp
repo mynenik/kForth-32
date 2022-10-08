@@ -989,14 +989,16 @@ int CPP_name_to_compile()
     DEC_DTSP
     WordListEntry* p;
     if (nt->Precedence & PRECEDENCE_IMMEDIATE) {
-      CPP_name_to_interpret();
+      CPP_name_to_interpret(); // nt -- xt-word
       p = SearchOrder.LocateWord( "EXECUTE" );
     }
     else {
       p = SearchOrder.LocateWord( "COMPILE-NAME" );
     }
-    PUSH_ADDR( (long int) p )
-    CPP_name_to_interpret();
+    PUSH_ADDR( (long int) p )  // ( -- xt-word nt_execute ) or
+                               // ( -- nt nt_compile-name ) 
+    CPP_name_to_interpret();   // ( -- xt-word xt-execute ) or
+                               // ( -- nt xt_compile-name )
 
     return 0;
 }
@@ -1165,7 +1167,7 @@ int CPP_compilecomma ()
 }
 
 // COMPILE-NAME ( nt -- )
-// Append the execution semantics of nt to the current definition.
+// Perform the compilation semantics of the word referenced by nt.
 // Non-standard word used by the Forth Compiler.
 int CPP_compilename ()
 {
