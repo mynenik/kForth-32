@@ -1166,18 +1166,16 @@ int CPP_compilecomma ()
     return 0;  
 }
 
-// COMPILE-NAME ( nt -- )
-// Perform the compilation semantics of the word referenced by nt.
-// Non-standard word used by the Forth Compiler.
-int CPP_compilename ()
+int CPP_compile_to_current ()
 {
     DROP
     CHK_ADDR
     WordListEntry* p = (WordListEntry*) TOS;
     byte* bp;
+
     int wc = (p->WordCode >> 8) ? OP_CALLADDR : p->WordCode;
     pCurrentOps->push_back(wc);
-    switch (wc) 
+    switch (wc)
     {
       case OP_CALLADDR:
         bp = (byte*) p->Cfa;
@@ -1188,13 +1186,13 @@ int CPP_compilename ()
       case OP_ADDR:
         OpsPushInt((long int) p->Pfa);
         break;
-	  
+
       case OP_DEFINITION:
         OpsPushInt((long int) p->Cfa);
         break;
 
       case OP_IVAL:
-        OpsPushInt(*((long int*)p->Pfa));			
+        OpsPushInt(*((long int*)p->Pfa));
         break;
 
       case OP_2VAL:
@@ -1209,6 +1207,18 @@ int CPP_compilename ()
       default:
         ;
     }
+    return 0;
+}
+
+// COMPILE-NAME ( nt -- )
+// Perform the compilation semantics of the word referenced by nt.
+// Non-standard word used by the Forth Compiler.
+int CPP_compilename ()
+{
+    vector<byte>* pSaveOps = pCurrentOps;
+    if ( (State == 0) && PendingDefStack.size() ) pCurrentOps = PendingOps.top();
+    CPP_compile_to_current();
+    pCurrentOps = pSaveOps;
     return 0;
 }
 
