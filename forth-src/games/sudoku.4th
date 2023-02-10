@@ -85,6 +85,7 @@ Calls : 458
 )
 
 \ ======== kForth interface ==========
+include ans-words
 include strings
 : CHARS ;
 \ ====================================

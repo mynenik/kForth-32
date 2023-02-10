@@ -17,7 +17,7 @@
 * )
 \ ==== Definitions needed for ANS Forths====
 
-( \ start of comment
+( Remove comment markers if needed. 
 
  synonym a@ @ 			\ ANS Forth 
  : ?allot  HERE SWAP ALLOT ;	\ ANS Forth 
@@ -25,12 +25,14 @@
  : 2+ 2 + ;      		\ Gforth 
  : 2- 2 - ;      		\ Gforth 
 
- ) \ end of comment
+ )
 
 \ =====End of defs for ANS Forth============
 
 \ The following files are available for ANS Forths as well
+include ans-words.4th
 include strings.4th    
+include utils.4th
 include ansi.4th
 
 DECIMAL
@@ -52,25 +54,6 @@ DECIMAL
 	in string a3 u3 )
 	2ROT SEARCH IF DROP SWAP CMOVE ELSE 2DROP 2DROP THEN ;
 
-: $table ( a1 u1 a2 u2 ... an un n umax -- | create a string table )
-	CREATE  2DUP * 1 CELLS + ?allot 2DUP ! 
-	  1 CELLS + >R 2DUP SWAP 1- * R> + 
-	  SWAP ROT  
-	  0 ?DO  
-	    2>R  R@  1-  MIN  DUP  2R@  DROP  C!
-	    2R@  DROP  1+  SWAP  CMOVE
-	    2R>  DUP >R  -  R>
-	  LOOP 2DROP
-	DOES>  ( n a -- an un) 
-	  DUP @ ROT * + 1 CELLS + COUNT ;  	
-
-: pack ( a u a2 -- | copy string to counted string at a2)
-	2DUP C! 1+ SWAP CMOVE ;	
-
-: $constant  ( a u -- | create a string constant )
-	CREATE  256 ?allot pack
-	DOES>   COUNT ;  \ execution: ( -- a' u )
-
 : choose ( n -- n' | arbitrarily choose a number between 0 and n-1)
 	1- TIME&DATE 2DROP DROP XOR XOR * 60 / ;
 
@@ -84,7 +67,8 @@ VARIABLE  last-c
 VARIABLE  char#
 VARIABLE  phrase_voc
 
-: Rmargin	C/L 10 - ;	
+: Rmargin	C/L 10 - ;
+
 : CR		CR  0 char# ! ;
 : SPACE		char# @ IF  BL EMIT  1 char# +! THEN ;
 
