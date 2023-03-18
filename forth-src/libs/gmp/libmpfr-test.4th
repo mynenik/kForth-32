@@ -53,7 +53,8 @@ create mpexp 16  allot
     2>r mpstr mpexp 10 2r@ swap GMP_RNDN mpfr_get_str drop 
     mpstr 2r> nip ;
 
-: mpfr. ( amp u -- ) mp>str type ;
+: mpfr. ( amp u -- ) mp>str [char] 0 emit [char] . emit type
+    [char] E emit mpexp @ s>string count type ;
 
 \ Compare significant digits in string with value in a multi-precision
 \ variable. Return 0 if dst agrees to u significant digits; non-zero 
