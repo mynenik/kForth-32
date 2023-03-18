@@ -1,5 +1,6 @@
 (     Title:  kForth bindings for the GNU Multiple
-              Precision Floatint-Point Reliable Library, GNU MPFR 3.0.0
+              Precision Floatint-Point Reliable Library, 
+              for GNU MPFR Ver. >= 3.0.0
        File:  libmpfr.4th
   Test file:  gmpr-test.fs
      Author:  David N. Williams
@@ -8,6 +9,7 @@
     Started:  March 25, 2011 
     Revised:  July 10, 2011 -- adapted for kForth by K. Myneni,
                 2015-02-08 fixed problem with mpfr_div_d.
+                2023-03-18 use Forth 200x structures.
 
 Any part of this file not derived from the GMP library is
 )  
@@ -38,22 +40,21 @@ dup 0= [IF] check-lib-error [THEN]
 to hndl_MPFR
 cr .( Opened the MPFR library )
 
-[undefined] struct [IF] 
-s" struct.4th" included
-s" struct-ext.4th" included
+[UNDEFINED] begin-structure [IF] 
+s" struct-200x.4th" included
 [THEN]
 
-struct
-	int32:       mpfr_struct->mpfr_prec
-	int32:       mpfr_struct->mpfr_sign
-	int32:       mpfr_struct->mpfr_exp
-	cell% field  mpfr_struct->mpfr_d
-end-struct  mpfr_struct%
+BEGIN-STRUCTURE mpfr_struct%
+  4 +FIELD   mpfr_struct->mpfr_prec
+  4 +FIELD   mpfr_struct->mpfr_sign
+  4 +FIELD   mpfr_struct->mpfr_exp
+    FIELD:   mpfr_struct->mpfr_d
+END-STRUCTURE
 
-mpfr_struct% %size  constant /MPFR
+mpfr_struct%  constant /MPFR
 
 \ Create and allot a mpfr number type
-: mpfr_t create mpfr_struct% %allot drop ;
+: mpfr_t create mpfr_struct% allot ;
 
 
           2  constant  MPFR_PREC_MIN
