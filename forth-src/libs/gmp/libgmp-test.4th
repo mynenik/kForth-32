@@ -22,7 +22,7 @@ include mc
 include asm
 include strings
 include lib-interface
-include libgmp
+include libs/gmp/libgmp
 include ttester
 
 true VERBOSE !

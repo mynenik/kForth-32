@@ -30,11 +30,21 @@
 \  asm
 \  strings
 \  lib-interface
-\  libmpfr
+\  libs/gmp/libmpfr
 
-\ Output a multi-precision float to specified number of digits in 
+[UNDEFINED] mpfr. [IF]
+create mpstr 256 allot
+create mpexp 16  allot
+
+\ Output a multi-precision float to specified number of digits in
 \ base 10 using standard rounding
-: mpfr. ( a ndig -- )  swap 0 10 2swap GMP_RNDN mpfr_out_str drop ;
+: mp>str ( amp u -- addr u )
+    2>r mpstr mpexp 10 2r@ swap GMP_RNDN mpfr_get_str drop
+    mpstr 2r> nip ;
+
+: mpfr. ( amp u -- ) mp>str [char] 0 emit [char] . emit type
+    [char] E emit mpexp @ s>string count type ;
+[THEN]
 
 \ Set precision before initializing mp vars
 256 mpfr_set_default_prec

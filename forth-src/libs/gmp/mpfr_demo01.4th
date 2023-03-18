@@ -64,8 +64,19 @@ DECIMAL
     2drop ;
 
 \ Utilities
-: mpfr. ( amp u -- )  swap 0 10 2swap GMP_RNDN mpfr_out_str drop ;
-[undefined] mpfr_t [IF] : mpfr_t create /MPFR allot ; [THEN]
+[UNDEFINED] mpfr. [IF]
+create mpstr 256 allot
+create mpexp 16  allot
+
+\ Output a multi-precision float to specified number of digits in
+\ base 10 using standard rounding
+: mp>str ( amp u -- addr u )
+    2>r mpstr mpexp 10 2r@ swap GMP_RNDN mpfr_get_str drop
+    mpstr 2r> nip ;
+
+: mpfr. ( amp u -- ) mp>str [char] 0 emit [char] . emit type
+    [char] E emit mpexp @ s>string count type ;
+[THEN]
 
 
 256 mpfr_set_default_prec  \ provides 77 sig. decimal digits
