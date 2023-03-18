@@ -2,18 +2,27 @@
 \
 \ Test the Forth interface to the GNU MPFR shared library.
 \
-\ Copyright (c) Krishna Myneni
+\ Copyright (c) -- 2023 Krishna Myneni
 \
-\ This code is provided under the Lesser Gnu Public License (LGPL)
+\ Provided under the Lesser Gnu Public License (LGPL)
 \
 \ Notes:
 \ 
-\ 1. We set a default precision of 256 bits for the significand (mantissa). When 
-\    exactly representable arguments at this precision are provided to 
-\    a function, we should obtain 77 significant decimal digits in the result.
+\ 1. We set a default precision of 256 bits for the significand
+\    (mantissa). When exactly representable arguments at this
+\    precision are provided to a function, we should obtain 77
+\    significant decimal digits in the result.
+\
+\ 2. In order for libmpfr.4th to load correctly, a symbolic link
+\    "libmpfr.so" must exist and point to the current shared 
+\    object library file in /usr/lib/ .
 \
 \ Revisions:
 \   2015-02-08  km; fixed test with mpfr_cos for MPFR v3.
+\   2023-03-18  km; fixed problems with mpfr_cos and mpfr_sin 
+\                   tests, added default path for libmpfr.4th,
+\                   added tests for mpfr_acos, mpfr_asin,
+\                   mpfr_sec, mpfr_csc, mpfr_cot.
 
 include ans-words
 include modules.fs
@@ -22,7 +31,7 @@ include mc
 include asm
 include strings
 include lib-interface
-include libmpfr
+include libs/gmp/libmpfr
 include ttester
 
 true VERBOSE !
@@ -132,6 +141,7 @@ t{ dst num GMP_RNDN mpfr_log2 -> 0 }t
 t{ ONE$ dst sdcomp -> 0 }t
 t{ dst num GMP_RNDN mpfr_log10 -> -1 }t
 t{ s" 3010299956639811952137388947244930267681898814621085413104274611" dst sdcomp -> 0 }t
+
 TESTING mpfr_exp  mpfr_exp2  mpfr_exp10
 t{ dst num GMP_RNDN mpfr_exp -> -1 }t
 t{ s" 7389056098930650227230427460575007813180315570551847324087127823" dst sdcomp -> 0 }t
@@ -139,27 +149,41 @@ t{ dst num GMP_RNDN mpfr_exp2 -> 0 }t
 t{ s" 4000000000000000000000000000000000000000000000000000000000000000" dst sdcomp -> 0 }t
 t{ dst num GMP_RNDN mpfr_exp10 -> 0 }t
 t{ s" 1000000000000000000000000000000000000000000000000000000000000000" dst sdcomp -> 0 }t
-TESTING mpfr_cos  mpfr_sin  mpfr_tan
+
+TESTING mpfr_cos  mpfr_acos  mpfr_sin  mpfr_asin  mpfr_tan
 t{ num 0   GMP_RNDN  mpfr_set_ui ->  0 }t
 t{ dst num GMP_RNDN  mpfr_cos    ->  0 }t
 t{ ONE$ dst sdcomp -> 0 }t
 t{ num -1  GMP_RNDN  mpfr_set_si ->  0 }t
-t{ dst num GMP_RNDN  mpfr_cos    ->  1 }t
+t{ dst num GMP_RNDN  mpfr_acos   -> -1 }t
 t{ PI$ dst sdcomp -> 0 }t
- 
-\ t{ s" -416146836547142386997568229500762189766000771075544890755149974" sdcomp -> 0 }t
-\ t{ dst mp>str s" -416146836547142386997568229500762189766" compare -> 0 }t
+t{ num 2   GMP_RNDN mpfr_set_ui -> 0 }t
+t{ num dst num GMP_RNDN mpfr_div -> 0 }t  \ num = pi/2 
 t{ dst num GMP_RNDN mpfr_sin -> 1 }t
-\ t{ dst mp>str s" 9092974268256816953960198659117448427023" compare -> 0 }t
-t{ dst num GMP_RNDN mpfr_tan -> -1 }t
-\ t{ dst mp>str s" -218503986326151899164330610231368254343" compare -> 0 }t
+t{ ONE$ dst sdcomp -> 0 }t
+t{ num dst GMP_RNDN mpfr_neg -> 0 }t   \ num = -1
+t{ dst num GMP_RNDN mpfr_asin -> 1 }t
+t{ num 2 GMP_RNDN mpfr_set_ui -> 0 }t
+t{ num dst num GMP_RNDN mpfr_div -> 0 }t \ num = -pi/4
+t{ dst num GMP_RNDN mpfr_tan -> 1 }t  \ dst = -1
+t{ dst dst GMP_RNDN mpfr_abs -> 0 }t
+t{ ONE$ 1- dst sdcomp -> 0 }t  \ 1- corrects for lower sig dig with mpfr_tan
+
 TESTING mpfr_sec  mpfr_csc  mpfr_cot
-t{ dst num GMP_RNDN mpfr_sec -> -1 }t
-\ t{ dst mp>str s" -240299796172238098975460040142006622624" compare -> 0 }t
+t{ num GMP_RNDN mpfr_const_pi -> -1 }t
+t{ dst num GMP_RNDN mpfr_sec -> 1 }t
+t{ dst dst GMP_RNDN mpfr_neg -> 0 }t
+t{ ONE$ dst sdcomp -> 0 }t
+t{ dst num GMP_RNDN mpfr_set -> 0 }t
+t{ num 2 GMP_RNDN mpfr_set_ui -> 0 }t
+t{ num dst num GMP_RNDN mpfr_div -> 0 }t  \ num = pi/2 
 t{ dst num GMP_RNDN mpfr_csc -> -1 }t
-\ t{ dst mp>str s" 1099750170294616466756697397026312896659" compare -> 0 }t
+t{ ONE$ dst sdcomp -> 0 }t
+t{ dst num GMP_RNDN mpfr_set -> 0 }t
+t{ num 2 GMP_RNDN mpfr_set_ui -> 0 }t
+t{ num dst num GMP_RNDN mpfr_div -> 0 }t  \ num = pi/4
 t{ dst num GMP_RNDN mpfr_cot -> -1 }t
-\ t{ dst mp>str s" -457657554360285763750277410432047276428" compare -> 0 }t
+t{ ONE$ dst sdcomp -> 0 }t
 
 cr
 COMMENT Golden Ratio calculation by four methods
