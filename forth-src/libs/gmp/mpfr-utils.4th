@@ -14,8 +14,10 @@ create mpexp 16  allot
 
 : mpfr. ( amp u -- ) 
     mp>str
-    over c@ [char] - = IF [char] - emit THEN
-    1- swap 1+ swap 
+    over c@ [char] - = IF
+      [char] - emit
+      1- swap 1+ swap
+    THEN
     [char] 0 emit [char] . emit type
     [char] E emit mpexp @ s>string count type ;
 
