@@ -7,8 +7,8 @@
 \ Neumann functions, j_l(x) and n_l(x), for l over the range
 \ 0 to 5000.
 \
-\ The computed function values for different l's are stored in
-\ arrays rbes{ and rneu{ with l as the index. 
+\ The computed function values for different l's are returned in
+\ double precision arrays rbes{ and rneu{ with l as the index. 
 \ 
 \ The recursive algorithm implemented here is the one from Ref. 1.
 \ The computed functions have standard normalization, e.g.
@@ -30,16 +30,6 @@
 \      of indices," Computers in Physics vol. 2, p. 62 (1988).
 \
 \ Notes:
-\   1. The floating point words FSIN and FCOS are used separately
-\      to obtain the sin and cos of the arguments, instead of
-\      FSINCOS. In kForth, FSIN and FCOS use the C math library,
-\      which, under Linux, provides much higher accuracy for large
-\      arguments than using the word FSINCOS which calls the f.p.u.
-\      instruction of the same name.
-\
-\   2. Reference values for test code are computed using the
-\      functions, SphericalBesselJ[l,x] and SphericalBesselY[l,x]
-\      on Wolfram Alpha.
 \
 \ Requires:
 \
