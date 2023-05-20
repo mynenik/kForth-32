@@ -3,7 +3,7 @@ vmc.c
 
   C portion of the kForth Virtual Machine
 
-  Copyright (c) 1998--2022 Krishna Myneni, 
+  Copyright (c) 1998--2023 Krishna Myneni, 
   <krishna.myneni@ccreweb.org>
 
   This software is provided under the terms of the GNU
@@ -564,7 +564,12 @@ Check the string token to see if it is an LMI style floating point
 number; if so set the value of *p and return True, otherwise
 return False.
 */
-    char *pStr = token;
+    char s[256];
+    char *pStr = &s[0];
+    char *pEnd;
+    int f = FALSE;
+
+    strcpy(s, token);
 
     if (strchr(pStr, 'E'))
     {
@@ -578,13 +583,19 @@ return False.
             /* LMI Forth style */
 
             --pStr;
-            if (*pStr == 'E') *pStr = '\0';
-            *p = atof(token);
-            return TRUE;
-        }
+            if ((*pStr == '+') || (*pStr == '-')) {
+              *pStr = '\0';
+              --pStr;
+            }
+            if (pStr > &s[0]) {
+              if (*pStr == 'E') *pStr = '\0';
+            }
+            *p = strtod(s, &pEnd);
+             if (*pEnd == 0) f = TRUE;
+	}
     }
 
-    return FALSE;
+    return f;
 }
 /*----------------------------------------------------------*/
 

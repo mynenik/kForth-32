@@ -1,7 +1,7 @@
 # kForth-32
 32-bit Forth System for x86-GNU/Linux
 
-Copyright &copy; 1998--2022 Krishna Myneni, <krishna.myneni@ccreweb.org>
+Copyright &copy; 1998--2023 Krishna Myneni, <krishna.myneni@ccreweb.org>
 
 ## LICENSE
 
@@ -67,7 +67,8 @@ different categories of Forth libraries or applications. These include:
 `games/`           console games written in Forth
 
 `libs/`            Forth interfaces to C and Fortran shared object libraries, such
-                   as X11 and the GNU Multiprecision Library, gmp.
+                   as X11 the GNU Multiprecision Library, gmp, and the GNU
+                   Multiprecision Floating-Point Library, mpfr.
 
 'x11/'             A collection of X11 utilities providing a simple interfaces
                    for plotting, bitmap font handling and text rendering, and
