@@ -162,7 +162,7 @@ fvariable peak_offset	\ offset in time for current peak
 : GaussianPulse ( ft -- fc | compute current at real time ft )
     \ ft is in nano-seconds
     peak_offset F@ F- fwhm F@ F/
-    FDUP F* -2.77066e F* FEXP
+    FSQUARE -2.77066e F* FEXP
     pulse_amp F@ F* dc_current F@ F+ ;		
 
 
