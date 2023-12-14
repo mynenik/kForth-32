@@ -1377,7 +1377,9 @@ int CPP_dotr ()
 
   if (GlobalSp > BottomOfStack) return E_V_STK_UNDERFLOW;
 
-  if (nfield <= 0) return 0;  // don't print anything if field with <= 0
+  // km 2023-12-14
+  // The following commented line is not consistent with the Forth standard.
+  // if (nfield <= 0) return 0;  // don't print anything if field width <= 0
 
   n = TOS;
   u = labs(n);
@@ -1411,7 +1413,10 @@ int CPP_udotr ()
   long int i, ndig, nfield;
   nfield = TOS;
   DROP
-  if (nfield <= 0) return 0;  // don't print anything if field with <= 0
+
+  // km 2023-12-14
+  // The following commented line is not consistent with the Forth standard.
+  // if (nfield <= 0) return 0;  // don't print anything if field width <= 0
 
   unsigned long int u, utemp, uscale;
   u = TOS;
