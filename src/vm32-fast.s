@@ -3,7 +3,7 @@
 // The assembler portion of the kForth 32-bit Virtual Machine
 // (fast version)
 //
-// Copyright (c) 1998--2022 Krishna Myneni,
+// Copyright (c) 1998--2023 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -1379,6 +1379,40 @@ L_add:
 	movl (%ebx), %eax
 	addl %eax, WSIZE(%ebx)
         xorl %eax, %eax
+        NEXT
+
+L_starplus:
+        INC_DSP
+        mov (%ebx), %ecx
+        INC_DSP
+        mov (%ebx), %eax
+        INC_DSP
+        imull (%ebx)
+        add %ecx, %eax
+        mov %eax, (%ebx)
+        DEC_DSP
+        xor %eax, %eax
+        NEXT
+
+L_fsl_mat_addr:
+        INC_DSP
+        mov (%ebx), %ecx   # ecx = j (column index)
+        INC_DSP
+        mov (%ebx), %edx   # edx = i (row index)
+        mov WSIZE(%ebx), %eax   # adress of first element
+        sub $2*WSIZE, %eax # eax = a - 2 cells
+        push %edi
+        mov %eax, %edi
+        mov (%eax), %eax   # rax = ncols
+        imull %edx         # rax = i*ncols 
+        add %eax, %ecx     # rcx = i*ncols + j 
+        mov %edi, %eax
+        pop %edi
+        add $WSIZE, %eax
+        mov (%eax), %eax   # rax = size
+        imull %ecx         # rax = size*(i*ncols + j)
+        add %eax, WSIZE(%ebx)   # TOS = a + rax
+        xor %eax, %eax
         NEXT
 
 L_div:

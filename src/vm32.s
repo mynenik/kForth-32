@@ -2,7 +2,7 @@
 //
 // The assembler portion of kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2022 Krishna Myneni,
+// Copyright (c) 1998--2023 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -1887,6 +1887,48 @@ L_add:
 	andb %ah, %al		# and the two types to preserve addr type
 	incl %ebx
 	movb %al, (%ebx)
+        xor %eax, %eax
+        NEXT
+
+L_starplus:
+        LDSP
+        INC_DSP
+        mov (%ebx), %ecx
+        INC_DSP
+        STSP
+        mov (%ebx), %eax
+        INC_DSP
+        imull (%ebx)
+        add %ecx, %eax
+        mov %eax, (%ebx)
+  .ifdef __FAST__
+        DEC_DSP
+  .endif
+        INC2_DTSP
+        xor %eax, %eax
+        NEXT
+
+L_fsl_mat_addr:
+        LDSP
+        INC_DSP
+        mov (%ebx), %ecx   # ecx = j (column index)
+        INC_DSP
+        STSP
+        mov (%ebx), %edx   # edx = i (row index)
+        mov WSIZE(%ebx), %eax   # adress of first element
+        sub $2*WSIZE, %eax # eax = a - 2 cells
+	push %edi
+        mov %eax, %edi
+        mov (%eax), %eax   # rax = ncols
+        imull %edx         # rax = i*ncols 
+        add %eax, %ecx     # rcx = i*ncols + j 
+        mov %edi, %eax
+        pop %edi
+        add $WSIZE, %eax
+        mov (%eax), %eax   # rax = size
+        imull %ecx         # rax = size*(i*ncols + j)
+        add %eax, WSIZE(%ebx)   # TOS = a + rax
+        INC2_DTSP
         xor %eax, %eax
         NEXT
 
