@@ -1919,15 +1919,15 @@ L_fsl_mat_addr:
         sub $2*WSIZE, %eax # eax = a - 2 cells
 	push %edi
         mov %eax, %edi
-        mov (%eax), %eax   # rax = ncols
-        imull %edx         # rax = i*ncols 
-        add %eax, %ecx     # rcx = i*ncols + j 
+        mov (%eax), %eax   # eax = ncols
+        imull %edx         # eax = i*ncols 
+        add %eax, %ecx     # ecx = i*ncols + j 
         mov %edi, %eax
         pop %edi
         add $WSIZE, %eax
-        mov (%eax), %eax   # rax = size
-        imull %ecx         # rax = size*(i*ncols + j)
-        add %eax, WSIZE(%ebx)   # TOS = a + rax
+        mov (%eax), %eax   # eax = size
+        imull %ecx         # eax = size*(i*ncols + j)
+        add %eax, WSIZE(%ebx)   # TOS = a + eax
         INC2_DTSP
         xor %eax, %eax
         NEXT
