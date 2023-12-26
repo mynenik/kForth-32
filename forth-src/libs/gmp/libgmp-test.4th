@@ -39,6 +39,7 @@ t{ b mpz_init -> }t
 
 : mpz= ( a1 a2 -- flag )  mpz_cmp 0= ;
 : mpz_n= ( a n -- flag )  b swap mpz_set_si  b mpz= ;
+: mpz_u= ( a u -- flag )  b swap mpz_set_ui  b mpz= ;
 : $=   ( a1 u1 a2 u2 -- flag) compare 0= ;
 
 \ multiprecision integer to strings
@@ -66,7 +67,7 @@ t{ b3 mpz_init ->  }t
 
 \ *** 1.2 Assignment
 
-TESTING  mpz_set  mpz_set_ui  mpz_set_si  mpz_set_str
+TESTING  mpz_set  mpz_set_ui  mpz_set_si
 
 t{ b1 1 mpz_set_si ->  }t
 t{ b2 2 mpz_set_si ->  }t
@@ -77,18 +78,22 @@ t{ b2 2 mpz_n=     ->  true  }t
 
 t{ b1 b2  mpz_set  ->  }t
 t{ b1 b2  mpz=     -> true }t
-t{ b1 MAXU mpz_set_ui ->  }t  \  => "MAXU" }=
+t{ b1 MAXU mpz_set_ui ->  }t
+t{ b1 MAXU mpz_u=  -> true }t
 
 \ *** 1.3 Combined Initialization and Assignment
 
-TESTING  mpz_init_set 
-\ mpz_init_set_ui mpz_init_set_si mpz_init_set_str
+TESTING  mpz_init_set  mpz_init_set_ui  mpz_init_set_si
 
 t{ b1 mpz_clear ->  }t
 t{ b1 b2 mpz_init_set  ->  }t
 t{ b1 b2 mpz=  ->  true  }t 
-\ t{ b mpz_clear b MAXU mpz_init_set_ui ->  }t  \  => "MAXU" }=
-\ t{ b mpz_clear b -11 mpz_init_set_si  ->  }t  \  => s" -11" }=
+t{ b1 mpz_clear  -> }t
+t{ b1 MAXU mpz_init_set_ui ->  }t
+t{ b1 MAXU mpz_u= -> true }t 
+t{ b1 mpz_clear -> }t
+t{ b1 -11 mpz_init_set_si  ->  }t
+t{ b1 -11 mpz_n= -> true }t
 
 \ *** 1.4 Conversion
 
