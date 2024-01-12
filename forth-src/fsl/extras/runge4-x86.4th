@@ -495,7 +495,7 @@ END-CODE
 \ y(0) = 1
 \ Exact solution is y(t) = 1 / sqrt(t + 1)
 \ : derivs-A2() ( t 'y 'dydt -- )
-\    >R 0 } F@ FDUP FDUP F* F* FNEGATE 2e F/ R> 0 } F! FDROP ;
+\    >R 0 } F@ FDUP FSQUARE F* FNEGATE 2e F/ R> 0 } F! FDROP ;
 
 CODE derivs-A2c ( t 'y 'dydt -- )
     0 [ebx]  ecx mov,  \ ecx = 'dydt
