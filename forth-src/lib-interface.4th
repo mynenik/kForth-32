@@ -45,8 +45,10 @@
 \   2009-11-18  km  modified F-word to handle integer and floating point return 
 \                     cases, providing partial support for calling FORTRAN functions
 \   2009-11-19  km  factor common code between C-word and F-word
-
-[undefined] fcall [if] s" fcalls.4th" included [then]
+1 CELLS 8 = constant 64-bit?
+[undefined] fcall0 [IF]
+   s" fcalls.4th" included
+[THEN]
 
 base @
 decimal
@@ -188,6 +190,7 @@ decimal
      REPEAT
 ;
 
+64-bit? 0= [IF]
 : lword-does> ( -- )
       lword_nargs 0= IF
         lword_nret 0= IF  
@@ -241,6 +244,7 @@ decimal
      lword_nargs lword_pfa cell+ !      
      lword-does>
 ;
+[THEN]
 
 base !
 
