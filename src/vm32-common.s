@@ -2,7 +2,7 @@
 //
 // Common declarations and data for kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2023 Krishna Myneni,
+// Copyright (c) 1998--2024 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -17,6 +17,7 @@
 .equ OP_IVAL,	73
 .equ OP_RET,	238
 .equ SIGN_MASK,	0x80000000
+.equ MAX_SHIFT_COUNT, WSIZE*8-1
 	
 // Error Codes must be same as those in VMerrors.h
 
@@ -662,6 +663,11 @@ L_lshift:
 	LDSP
 	DROP
 	movl (%ebx), %ecx
+	cmp $MAX_SHIFT_COUNT, %ecx
+        jbe lshift1
+        movl $0, WSIZE(%ebx)
+        NEXT 
+lshift1:
 	shll %cl, WSIZE(%ebx)
 	NEXT
 
@@ -669,6 +675,11 @@ L_rshift:
 	LDSP
 	DROP
 	movl (%ebx), %ecx
+	cmp $MAX_SHIFT_COUNT, %ecx
+	jbe rshift1
+	movl $0, WSIZE(%ebx)
+	NEXT
+rshift1:
 	shrl %cl, WSIZE(%ebx)
 	NEXT
 
