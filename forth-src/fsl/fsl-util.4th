@@ -79,16 +79,15 @@
 \   2021-05-16  km;  provide def. of }}FCOPY for separate FP stack.
 \   2021-05-18  km;  define FP-STACK? for conditional compilation.
 \   2021-09-11  km;  replace instances of ?ALLOT with ALLOT?
+\   2024-04-21  km;  added conditional defns of FSQUARE and F+!
 \ ================= kForth specific defs/notes ==============================
 \ Requires ans-words.4th
+\ ================= end of kForth specific defs =============================
 
-[undefined] ptr [IF] : ptr create 1 cells allot? ! does> a@ ; [THEN]
-\ ================= end of kForth specific defs ==============================
-
-CR .( FSL-UTIL          V1.3c          11 Sep 2021   EFC, KM )
+CR .( FSL-UTIL          V1.3d          21 Apr 2024   EFC, KM )
 BASE @ DECIMAL
 
-\ ================= compilation control ======================================
+\ ================= compilation control =====================================
 
 \ for control of conditional compilation of test code
 FALSE VALUE TEST-CODE?
@@ -103,11 +102,19 @@ TRUE CONSTANT HAS-MEMORY-WORDS?
 : fp-stack? [DEFINED] fdepth literal ;
 [THEN]
 
-\ =============================================================================
+\ ===========================================================================
 
 \ FSL NonANS words
 
 [undefined] s>f [IF] : s>f    S>D D>F ;  [THEN]
+[undefined] fsquare [IF] : fsquare fdup f* ; [THEN]
+[undefined] f+! [IF]
+fp-stack? [IF]
+  : f+! ( a -- ) ( F: r -- ) dup f@ f+ f! ;
+[ELSE]
+  : f+! ( r a -- ) dup >r f@ f+ r> f! ;
+[THEN]
+[THEN]
 
 \ The following has been superceded by use of KM's modules.4th
 
@@ -364,10 +371,13 @@ fp-stack? [IF]
 : DMATRIX ( size -- )  DARRAY ;
 
 \ word to fetch 2-D array addresses
-: }}  ( addr i j -- addr[i][j] ) 
-    >R >R
-    DUP [ 2 CELLS ] LITERAL - 2@     \ &a[0][0] size m
-    R> * R> + * + ;
+[UNDEFINED] }} [IF]
+cr .( Using FSL Forth source definition of }} ) cr
+    : }} ( addr i j -- addr[i][j] )
+       >R >R
+       DUP [ 2 CELLS ] LITERAL - 2@     \ &a[0][0] size m
+       R> * R> + * + ;
+[THEN]
 
 \ print nXm elements of a float 2-D array
 : }}fprint ( n m addr -- ) 
