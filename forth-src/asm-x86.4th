@@ -152,7 +152,7 @@ HEX
 
 \ Data definition words (also used for code generation)
 
-: db,  ( c -) >ASM @  SWAP OVER db!  CHAR+ >ASM ! ;
+: db,  ( c -) >ASM @  TUCK db!  CHAR+ >ASM ! ;
 : dw,  ( x -) DUP db, 8 RSHIFT db, ;
 : dd,  ( x -) 4 0 DO  DUP db, 8 RSHIFT  LOOP DROP ;
 : dc,  ( x -) MODE @ if dd, else dw, then ;
@@ -425,7 +425,7 @@ char W swap c!
     else
       SREG? DISP @ OR  OVER 7 AND 6 = OR ( [BP])
       if
-         DISP @ SWAP OVER
+         DISP @ TUCK
          SHORT? if 40 OR mod, db,  else 80 OR mod, dc,  then
       else ( zero & not seg) mod, then
     then
@@ -544,7 +544,7 @@ HEX
 \ MOVZX, MOVSX, -- zero extend / sign extend
 
 : MX ( n -) ( r/m reg -)
-  CREATE 2 allot? SWAP OVER C! 1+ C! DOES> (OPSIZ)
+  CREATE 2 allot? TUCK C! 1+ C! DOES> (OPSIZ)
   SRCSIZ @ 100 AND if ABORT" Attempt to extend a dword" then
   DUP CHAR+ C@ db,  C@ SRCSIZ @ OR db,
   2REGS? if SWAP R>M then  OR modDISP,
