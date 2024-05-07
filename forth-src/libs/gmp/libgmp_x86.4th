@@ -28,7 +28,6 @@ Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA 02111-1307 USA.
 )
 
-
 vocabulary gmp
 also gmp definitions
 
@@ -38,9 +37,11 @@ dup 0= [IF] check-lib-error [THEN]
 to hndl_GMP
 cr .( Opened the GMP library )
 
-[undefined] struct [IF] 
-s" struct.4th" included
-s" struct-ext.4th" included
+4 constant GMPVER
+
+[undefined] BEGIN-STRUCTURE [IF] 
+s" struct-200x.4th" included
+s" struct-200x-ext.4th" included
 [THEN]
 
 \ from /usr/include/gmp-i386.h
@@ -50,26 +51,23 @@ s" struct-ext.4th" included
 4 constant GMP_ERROR_SQRT_OF_NEGATIVE
 8 constant GMP_ERROR_INVALID_ARGUMENT
 
-struct
-	int:         mpz_struct->mp_alloc
-	int:         mpz_struct->mp_size
-	cell% field  mpz_struct->mp_d
-end-struct  mpz_struct%
+BEGIN-STRUCTURE mpz_struct%
+        +LFIELD      mpz_struct->mp_alloc
+        +LFIELD      mpz_struct->mp_size
+        field:       mpz_struct->mp_d
+END-STRUCTURE
 
+BEGIN-STRUCTURE mpq_struct%
+        mpz_struct%  +FIELD   mpq_struct->mp_num
+        mpz_struct%  +FIELD   mpq_struct->mp_den
+END-STRUCTURE
 
-struct
-	4 mpz_struct% %size field   mpq_struct->mp_num
-	4 mpz_struct% %size field   mpq_struct->mp_den
-end-struct  mpq_struct%
-
-
-struct
-	int:         mpf_struct->mp_prec
-	int:         mpf_struct->mp_size
-	int:         mpf_struct->mp_exp
-	cell% field  mpf_struct->mp_d
-end-struct  mpf_struct%
-
+BEGIN-STRUCTURE mpf_struct%
+        +LFIELD      mpf_struct->mp_prec
+        +LFIELD      mpf_struct->mp_size
+        +LFIELD      mpf_struct->mp_exp
+        field:       mpf_struct->mp_d
+END-STRUCTURE
 
 \ libgmp 5.0.1 functions
 
@@ -170,14 +168,18 @@ s" __gmpz_congruent_2exp_p" C-word  mpz_congruent_2exp_p ( a a n -- n )
 
 s" __gmpz_powm"       C-word  mpz_powm       ( a a a a -- )
 s" __gmpz_powm_ui"    C-word  mpz_powm_ui    ( a a n a -- )
-\ s" __gmpz_powm_sec"   C-word  mpz_powm_sec   ( a a a a -- ) \ only in 5.x
+GMPVER 4 > [IF]
+s" __gmpz_powm_sec"   C-word  mpz_powm_sec   ( a a a a -- ) \ only in 5.x
+[THEN]
 s" __gmpz_pow_ui"     C-word  mpz_pow_ui     ( a a n -- )
 s" __gmpz_ui_pow_ui"  C-word  mpz_ui_pow_ui  ( a n n -- )
 
 \ 5.8 Root extraction
 
 s" __gmpz_root"             C-word  mpz_root              ( a a n -- n )
+GMPVER 4 > [IF]
 s" __gmpz_rootrem"          C-word  mpz_rootrem           ( a a a n -- )
+[THEN]
 s" __gmpz_sqrt"             C-word  mpz_sqrt              ( a a -- )
 s" __gmpz_sqrtrem"          C-word  mpz_sqrtrem           ( a a a -- )
 s" __gmpz_perfect_power_p"  C-word  mpz_perfect_power_p   ( a -- n )
@@ -241,7 +243,9 @@ s" __gmpz_scan0"     C-word  mpz_scan0     ( a n -- n )
 s" __gmpz_scan1"     C-word  mpz_scan1     ( a n -- n )
 s" __gmpz_setbit"    C-word  mpz_setbit    ( a n -- )
 s" __gmpz_clrbit"    C-word  mpz_clrbit    ( a n -- )
+GMPVER 4 > [IF]
 s" __gmpz_combit"    C-word  mpz_combit    ( a n -- )
+[THEN]
 s" __gmpz_tstbit"    C-word  mpz_tstbit    ( a n -- n )
 
 \ 5.12 Input and output
@@ -442,10 +446,14 @@ s" __gmpf_random2"       C-word  mpf_random2       ( a n n -- )
 \ 9.1 Initialization
 
 s" __gmp_randinit_default"      C-word  gmp_randinit_default       ( a -- )
+GMPVER 4 > [IF]
 s" __gmp_randinit_mt"           C-word  gmp_randinit_mt            ( a -- )
+[THEN]
 s" __gmp_randinit_lc_2exp"      C-word  gmp_randinit_lc_2exp       ( a a n n -- )
 s" __gmp_randinit_lc_2exp_size" C-word  gmp_randinit_lc_2exp_size  ( a n -- n )
+GMPVER 4 > [IF]
 s" __gmp_randinit_set"          C-word  gmp_randinit_set           ( a a -- )
+[THEN]
 s" __gmp_randclear"             C-word  gmp_randclear              ( a -- )
 
 \ 9.2 Seeding
@@ -455,8 +463,10 @@ s" __gmp_randseed_ui"  C-word  gmp_randseed_ui  ( a n -- )
 
 \ 9.3 Miscellaneous
 
+GMPVER 4 > [IF]
 s" __gmp_urandomb_ui"  C-word  gmp_urandomb_ui  ( a n -- n )
 s" __gmp_urandomm_ui"  C-word  gmp_urandomm_ui  ( a n -- n )
+[THEN]
 
 \ 10 Formatted output
 
@@ -504,13 +514,9 @@ C-word mp_bits_per_limb bits_per_mp_limb -- n
 C-word /GMP-RANDSTATE sizeof_gmp_randstate -- n
 [THEN]
 
-: sizeof_mpz ( -- n ) mpz_struct% %size ;
-: sizeof_mpq ( -- n ) mpq_struct% %size ;
-: sizeof_mpf ( -- n ) mpf_struct% %size ;
-
-sizeof_mpz constant /MPZ
-sizeof_mpq constant /MPQ
-sizeof_mpf constant /MPF
+mpz_struct% constant /MPZ
+mpq_struct% constant /MPQ
+mpf_struct% constant /MPF
 
 also forth definitions
 
