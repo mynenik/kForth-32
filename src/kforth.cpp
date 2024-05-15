@@ -115,7 +115,9 @@ int main(int argc, char *argv[])
       SetForthInputStream(*pSS);
       ec = ForthCompiler (&op, &line_num);
       if (ec) {
-        PrintVM_Error(ec); exit(ec);
+        PrintVM_Error(ec);
+        delete pSS;	
+	exit(ec);
       }
       delete pSS; pSS = NULL;
       op.erase(op.begin(), op.end());
