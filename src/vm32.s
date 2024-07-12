@@ -2335,11 +2335,17 @@ L_utmslash:
 	cmpl $0, %ecx
 	jz   E_div_zero	
 	INC_DSP
-	movl (%ebx), %eax		# ut3
-	movl $0, %edx
-	divl %ecx			# ut3/u
-	cmpl $0, %eax
-	jnz  E_div_overflow
+#	movl (%ebx), %eax		# ut3
+#	movl $0, %edx
+	movl (%ebx), %edx               # ut3
+	movl WSIZE(%ebx), %eax          # ut2
+	divl %ecx			# ut3:ut2/u  INT 0 on overflow
+#	cmpl $0, %eax
+#	jnz  E_div_overflow
+	xor %edx, %edx
+	movl (%ebx), %eax
+	divl %ecx
+	xor %eax, %eax
 utmslash1:	
 	pushl %ebx			# keep local stack ptr
 	LDSP
