@@ -9,7 +9,7 @@
 \
 
 include ans-words
-include modules.fs
+include modules
 include syscalls
 include mc
 include asm

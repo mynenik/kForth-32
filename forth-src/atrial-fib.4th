@@ -50,7 +50,7 @@
 include ans-words
 include strings
 include ansi
-include modules.fs
+include modules
 include fsl/fsl-util
 
 \ === Memory utility words

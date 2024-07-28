@@ -13,7 +13,7 @@
 \   2012-05-03  km  Added statement: Also X11
 
 include ans-words
-include modules.fs
+include modules
 include syscalls
 include mc
 include asm

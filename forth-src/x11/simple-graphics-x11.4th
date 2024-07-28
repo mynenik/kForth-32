@@ -75,7 +75,7 @@
 \
 \ Requires:
 \   ans-words.4th
-\   modules.fs
+\   modules.4th
 \   syscalls.4th
 \   mc.4th
 \   asm.4th

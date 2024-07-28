@@ -61,7 +61,7 @@
 \      http://www.nist.gov/pml/data/asd.cfm
 
 include ans-words
-include modules.fs
+include modules
 include syscalls
 include mc
 include asm-x86

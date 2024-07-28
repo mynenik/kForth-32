@@ -46,7 +46,7 @@
 \   2017-07-26  km; first complete version.
  
 include ans-words
-include modules.fs
+include modules
 include syscalls
 include mc
 include asm-x86

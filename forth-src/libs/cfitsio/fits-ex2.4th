@@ -5,7 +5,7 @@
 \ [1] W. Pence, CFITSIO Quick Start Guide, January 2003, p.4.
 \
 include ans-words
-include modules.fs
+include modules
 include syscalls
 include mc
 include asm
