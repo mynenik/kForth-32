@@ -34,7 +34,7 @@ ptr curr_wcl
 s" libXft.so.2" open-lib        \ change if library name is different 
 dup 0= [IF] check-lib-error [THEN]
 to hndl_Xft
-cr .( Openend the Xft library )
+cr .( Opened the Xft library )
 
 include libs/x11/Xrender.4th
 include libs/x11/Xft.4th

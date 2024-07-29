@@ -30,7 +30,7 @@ include libs/x11/libX11
 
 Also X11
 true value  XK_MISCELLANY
-include keysymdef
+include libs/x11/keysymdef
 
 
 \ Handy utilities for calls to X drawing functions
