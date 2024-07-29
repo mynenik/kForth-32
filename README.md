@@ -1,7 +1,7 @@
 # kForth-32
 32-bit Forth System for x86-GNU/Linux
 
-Copyright &copy; 1998--2023 Krishna Myneni, <krishna.myneni@ccreweb.org>
+Copyright &copy; 1998--2024 Krishna Myneni, <krishna.myneni@ccreweb.org>
 
 ## LICENSE
 
@@ -33,12 +33,13 @@ To build:
 
 1. Unpack the files if you obtained them as a `.zip` or `.tar.gz` file.
 
-2. Change to the `kForth-32-branch/src/` directory, where "branch" is the project
-   branch, e.g. `master`, and type `make` to build the executables. A successful
+2. Change to the `kForth-32-<branch>/src/` directory, where *branch* is the project
+   branch e.g. `master`, and type `make` to build the executables. A successful
    build results in two executables, `kforth32` and `kforth32-fast`.
 
 3. Move the executables into the search path. It is recommended to move
-   the kForth-32 executables to `/usr/local/bin` . You must be root to do this.
+   the kForth-32 executables to `/usr/local/bin` . You must have superuser
+   privileges to do this.
 
 4. Specify the default directory in which kforth32 will search for Forth source
    files not found in the current directory. The environment variable `KFORTH_DIR`
@@ -61,7 +62,7 @@ different categories of Forth libraries or applications. These include:
 `system-test/`     A set of automated tests to validate the Forth system against
                    the Forth-2012 standard
 
-`fsl/`             modules from the Forth Scientific Library, including test code;
+`fsl/`             modules for numeric computation from the Forth Scientific Library, including test code;
                    also note the subdirs, `fsl/extras/` and `fsl/demo/`
 
 `games/`           console games written in Forth
@@ -70,7 +71,7 @@ different categories of Forth libraries or applications. These include:
                    as X11 the GNU Multiprecision Library, gmp, and the GNU
                    Multiprecision Floating-Point Library, mpfr.
 
-'x11/'             A collection of X11 utilities providing a simple interfaces
+`x11/`             A collection of X11 utilities providing a simple interfaces
                    for plotting, bitmap font handling and text rendering, and
                    a framework for X11 multi-page applications.
 
@@ -84,10 +85,12 @@ Important system-level files in the `forth-src/` subdirectory include,
 * `files.4th`       Standard Forth words for file i/o
 * `ansi.4th`        ANSI terminal control
 * `dump.4th`	    Forth `DUMP` utility
+* `ssd.4th`         Forth `SEE` utility
 * `asm-x86.4th`     32-bit x86 assembler ported to kForth-32
-* `modules.fs`      A framework for modular programming in Forth
+* `modules.4th`     A framework for modular programming in Forth
 * `serial.4th`      Low-level serial port interface       
 * `syscalls.4th`    Operating System calls
+* `signal.4th`      Signals interface -- see `signals-ex.4th` and `sigfpe.4th`
 * `socket.4th`      Sockets interface
 * `lib-interface.4th` High-level interface to shared object libraries.
 * `ttester.4th`     Test harness used by automated test code
