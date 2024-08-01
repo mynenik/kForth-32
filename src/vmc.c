@@ -3,7 +3,7 @@ vmc.c
 
   C portion of the kForth Virtual Machine
 
-  Copyright (c) 1998--2023 Krishna Myneni, 
+  Copyright (c) 1998--2024 Krishna Myneni, 
   <krishna.myneni@ccreweb.org>
 
   This software is provided under the terms of the GNU
@@ -70,6 +70,7 @@ int L_dnegate();
 int L_dplus();
 int L_dminus();
 int L_udmstar();
+int L_uddivmod();
 int L_utmslash();
 int L_quit();
 int L_abort();
@@ -613,13 +614,12 @@ int IsInt (char* token, long int* p)
 /* Check the string token to see if it is an integer number;
    if so set the value of *p and return True, otherwise return False. */
 
-  int b = FALSE, sign = FALSE;
+  int b = FALSE;
   unsigned long u = 0;
   char *pStr = token, *endp;
 
   if ((*pStr == '-') || isBaseDigit(*pStr))
     {
-      if (*pStr == '-') {sign = TRUE;}
       ++pStr;
       while (isBaseDigit(*pStr))	    
 	{

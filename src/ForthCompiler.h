@@ -1,6 +1,6 @@
 // ForthCompiler.h
 //
-// Copyright (c) 1998--2022 Krishna Myneni,
+// Copyright (c) 1998--2024 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -44,7 +44,7 @@ struct WordListEntry
 class WordList : public vector<WordListEntry*> 
 {
 public:
-   WordListEntry* GetFromName( char* );
+   WordListEntry* GetFromName( const char* );
    WordListEntry* GetFromCfa( void* );
    void RemoveLastWord( void );
 };
@@ -60,7 +60,7 @@ public:
 class SearchList : public vector<Vocabulary*>
 {
 public:
-   WordListEntry* LocateWord( char* );
+   WordListEntry* LocateWord( const char* );
    WordListEntry* LocateCfa( void*  );
 };
 
