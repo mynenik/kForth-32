@@ -21,7 +21,7 @@
 \    https://people.eecs.berkeley.edu/~wkahan/ieee754status/IEEE754.PDF
 
 include ans-words
-include modules.fs
+include modules
 include syscalls
 include mc
 include asm-x86

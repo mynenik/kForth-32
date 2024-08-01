@@ -6,10 +6,10 @@
 \
 \ Requires: ans-words.4th
 
-include modules.fs
-include syscalls.4th
-include mc.4th
-include asm-x86.4th
+include modules
+include syscalls
+include mc
+include asm-x86
 include dump
 
 : SEE-CODE ( "name" -- ) ' >MC-Code 256 DUMP ;
