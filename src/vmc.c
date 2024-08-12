@@ -524,13 +524,15 @@ int C_accept ()
   return 0;
 }
 /*----------------------------------------------------------*/
-
-void strupr (char* p)
+#ifndef _WIN32_
+char* strupr (char* p)
 {
 /* convert string to upper case  */
-
-  while (*p) {*p = toupper(*p); ++p;}
+  char* cp = p;
+  while (*cp) {*cp = toupper(*cp); ++cp;}
+  return p;
 }
+#endif
 
 char* ExtractName (char* str, char* name)
 {
