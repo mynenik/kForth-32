@@ -44,20 +44,26 @@
 \
 \ Revisions:
 \   2017-07-26  km; first complete version.
- 
+\   2024-08-11  km; fix to run under 64-bit kForth also
 include ans-words
 include modules
+1 cells 4 = [IF]
 include syscalls
 include mc
 include asm-x86
 include fpu-x86
+[THEN]
 include strings
 include fsl/fsl-util
 include fsl/dynmem
 include fsl/complex
 include fsl/quadratic
 include fsl/polrat
+1 cells 4 = [IF]
 include fsl/extras/numerov_x86
+[ELSE]
+include fsl/extras/numerov
+[THEN]
 include fsl/extras/find
 include fsl/extras/read_xyfile
 include fsl/extras/array-utils0

@@ -42,8 +42,9 @@
 \                  convergence.
 \   2017-07-25 km  fp number formatting and output words moved
 \                  to strings.4th and renamed.
+\   2024-08-11 km  fix to run under 64-bit kForth also.
 \
-\ Copyright (c) 2012--2017 Krishna Myneni, http://ccreweb.org
+\ Copyright (c) 2012--2024 Krishna Myneni, http://ccreweb.org
 \
 \ This code may be used for any purpose as long as the copyright
 \ notice above is preserved.
@@ -62,17 +63,23 @@
 
 include ans-words
 include modules
+1 cells 4 = [IF]
 include syscalls
 include mc
 include asm-x86
 include fpu-x86
+[THEN]
 include strings
 include fsl/fsl-util
 include fsl/dynmem
 include fsl/complex
 include fsl/quadratic
 include fsl/polrat
+1 cells 4 = [IF]
 include fsl/extras/numerov_x86
+[ELSE]
+include fsl/extras/numerov
+[THEN]
 include fsl/extras/find
 include fsl/extras/read_xyfile
 include fsl/extras/array-utils0
@@ -200,7 +207,6 @@ fvariable E1_last
 : he-scf ( n -- )
     & V_mesh{ Nmesh @ }malloc
     alloc-aux-arrays
-
     \ Find the one-electron energy in the nuclear potential
     mu1 set-particle-mass
     Nmesh @ V_mesh{ }fzero

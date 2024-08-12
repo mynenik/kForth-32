@@ -138,8 +138,7 @@ Public:
       Nmesh ! to Vt{ to r{
       r> s>f
       Nmesh @ 0 DO
-        fdup r{ I } F@ fsquare F/
-        Vt{ I } F@ F+ Vt{ I } F!
+        fdup r{ I } F@ fsquare F/ Vt{ I } F+!
       LOOP
       fdrop
     ELSE
