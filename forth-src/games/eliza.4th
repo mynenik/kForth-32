@@ -29,9 +29,10 @@
 
 \ =====End of defs for ANS Forth============
 
-\ The following files are available for ANS Forths as well
-include strings.4th    
-include ansi.4th
+include ans-words
+include strings    
+include ansi
+include utils
 
 DECIMAL
 
@@ -51,25 +52,6 @@ DECIMAL
 : substitute ( a1 u1 a2 u2 a3 u3 -- | substitute string a2 u2 for a1 u1
 	in string a3 u3 )
 	2ROT SEARCH IF DROP SWAP CMOVE ELSE 2DROP 2DROP THEN ;
-
-: $table ( a1 u1 a2 u2 ... an un n umax -- | create a string table )
-	CREATE  2DUP * 1 CELLS + ?allot 2DUP ! 
-	  1 CELLS + >R 2DUP SWAP 1- * R> + 
-	  SWAP ROT  
-	  0 ?DO  
-	    2>R  R@  1-  MIN  DUP  2R@  DROP  C!
-	    2R@  DROP  1+  SWAP  CMOVE
-	    2R>  DUP >R  -  R>
-	  LOOP 2DROP
-	DOES>  ( n a -- an un) 
-	  DUP @ ROT * + 1 CELLS + COUNT ;  	
-
-: pack ( a u a2 -- | copy string to counted string at a2)
-	2DUP C! 1+ SWAP CMOVE ;	
-
-: $constant  ( a u -- | create a string constant )
-	CREATE  256 ?allot pack
-	DOES>   COUNT ;  \ execution: ( -- a' u )
 
 : choose ( n -- n' | arbitrarily choose a number between 0 and n-1)
 	1- TIME&DATE 2DROP DROP XOR XOR * 60 / ;
@@ -119,23 +101,23 @@ variable echo
 
 
 
-S" Please do not repeat yourself."	$constant  Notrepeat$
-S" GOODBYE"				$constant  Goodbye$
-S" Ok, hope to see you again."	 	$constant  Farewell$
-S" Hello..."				$constant  Hello$
-S" The doctor is in..please stand by."	$constant  Doctorin$
-S" Welcome to my shrinker's office."   	$constant  Session$
+S" Please do not repeat yourself."	2constant  Notrepeat$
+S" GOODBYE"				2constant  Goodbye$
+S" Ok, hope to see you again."	 	2constant  Farewell$
+S" Hello..."				2constant  Hello$
+S" The doctor is in..please stand by."	2constant  Doctorin$
+S" Welcome to my shrinker's office."   	2constant  Session$
 
-S" ARE YOU"				$constant  Areyou$	
-S" are_you"				$constant  Are_you$	
-S" YOU ARE"				$constant  Youare$  	
-S" you_are"				$constant  You_are$
-S" AM I"				$constant  AmI$
-S" am_I"				$constant  Am_I$
-S" I AM"				$constant  Iam$
-S" I_am"				$constant  I_am$
-S" YOU"					$constant  YOU$
-S" MY"					$constant  my$
+S" ARE YOU"				2constant  Areyou$	
+S" are_you"				2constant  Are_you$	
+S" YOU ARE"				2constant  Youare$  	
+S" you_are"				2constant  You_are$
+S" AM I"				2constant  AmI$
+S" am_I"				2constant  Am_I$
+S" I AM"				2constant  Iam$
+S" I_am"				2constant  I_am$
+S" YOU"					2constant  YOU$
+S" MY"					2constant  my$
 
 
 S" What does that suggest to you?"
@@ -266,7 +248,7 @@ S" I think perhaps worries about your* are bothering you"
 
 
 : next-word  ( -- a u )	
-	^old COUNT parse_token strpck
+	^old COUNT parse-token strpck
 	-ROT ^old pack COUNT ;
 
 : conjugated					\ <addr><u> -- <adr><u>
