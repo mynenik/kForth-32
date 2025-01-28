@@ -2,7 +2,7 @@
 //
 // The assembler portion of kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2023 Krishna Myneni,
+// Copyright (c) 1998--2025 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -427,12 +427,10 @@
 vm:	
         pushl %ebp
         pushl %ebx
-        pushl %ecx
-        pushl %edx
 	pushl GlobalIp
 	pushl vmEntryRp
         movl %esp, %ebp
-        movl 28(%ebp), %ebp     # load the Forth instruction pointer
+        movl 20(%ebp), %ebp     # load the Forth instruction pointer
         movl %ebp, GlobalIp
 	movl GlobalRp, %eax
 	movl %eax, vmEntryRp
@@ -454,8 +452,6 @@ exitloop:
 vmexit:
 	pop vmEntryRp
 	pop GlobalIp
-        pop %edx
-        pop %ecx
         pop %ebx
         pop %ebp
         ret
@@ -490,6 +486,56 @@ retexit:
 #	movl %ecx, (%ebx)
 #	ret
 #
+
+L_vmthrow:      # throw VM error (used as default exception handler)
+        LDSP
+        INC_DSP
+        INC_DTSP
+        movl (%ebx), %eax
+        STSP
+        ret
+
+L_base:
+        LDSP
+        movl $Base, (%ebx)
+        DEC_DSP
+        STSP
+        STD_ADDR
+        NEXT
+
+L_precision:
+        LDSP
+        movl Precision, %ecx
+        movl %ecx, (%ebx)
+        DEC_DSP
+        STSP
+        STD_IVAL
+        NEXT
+
+L_false:
+        LDSP
+        movl $FALSE, (%ebx)
+        DEC_DSP
+        STSP
+        STD_IVAL
+        NEXT
+
+L_true:
+        LDSP
+        movl $TRUE, (%ebx)
+        DEC_DSP
+        STSP
+        STD_IVAL
+        NEXT
+
+L_bl:
+        LDSP
+        movl $32, (%ebx)
+        DEC_DSP
+        STSP
+        STD_IVAL
+        NEXT
+
 # For precision delays, use US or MS instead of USLEEP
 # Use USLEEP when task can be put to sleep and reawakened by OS
 #
@@ -1890,6 +1936,22 @@ L_add:
         xor %eax, %eax
         NEXT
 
+L_mul:
+        LDSP
+        movl $WSIZE, %ecx
+        addl %ecx, %ebx
+        STSP
+        movl (%ebx), %eax
+        addl %ecx, %ebx
+        imull (%ebx)
+        movl %eax, (%ebx)
+   .ifdef __FAST__
+        subl %ecx, %ebx
+   .endif
+        INC_DTSP
+        xorl %eax, %eax
+        NEXT
+
 L_starplus:
         LDSP
         INC_DSP
@@ -2036,16 +2098,19 @@ dabs_go:
 L_dnegate:
         LDSP
 	DNEGATE
-#	NEXT	
+        STSP	
 	ret
 
 L_dplus:
+        LDSP
 	DPLUS
-#	NEXT
+        STSP
         ret
 
 L_dminus:
+        LDSP
 	DMINUS
+        STSP
 	ret
 
 L_umstar:
@@ -2170,6 +2235,7 @@ L_mstar:
 L_mplus:
 	STOD
 	DPLUS
+        STSP
 	NEXT
 
 L_mslash:
@@ -2717,6 +2783,80 @@ L_pi:
         movb $OP_IVAL, (%ebx)
         decl %ebx
         movl %ebx, GlobalTp
+        NEXT
+
+L_fatan2:
+        LDSP
+        addl $2*WSIZE, %ebx
+        fldl WSIZE(%ebx)
+        fldl -WSIZE(%ebx)
+        fpatan
+        fstpl WSIZE(%ebx)
+        STSP
+        INC2_DTSP
+        NEXT
+
+L_fadd:
+        LDSP
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        fldl (%ebx)
+        sall $1, %eax
+        addl %eax, %ebx
+        faddl (%ebx)
+        fstpl (%ebx)
+        DEC_DSP
+        STSP
+        INC2_DTSP
+        xorl %eax, %eax
+        NEXT
+
+L_fsub:
+        LDSP
+        movl $3*WSIZE, %eax
+        addl %eax, %ebx
+        fldl (%ebx)
+        subl $WSIZE, %eax
+        subl %eax, %ebx
+        fsubl (%ebx)
+        addl %eax, %ebx
+        fstpl (%ebx)
+        DEC_DSP
+        STSP
+        INC2_DTSP
+        xorl %eax, %eax
+        NEXT
+
+L_fmul:
+        LDSP
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        fldl (%ebx)
+        addl %eax, %ebx
+        movl %ebx, %ecx
+        addl %eax, %ebx
+        fmull (%ebx)
+        fstpl (%ebx)
+        movl %ecx, %ebx
+        STSP
+        INC2_DTSP
+        xorl %eax, %eax
+        NEXT
+
+L_fdiv:
+        LDSP
+        movl $WSIZE, %eax
+        addl %eax, %ebx
+        fldl (%ebx)
+        addl %eax, %ebx
+        movl %ebx, %ecx
+        addl %eax, %ebx
+        fdivrl (%ebx)
+        fstpl (%ebx)
+        movl %ecx, %ebx
+        STSP
+        INC2_DTSP
+        xorl %eax, %eax
         NEXT
 
 L_fplusstore:
