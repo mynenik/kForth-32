@@ -311,22 +311,22 @@
 .global vm
 	.type	vm,@function
 vm:	
-        pushl %ebp
-        pushl %ebx
+        push  %ebp
+        push  %ebx
 	pushl GlobalIp
 	pushl vmEntryRp
-        movl %esp, %ebp
+        mov  %esp, %ebp
         movl 20(%ebp), %ebp     # load the Forth instruction pointer
         movl %ebp, GlobalIp
 	movl GlobalRp, %eax
 	movl %eax, vmEntryRp
-	xor %eax, %eax
+	xor  %eax, %eax
 	LDSP
 next:
         movb (%ebp), %al         # get the opcode
 	movl JumpTable(,%eax,4), %ecx	# machine code address of word
-	xor %eax, %eax          # clear error code
-	call *%ecx		# call the word
+	xor  %eax, %eax          # clear error code
+	call *%ecx		 # call the word
 	LDSP
 	movl GlobalIp, %ebp
 	incl %ebp		 # increment the Forth instruction ptr
@@ -347,7 +347,7 @@ vmexit:
 L_ret:
 	movl vmEntryRp, %eax		# Return Stack Ptr on entry to VM
 	movl GlobalRp, %ecx
-	cmpl %eax, %ecx
+	cmp  %eax, %ecx
 	jl ret1
         movl $OP_RET, %eax             # exhausted the return stack so exit vm
         ret
@@ -356,7 +356,7 @@ ret1:
         movl %ecx, GlobalRp
 ret2:   movl (%ecx), %eax
 	movl %eax, GlobalIp		# reset the instruction ptr
-        xorl %eax, %eax
+        xor  %eax, %eax
 retexit:
         ret
 
@@ -474,20 +474,18 @@ L_ms:
 	ret
 
 L_fill:
-	SWAP
-	movl $WSIZE, %eax
-	add  %eax, %ebx
+        DROP
+	movl WSIZE(%ebx), %ecx
+	push %ecx         # byte count
 	movl (%ebx), %ecx
-	push %ecx
-	add  %eax, %ebx
-	movl (%ebx), %ecx
-	push %ecx
-	add  %eax, %ebx
-	STSP
+	push %ecx         # fill byte
+	DROP
+	DROP
 	movl (%ebx), %ecx
 	push %ecx
 	call memset
 	addl $3*WSIZE, %esp
+        STSP
 	xor  %eax, %eax
 fillexit:	
 	ret

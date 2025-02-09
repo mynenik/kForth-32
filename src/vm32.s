@@ -24,7 +24,6 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro SWAP
-#        LDSP
         mov %ebx, %edx
         INC_DSP
 	movl (%ebx), %eax
@@ -49,11 +48,9 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro OVER
-#        LDSP
         movl 2*WSIZE(%ebx), %ecx
         movl %ecx, (%ebx)
 	DEC_DSP
-#	STSP
 # begin ts
         movl GlobalTp, %ecx
         movb 2(%ecx), %al
@@ -75,7 +72,6 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro FDUP
-#	LDSP
 	mov %ebx, %ecx
 	INC_DSP
 	movl (%ebx), %edx
@@ -86,7 +82,6 @@
 	DEC_DSP
 	movl %edx, (%ebx)
 	DEC_DSP
-#	STSP
         mov  %ebx, %edx
 # begin ts
 	movl GlobalTp, %ebx
@@ -113,7 +108,6 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro FSWAP
-#	LDSP
 	movl $WSIZE, %ecx
 	add  %ecx, %ebx
 	movl (%ebx), %edx
@@ -147,7 +141,6 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro FOVER
-#	LDSP
 	mov  %ebx, %ecx
 	addl $3*WSIZE, %ebx
 	movl (%ebx), %edx
@@ -178,10 +171,8 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro PUSH_R
-#     	 LDSP
 	movl $WSIZE, %eax
 	add  %eax, %ebx	
-#        STSP
 	movl (%ebx), %ecx
 	movl GlobalRp, %edx
 	movl %ecx, (%edx)
@@ -211,7 +202,6 @@
 	add  %eax, %edx
 	movl %edx, GlobalRp
 	movl (%edx), %ecx
-#       LDSP
 	movl %ecx, (%ebx)
 	sub  %eax, %ebx
 	mov  %ebx, %ecx    # save DSP
@@ -252,10 +242,8 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP	
 .macro LOGIC_DYADIC op
-#	LDSP
 	movl $WSIZE, %eax
 	add %eax, %ebx
-#	STSP
 	movl (%ebx), %eax
         \op %eax, WSIZE(%ebx)
 # begin ts
@@ -284,10 +272,8 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro REL_DYADIC setx
-#	LDSP
 	movl $WSIZE, %ecx
 	add  %ecx, %ebx
-#	STSP
 	movl (%ebx), %eax
 	add  %ecx, %ebx
 	cmpl %eax, (%ebx)
@@ -329,13 +315,11 @@
 // In: none
 // Out: eax = 0
 .macro FREL_DYADIC logic arg set
-#	LDSP
 	movl $WSIZE, %ecx
 	add  %ecx, %ebx
 	fldl (%ebx)
 	add  %ecx, %ebx
 	add  %ecx, %ebx
-#	STSP
 	fcompl (%ebx)
 	fnstsw %ax
 	andb $65, %ah
@@ -360,7 +344,6 @@
 // In: none
 // Out: eax = 0
 .macro DLT
-#	LDSP
 	movl $WSIZE, %ecx
 	xor  %edx, %edx
 	add  %ecx, %ebx
@@ -371,7 +354,6 @@
 	add  %ecx, %ebx
 	movl (%ebx), %eax
 	add  %ecx, %ebx
-#	STSP
 	add  %ecx, %ebx
 	cmpl %eax, (%ebx)
 	setb %al
@@ -397,7 +379,6 @@
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro DGT
-#	LDSP
 	movl $WSIZE, %ecx
 	xor  %edx, %edx
 	add  %ecx, %ebx
@@ -408,7 +389,6 @@
 	add  %ecx, %ebx
 	movl (%ebx), %eax
 	add  %ecx, %ebx
-#	STSP
 	add  %ecx, %ebx
 	cmpl %eax, (%ebx)
 	setb %al
@@ -436,11 +416,9 @@
         DUP
         REL_ZERO setz
         SWAP
-#        LDSP
         movl $TRUE, (%ebx)
         DEC_DSP
         DEC_DTSP
-#        STSP
         REL_DYADIC sete
         _OR
 .endm
@@ -450,10 +428,8 @@
 // Out: eax = 0, ebx = DSP
 .macro TWO_BOOLEANS
         TWO_DUP
-#        LDSP
         BOOLEAN_QUERY
         SWAP
-#        LDSP
         BOOLEAN_QUERY
         _AND
 .endm
@@ -462,7 +438,6 @@
 // In: ebx = DSP
 // Out: ebx = DSP
 .macro  CHECK_BOOLEAN
-#       LDSP
         DROP
         cmpl $TRUE, (%ebx)
         jnz E_arg_type_mismatch
@@ -474,23 +449,23 @@
 .global vm
 	.type	vm,@function
 vm:	
-        pushl %ebp
-        pushl %ebx
+        push  %ebp
+        push  %ebx
 	pushl GlobalIp
 	pushl vmEntryRp
-        movl %esp, %ebp
-        movl 20(%ebp), %ebp     # load the Forth instruction pointer
-        movl %ebp, GlobalIp
-	movl GlobalRp, %eax
-	movl %eax, vmEntryRp
-	xor %eax, %eax
+        mov   %esp, %ebp
+        movl  20(%ebp), %ebp     # load the Forth instruction pointer
+        movl  %ebp, GlobalIp
+	movl  GlobalRp, %eax
+	movl  %eax, vmEntryRp
+	xor   %eax, %eax
 next:
         movb (%ebp), %al         # get the opcode
 	movl JumpTable(,%eax,4), %ebx	# machine code address of word
-	xor %eax, %eax           # clear error code
+	xor  %eax, %eax          # clear error code
 	call *%ebx		 # call the word
 	movl GlobalIp, %ebp      # resync ip (possibly changed in call)
-	incl %ebp		 # increment the Forth instruction ptr
+	inc  %ebp		 # increment the Forth instruction ptr
 	movl %ebp, GlobalIp
 	cmpl $0, %eax		 # check for error
 	jz next        
@@ -508,7 +483,7 @@ vmexit:
 L_ret:
 	movl vmEntryRp, %eax		# Return Stack Ptr on entry to VM
 	movl GlobalRp, %ecx
-	cmpl %eax, %ecx
+	cmp  %eax, %ecx
 	jl ret1
         movl $OP_RET, %eax             # exhausted the return stack so exit vm
         ret
@@ -522,7 +497,7 @@ ret1:
         jnz  E_ret_stk_corrupt
 	movl (%ecx), %eax
 	movl %eax, GlobalIp		# reset the instruction ptr
-        xor %eax, %eax
+        xor  %eax, %eax
 retexit:
         ret
 
@@ -552,13 +527,11 @@ jz1:    mov  %ebp, %ecx
         dec  %eax
         add  %eax, %ebp
         xor  %eax, %eax
-        
         NEXT
 
 L_vmthrow:      # throw VM error (used as default exception handler)
         LDSP
-        INC_DSP
-        INC_DTSP
+        DROP
         movl (%ebx), %eax
         STSP
         ret
@@ -663,32 +636,25 @@ L_ms:
 
 L_fill:
         LDSP
-	SWAP
-	movl $WSIZE, %eax
-	add  %eax, %ebx
-	INC_DTSP
+	DROP
+	movl WSIZE(%ebx), %ecx
+	push %ecx         # byte count
 	movl (%ebx), %ecx
-	push %ecx
-	add  %eax, %ebx
-	INC_DTSP
-	movl (%ebx), %ecx
-	push %ecx
-	add  %eax, %ebx
-	INC_DTSP
-        STSP
-	movl GlobalTp, %ebx
-	movb (%ebx), %al
+	push %ecx         # fill byte
+	DROP
+	movl GlobalTp, %edx
+        inc %edx
+	movb (%edx), %al
 	cmpb $OP_ADDR, %al
 	jz fill2
-	pop %ebx
-	pop %ebx
-	movl $E_NOT_ADDR, %eax
-	jmp fillexit
-fill2:	LDSP
+	addl $2*WSIZE, %esp
+	jmp E_not_addr
+fill2:	DROP
 	movl (%ebx), %eax
 	push %eax
-	call memset
-	addl $12, %esp
+	call memset   
+	addl $3*WSIZE, %esp
+        STSP
 	xor %eax, %eax
 fillexit:	
 	ret
@@ -854,13 +820,13 @@ L_call:
 	DROP
         STSP
 	jmpl *(%ebx)
-	ret
 
 L_push_r:
         LDSP
 	PUSH_R
         STSP
         NEXT
+
 L_pop_r:
         LDSP
 	POP_R
@@ -1010,6 +976,7 @@ L_rfetch:
         DEC_DTSP
         xor %eax, %eax
 	NEXT
+
 L_tworfetch:
 	movl GlobalRp, %ebx
 	addl $WSIZE, %ebx
@@ -1033,6 +1000,7 @@ L_tworfetch:
 	movl %ebx, GlobalTp
 	xor %eax, %eax				
 	NEXT
+
 L_rpfetch:
 	LDSP
 	movl GlobalRp, %eax
@@ -1046,6 +1014,7 @@ L_rpfetch:
 	movl %ebx, GlobalTp
 	xor %eax, %eax
 	NEXT
+
 L_spfetch:
 	movl GlobalSp, %eax
 	movl %eax, %ebx
@@ -1059,6 +1028,7 @@ L_spfetch:
 	movl %ebx, GlobalTp
 	xor %eax, %eax 
 	NEXT
+
 L_i:
         movl GlobalRtp, %ebx
         movb 3(%ebx), %al
@@ -1075,6 +1045,7 @@ L_i:
 	STSP
         xor %eax, %eax
         NEXT
+
 L_j:
         movl GlobalRtp, %ebx
         movb 6(%ebx), %al
