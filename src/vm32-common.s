@@ -255,10 +255,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 // In/Out: ebx = DSP
 .macro DROP                     # increment DSP by 1 cell
         INC_DSP
-  .ifndef __FAST__
-	STSP
 	INC_DTSP
-  .endif
 .endm
 
 // Regs: eax, ebx, ecx
@@ -268,13 +265,12 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
         movl %ecx, (%ebx)
 	DEC_DSP
   .ifndef __FAST__
-	STSP
         movl GlobalTp, %ecx
         movb 1(%ecx), %al
         movb %al, (%ecx)
 	xorl %eax, %eax
-        DEC_DTSP
    .endif
+        DEC_DTSP
 .endm
 
 // Regs: none
@@ -496,26 +492,6 @@ L_abort:
   .endif
 	jmp L_quit
 
-L_jz:
-  .ifndef __FAST__
-        LDSP
-  .endif
-	DROP
-        movl (%ebx), %eax
-        cmpl $0, %eax
-        jz jz1
-	movl $4, %eax
-        addl %eax, %ebp       # do not jump
-	xorl %eax, %eax
-        NEXT
-jz1:    movl %ebp, %ecx
-        incl %ecx
-        movl (%ecx), %eax       # get the relative jump count
-        decl %eax
-        addl %eax, %ebp
-	xorl %eax, %eax
-        NEXT
-
 L_jnz:				# not implemented
 	ret
 
@@ -549,15 +525,6 @@ L_hex:
 	movl $16, (%ecx)
 	NEXT
 
-L_setprecision:
-  .ifndef __FAST__
-	LDSP
-  .endif
-	DROP
-	movl (%ebx), %ecx
-	movl %ecx, Precision
-	NEXT
-
 L_cellplus:
   .ifndef __FAST__
 	LDSP
@@ -585,21 +552,6 @@ L_dfloats:
   .endif
 	sall $3, WSIZE(%ebx)
 	NEXT
-
-L_dup:
-  .ifndef __FAST__
-	LDSP
-  .endif
-	DUP
-        NEXT
-
-L_drop:
-  .ifndef __FAST__
-	LDSP
-  .endif
-        DROP
-        NEXT
-
 L_inc:
   .ifndef __FAST__
 	LDSP
@@ -620,34 +572,6 @@ L_neg:
   .endif
 	negl WSIZE(%ebx)
         NEXT
-
-L_lshift:
-  .ifndef __FAST__
-	LDSP
-  .endif
-	DROP
-	movl (%ebx), %ecx
-	cmp $MAX_SHIFT_COUNT, %ecx
-        jbe lshift1
-        movl $0, WSIZE(%ebx)
-        NEXT 
-lshift1:
-	shll %cl, WSIZE(%ebx)
-	NEXT
-
-L_rshift:
-  .ifndef __FAST__
-	LDSP
-  .endif
-	DROP
-	movl (%ebx), %ecx
-	cmp $MAX_SHIFT_COUNT, %ecx
-	jbe rshift1
-	movl $0, WSIZE(%ebx)
-	NEXT
-rshift1:
-	shrl %cl, WSIZE(%ebx)
-	NEXT
 
 L_twoplus:
   .ifndef __FAST__
@@ -679,24 +603,6 @@ L_twodiv:
 	sarl $1, WSIZE(%ebx)
 	NEXT
 
-L_sub:
-  .ifndef __FAST__
-	LDSP
-  .endif
-	DROP         # result will have type of first operand
-	movl (%ebx), %eax
-	subl %eax, WSIZE(%ebx)	
-        xorl %eax, %eax
-        NEXT
-
-L_stod:
-  .ifndef __FAST__
-        LDSP
-  .endif
-	STOD
-        STSP
-	NEXT
-
 L_fabs:
   .ifndef __FAST__
 	LDSP
@@ -705,6 +611,7 @@ L_fabs:
         fabs
         fstpl WSIZE(%ebx)
         NEXT
+
 L_fneg:
   .ifndef __FAST__
         LDSP

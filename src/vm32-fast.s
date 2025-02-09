@@ -360,6 +360,23 @@ ret2:   movl (%ecx), %eax
 retexit:
         ret
 
+L_jz:
+        DROP
+        movl (%ebx), %eax
+        cmpl $0, %eax
+        jz jz1
+        movl $4, %eax
+        addl %eax, %ebp       # do not jump
+        xorl %eax, %eax
+        NEXT
+jz1:    movl %ebp, %ecx
+        incl %ecx
+        movl (%ecx), %eax       # get the relative jump count
+        decl %eax
+        addl %eax, %ebp
+        xorl %eax, %eax
+        NEXT
+
 L_tobody:
 	INC_DSP
 	movl (%ebx), %ecx	# code address
@@ -387,6 +404,12 @@ L_precision:
         DEC_DSP
         NEXT
 
+L_setprecision:
+        DROP
+        movl (%ebx), %ecx
+        movl %ecx, Precision
+        NEXT
+
 L_false:
         movl $FALSE, (%ebx)
         DEC_DSP
@@ -402,21 +425,44 @@ L_bl:
         DEC_DSP
         NEXT
 
+L_lshift:
+        DROP
+        movl (%ebx), %ecx
+        cmp $MAX_SHIFT_COUNT, %ecx
+        jbe lshift1
+        movl $0, WSIZE(%ebx)
+        NEXT
+lshift1:
+        shll %cl, WSIZE(%ebx)
+        NEXT
+
+L_rshift:
+        DROP
+        movl (%ebx), %ecx
+        cmp $MAX_SHIFT_COUNT, %ecx
+        jbe rshift1
+        movl $0, WSIZE(%ebx)
+        NEXT
+rshift1:
+        shrl %cl, WSIZE(%ebx)
+        NEXT
+
+
 #
 # For precision delays, use MS instead of USLEEP
 # Use USLEEP when task can be put to sleep and reawakened by OS
 #
 L_usleep:
 	movl $WSIZE, %eax
-	addl %eax, %ebx
-	pushl %ebx
+	add  %eax, %ebx
+	push %ebx
 	movl (%ebx), %eax
-	pushl %eax
+	push %eax
 	call usleep
-	popl %eax
-	popl %ebx
+	pop  %eax
+	pop  %ebx
 	STSP
-	xorl %eax, %eax
+	xor  %eax, %eax
 	ret
 
 L_ms:
@@ -430,19 +476,19 @@ L_ms:
 L_fill:
 	SWAP
 	movl $WSIZE, %eax
-	addl %eax, %ebx
+	add  %eax, %ebx
 	movl (%ebx), %ecx
-	pushl %ecx
-	addl %eax, %ebx
+	push %ecx
+	add  %eax, %ebx
 	movl (%ebx), %ecx
-	pushl %ecx
-	addl %eax, %ebx
+	push %ecx
+	add  %eax, %ebx
 	STSP
 	movl (%ebx), %ecx
-	pushl %ecx
+	push %ecx
 	call memset
 	addl $3*WSIZE, %esp
-	xorl %eax, %eax
+	xor  %eax, %eax
 fillexit:	
 	ret
 
@@ -461,16 +507,16 @@ L_blank:
 L_move:
         INC_DSP
         movl (%ebx), %eax
-        pushl %eax
+        push  %eax
         INC_DSP
         movl WSIZE(%ebx), %eax
-        pushl %eax
+        push  %eax
         movl (%ebx), %eax
-        pushl %eax
+        push  %eax
         DROP
         call memmove
         addl $3*WSIZE, %esp
-        xorl %eax, %eax
+        xor  %eax, %eax
         NEXT
 
 L_cmove:
@@ -779,25 +825,12 @@ L_count:
 	NEXT
 
 L_ival:
-        movl %ebp, %ecx
-        incl %ecx
-        movl (%ecx), %eax
-	addl $WSIZE-1, %ecx
-	movl %ecx, %ebp
-	movl %eax, (%ebx)
-	DEC_DSP
-	xorl %eax, %eax
-	NEXT
-
 L_addr:
-	movl %ebp, %ecx
-	incl %ecx
-	movl (%ecx), %eax
-	addl $WSIZE-1, %ecx
-	movl %ecx, %ebp
-	movl %eax, (%ebx)
+        inc %ebp
+        movl (%ebp), %ecx
+        addl $WSIZE-1, %ebp
+	movl %ecx, (%ebx)
 	DEC_DSP
-	xorl %eax, %eax
 	NEXT
 
 L_ptr:
@@ -942,20 +975,19 @@ L_deq:
 	INC_DSP
 	movl (%ebx), %ecx
 	INC_DSP
-	STSP
 	movl (%ebx), %eax
 	subl %edx, %eax
 	INC_DSP
 	movl (%ebx), %edx
-	subl %ecx, %edx
-	orl %edx, %eax
+	sub  %ecx, %edx
+	or   %edx, %eax
 	cmpl $0, %eax
 	movl $0, %eax
 	setz %al
-	negl %eax
+	neg  %eax
 	movl %eax, (%ebx)
-	LDSP
-	xorl %eax, %eax
+	DEC_DSP
+	xor %eax, %eax
 	NEXT
 
 L_dzeroeq:
@@ -1019,6 +1051,14 @@ L_querydup:
 	xorl %eax, %eax
 L_querydupexit:
 	NEXT
+
+L_dup:
+        DUP
+        NEXT 
+
+L_drop:
+        DROP
+        NEXT 
 
 L_swap:
 	SWAP
@@ -1145,7 +1185,7 @@ L_f2dup:
 	NEXT
 
 L_2dup:
-	FDUP
+	TWO_DUP
         NEXT
 
 L_2swap:
@@ -1335,6 +1375,10 @@ minexit:
 	xorl %eax, %eax
         NEXT
 
+L_stod:
+        STOD
+        NEXT
+
 L_dmax:
 	FOVER
 	FOVER
@@ -1399,9 +1443,27 @@ L_dtwodiv:
 
 L_add:
 	movl $WSIZE, %eax
-	addl %eax, %ebx
+	add  %eax, %ebx
 	movl (%ebx), %eax
 	addl %eax, WSIZE(%ebx)
+        xor  %eax, %eax
+        NEXT
+
+L_sub:
+        DROP         
+        movl (%ebx), %eax
+        subl %eax, WSIZE(%ebx)
+        xor  %eax, %eax
+        NEXT
+
+L_mul:
+        movl $WSIZE, %ecx
+        addl %ecx, %ebx
+        movl (%ebx), %eax
+        addl %ecx, %ebx
+        imull (%ebx)
+        movl %eax, (%ebx)
+        subl %ecx, %ebx
         xorl %eax, %eax
         NEXT
 
@@ -1437,17 +1499,6 @@ L_fsl_mat_addr:
         imull %ecx         # eax = size*(i*ncols + j)
         add %eax, WSIZE(%ebx)   # TOS = a + eax
         xor %eax, %eax
-        NEXT
-
-L_mul:
-        movl $WSIZE, %ecx
-        addl %ecx, %ebx
-        movl (%ebx), %eax
-        addl %ecx, %ebx
-        imull (%ebx)
-        movl %eax, (%ebx)
-        subl %ecx, %ebx
-        xorl %eax, %eax
         NEXT
 
 L_div:

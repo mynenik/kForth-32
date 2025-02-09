@@ -20,215 +20,251 @@
 	.comm BottomOfTypeStack,4,4
 	.comm BottomOfReturnTypeStack,4,4
 
-// Regs: eax, ebx, ecx
+// Regs: eax, ebx, ecx, edx
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
-.macro FETCH op
-	movl GlobalTp, %ecx
-        movb 1(%ecx), %al
-        cmpb $OP_ADDR, %al
-        jnz E_not_addr
-        movb \op, 1(%ecx)
-        movl WSIZE(%ebx), %eax	
-        movl (%eax), %eax
-	movl %eax, WSIZE(%ebx)
-	xor %eax, %eax
-.endm
-
-// Regs: eax, ebx, ecx
-// In: none
-// Out: eax = 0
 .macro SWAP
-        LDSP
+#        LDSP
+        mov %ebx, %edx
         INC_DSP
 	movl (%ebx), %eax
 	INC_DSP
 	movl (%ebx), %ecx
 	movl %eax, (%ebx)
 	movl %ecx, -WSIZE(%ebx)
+# begin ts
         movl GlobalTp, %ebx
-        incl %ebx
+        inc  %ebx
 	movb (%ebx), %al
-	incl %ebx
+	inc  %ebx
 	movb (%ebx), %cl
 	movb %al, (%ebx)
 	movb %cl, -1(%ebx)
-        xor %eax, %eax
+# end ts
+        mov  %edx, %ebx
+        xor  %eax, %eax
 .endm
 
-// Regs: eax, ebx
-// In: none
-// Out: eax = 0
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro OVER
-        LDSP
-        movl 2*WSIZE(%ebx), %eax
-        movl %eax, (%ebx)
+#        LDSP
+        movl 2*WSIZE(%ebx), %ecx
+        movl %ecx, (%ebx)
 	DEC_DSP
-	STSP
-        movl GlobalTp, %ebx
-        movb 2(%ebx), %al
-        movb %al, (%ebx)
+#	STSP
+# begin ts
+        movl GlobalTp, %ecx
+        movb 2(%ecx), %al
+        movb %al, (%ecx)
         decl GlobalTp
-        xor %eax, %eax
+# end ts
+        xor  %eax, %eax
+.endm
+
+// Regs: ebx, ecx
+// In: ebx = DSP
+// Out: ebx = DSP
+.macro TWO_DUP
+        OVER 
+        OVER
 .endm
 
 // Regs: eax, ebx, ecx, edx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FDUP
-	LDSP
-	movl %ebx, %ecx
+#	LDSP
+	mov %ebx, %ecx
 	INC_DSP
 	movl (%ebx), %edx
 	INC_DSP
 	movl (%ebx), %eax
-	movl %ecx, %ebx
+	mov  %ecx, %ebx
 	movl %eax, (%ebx)
 	DEC_DSP
 	movl %edx, (%ebx)
 	DEC_DSP
-	STSP
+#	STSP
+        mov  %ebx, %edx
+# begin ts
 	movl GlobalTp, %ebx
-	incl %ebx
+	inc  %ebx
 	movw (%ebx), %ax
 	subl $2, %ebx
 	movw %ax, (%ebx)
-	decl %ebx
+	dec  %ebx
 	movl %ebx, GlobalTp
-	xor %eax, %eax
+# end ts
+        mov  %edx, %ebx
+	xor  %eax, %eax
 .endm
 
 // Regs: eax
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FDROP
-	movl $2*WSIZE, %eax
-	addl %eax, GlobalSp
+	INC2_DSP
         INC2_DTSP
-	xor %eax, %eax
 .endm
 
 // Regs: eax, ebx, ecx, edx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FSWAP
-	LDSP
+#	LDSP
 	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	movl (%ebx), %edx
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	xchgl %edx, (%ebx)
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	xchgl %eax, (%ebx)
-	subl %ecx, %ebx
-	subl %ecx, %ebx
+	sub  %ecx, %ebx
+	sub  %ecx, %ebx
 	movl %eax, (%ebx)
-	subl %ecx, %ebx
+	sub  %ecx, %ebx
 	movl %edx, (%ebx)
+        sub  %ecx, %ebx
+        mov  %ebx, %ecx     # store DSP
+# begin ts
 	movl GlobalTp, %ebx
-	incl %ebx
+	inc  %ebx
 	movw (%ebx), %ax
 	addl $2, %ebx
 	xchgw %ax, (%ebx)
 	subl $2, %ebx
 	movw %ax, (%ebx)
-	xor %eax, %eax
+# end ts
+        mov  %ecx, %ebx      # restore DSP
+	xor  %eax, %eax
 .endm
 
 // Regs: eax, ebx, ecx, edx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro FOVER
-	LDSP
-	movl %ebx, %ecx
+#	LDSP
+	mov  %ebx, %ecx
 	addl $3*WSIZE, %ebx
 	movl (%ebx), %edx
 	INC_DSP
 	movl (%ebx), %eax
-	movl %ecx, %ebx
+	mov  %ecx, %ebx
 	movl %eax, (%ebx)
 	DEC_DSP
 	movl %edx, (%ebx)
 	DEC_DSP
-	STSP
+	mov %ebx, %ecx      # store DSP
+# begin ts
 	movl GlobalTp, %ebx
-	movl %ebx, %ecx
+	mov  %ebx, %edx
 	addl $3, %ebx
 	movw (%ebx), %ax
-	movl %ecx, %ebx
-	decl %ebx
+	mov  %edx, %ebx
+	dec  %ebx
 	movw %ax, (%ebx)
-	decl %ebx
+	dec  %ebx
 	movl %ebx, GlobalTp
-	xor %eax, %eax	
+# end ts
+        mov  %ecx, %ebx     # restore DSP
+	xor  %eax, %eax	
 .endm
 
-// Regs: eax, ebx, ecx
-// In: none
-// Out: eax = 0
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro PUSH_R
-	LDSP
+#     	 LDSP
 	movl $WSIZE, %eax
-	addl %eax, %ebx	
-        STSP
+	add  %eax, %ebx	
+#        STSP
 	movl (%ebx), %ecx
-	movl GlobalRp, %ebx
-	movl %ecx, (%ebx)
-	subl %eax, %ebx
-	movl %ebx, GlobalRp
+	movl GlobalRp, %edx
+	movl %ecx, (%edx)
+	sub  %eax, %edx
+	movl %edx, GlobalRp
+        mov  %ebx, %ecx       # save DSP
+# begin ts
 	movl GlobalTp, %ebx
-	incl %ebx
+	inc  %ebx
 	movl %ebx, GlobalTp
 	movb (%ebx), %al
 	movl GlobalRtp, %ebx
 	movb %al, (%ebx)
-	decl %ebx
+	dec  %ebx
 	movl %ebx, GlobalRtp
-        xor %eax, %eax
+# end ts
+        mov  %ecx, %ebx       # restore DSP
+        xor  %eax, %eax
 .endm
 
-// Regs: eax, ebx, ecx
-// In: none
-// Out: eax = 0
+// Regs: eax, ebx, ecx, edx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro POP_R
 	movl $WSIZE, %eax
-	movl GlobalRp, %ebx
-	addl %eax, %ebx
-	movl %ebx, GlobalRp
-	movl (%ebx), %ecx
-	LDSP
+	movl GlobalRp, %edx
+	add  %eax, %edx
+	movl %edx, GlobalRp
+	movl (%edx), %ecx
+#       LDSP
 	movl %ecx, (%ebx)
-	subl %eax, %ebx
-	STSP
+	sub  %eax, %ebx
+	mov  %ebx, %ecx    # save DSP
+# begin ts
 	movl GlobalRtp, %ebx
-	incl %ebx
+	inc  %ebx
 	movl %ebx, GlobalRtp
 	movb (%ebx), %al
 	movl GlobalTp, %ebx
 	movb %al, (%ebx)
 	decl %ebx
 	movl %ebx, GlobalTp
+# end ts
+        mov  %ecx, %ebx    # restore DSP
+	xor  %eax, %eax
+.endm
+
+// Regs: eax, ebx, ecx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro FETCH op
+# begin ts
+	movl GlobalTp, %ecx
+        movb 1(%ecx), %al
+        cmpb $OP_ADDR, %al
+        jnz E_not_addr
+        movb \op, 1(%ecx)
+# end ts
+        movl WSIZE(%ebx), %eax	
+        movl (%eax), %eax
+	movl %eax, WSIZE(%ebx)
 	xor %eax, %eax
 .endm
-	
+
+
 // Dyadic Logic operators
 // Regs: eax, ebx
-// In: none
-// Out: eax = 0	
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP	
 .macro LOGIC_DYADIC op
-	LDSP
+#	LDSP
 	movl $WSIZE, %eax
-	addl %eax, %ebx
-	STSP
+	add %eax, %ebx
+#	STSP
 	movl (%ebx), %eax
         \op %eax, WSIZE(%ebx)
+# begin ts
 	movl GlobalTp, %eax
-	incl %eax
+	inc %eax
 	movl %eax, GlobalTp
-	movb $OP_IVAL, 1(%eax)	
-	xorl %eax, %eax 
+	movb $OP_IVAL, 1(%eax)
+# end ts
+	xor %eax, %eax 
 .endm
 	
 .macro _AND
@@ -245,70 +281,78 @@
 	
 // Dyadic relational operators (single length numbers) 
 // Regs: eax, ebx, ecx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro REL_DYADIC setx
-	LDSP
+#	LDSP
 	movl $WSIZE, %ecx
-	addl %ecx, %ebx
-	STSP
+	add  %ecx, %ebx
+#	STSP
 	movl (%ebx), %eax
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	cmpl %eax, (%ebx)
 	movl $0, %eax
 	\setx %al
-	negl %eax
+	neg  %eax
 	movl %eax, (%ebx)
+        sub  %ecx, %ebx
+# begin ts
 	movl GlobalTp, %eax
-	incl %eax
+	inc  %eax
 	movl %eax, GlobalTp
 	movb $OP_IVAL, 1(%eax)
-	xorl %eax, %eax
+# end ts
+	xor %eax, %eax
 .endm
 
 // Relational operators for zero (single length numbers)
 // Regs: eax, ebx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro REL_ZERO setx
-	LDSP
 	INC_DSP
 	movl (%ebx), %eax
 	cmpl $0, %eax
 	movl $0, %eax
 	\setx %al
-	negl %eax
+	neg  %eax
 	movl %eax, (%ebx)
+        DEC_DSP
+# begin ts
 	movl GlobalTp, %eax
 	movb $OP_IVAL, 1(%eax)
-	xorl %eax, %eax
+# end ts
+	xor %eax, %eax
 .endm
 
 // Regs: eax, ebx, ecx
 // In: none
 // Out: eax = 0
 .macro FREL_DYADIC logic arg set
-	LDSP
+#	LDSP
 	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	fldl (%ebx)
-	addl %ecx, %ebx
-	addl %ecx, %ebx
-	STSP
+	add  %ecx, %ebx
+	add  %ecx, %ebx
+#	STSP
 	fcompl (%ebx)
 	fnstsw %ax
 	andb $65, %ah
 	\logic \arg, %ah
 	movl $0, %eax
 	\set %al
-	negl %eax
-	addl %ecx, %ebx
+	neg  %eax
+	add  %ecx, %ebx
 	movl %eax, (%ebx)
+        subl %ecx, %ebx
+# begin ts
 	movl GlobalTp, %eax
 	addl $3, %eax
 	movl %eax, GlobalTp
 	movb $OP_IVAL, 1(%eax)
-	xorl %eax, %eax
+# end ts
+	xor  %eax, %eax
 .endm
 				
 # b = (d1.hi < d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u< d2.lo))
@@ -316,104 +360,109 @@
 // In: none
 // Out: eax = 0
 .macro DLT
-	LDSP
+#	LDSP
 	movl $WSIZE, %ecx
-	xorl %edx, %edx
-	addl %ecx, %ebx
+	xor  %edx, %edx
+	add  %ecx, %ebx
 	movl (%ebx), %eax
 	cmpl %eax, 2*WSIZE(%ebx)
 	sete %dl
 	setl %dh
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	STSP
-	addl %ecx, %ebx
+	add  %ecx, %ebx
+#	STSP
+	add  %ecx, %ebx
 	cmpl %eax, (%ebx)
 	setb %al
 	andb %al, %dl
 	orb  %dh, %dl
-	xorl %eax, %eax
+	xor  %eax, %eax
 	movb %dl, %al
 	negl %eax
 	movl %eax, (%ebx)
+        sub  %ecx, %ebx
+# begin ts
 	movl GlobalTp, %eax
 	addl $4, %eax
 	movb $OP_IVAL, (%eax)
 	decl %eax
-	movl %eax, GlobalTp	
-	xorl %eax, %eax
+	movl %eax, GlobalTp
+# end ts
+	xor  %eax, %eax
 .endm
 
 # b = (d1.hi > d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u> d2.lo))
 // Regs: eax, ebx, ecx, edx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro DGT
-	LDSP
+#	LDSP
 	movl $WSIZE, %ecx
-	xorl %edx, %edx
-	addl %ecx, %ebx
+	xor  %edx, %edx
+	add  %ecx, %ebx
 	movl (%ebx), %eax
 	cmpl %eax, 2*WSIZE(%ebx)
 	sete %dl
 	setl %dh
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	movl (%ebx), %eax
-	addl %ecx, %ebx
-	STSP
-	addl %ecx, %ebx
+	add  %ecx, %ebx
+#	STSP
+	add  %ecx, %ebx
 	cmpl %eax, (%ebx)
 	setb %al
 	andb %al, %dl
 	orb  %dh, %dl
 	xorl %eax, %eax
 	movb %dl, %al
-	negl %eax
+	neg  %eax
 	movl %eax, (%ebx)
+        sub  %ecx, %ebx
+# begin ts
 	movl GlobalTp, %eax
 	addl $4, %eax
 	movb $OP_IVAL, (%eax)
-	decl %eax
-	movl %eax, GlobalTp	
-	xorl %eax, %eax
+	dec  %eax
+	movl %eax, GlobalTp
+# end ts
+	xor  %eax, %eax
 .endm
 
 // Regs: eax, ebx, ecx
 // In: ebx = DSP
-// Out: eax = 0
+// Out: eax = 0, ebx = DSP
 .macro BOOLEAN_QUERY
         DUP
         REL_ZERO setz
         SWAP
-        LDSP
+#        LDSP
         movl $TRUE, (%ebx)
         DEC_DSP
         DEC_DTSP
-        STSP
+#        STSP
         REL_DYADIC sete
         _OR
 .endm
 
 // Regs: eax, ebx, ecx
-// In: none
-// Out: eax = 0
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
 .macro TWO_BOOLEANS
-        OVER
-	OVER
-        LDSP
+        TWO_DUP
+#        LDSP
         BOOLEAN_QUERY
         SWAP
-        LDSP
+#        LDSP
         BOOLEAN_QUERY
         _AND
 .endm
 
 // Regs: ebx
-// In: none
+// In: ebx = DSP
 // Out: ebx = DSP
 .macro  CHECK_BOOLEAN
-        LDSP
+#       LDSP
         DROP
         cmpl $TRUE, (%ebx)
         jnz E_arg_type_mismatch
@@ -486,6 +535,25 @@ retexit:
 #	movl %ecx, (%ebx)
 #	ret
 #
+L_jz:
+        LDSP
+        DROP
+        STSP
+        movl (%ebx), %eax
+        cmpl $0, %eax
+        jz jz1
+        movl $4, %eax
+        add  %eax, %ebp       # do not jump
+        xor  %eax, %eax
+        NEXT
+jz1:    mov  %ebp, %ecx
+        inc  %ecx
+        movl (%ecx), %eax       # get the relative jump count
+        dec  %eax
+        add  %eax, %ebp
+        xor  %eax, %eax
+        
+        NEXT
 
 L_vmthrow:      # throw VM error (used as default exception handler)
         LDSP
@@ -512,6 +580,14 @@ L_precision:
         STD_IVAL
         NEXT
 
+L_setprecision:
+        LDSP
+        DROP
+        STSP
+        movl (%ebx), %ecx
+        movl %ecx, Precision
+        NEXT
+
 L_false:
         LDSP
         movl $FALSE, (%ebx)
@@ -536,6 +612,33 @@ L_bl:
         STD_IVAL
         NEXT
 
+L_lshift:
+        LDSP
+        DROP
+        STSP
+        movl (%ebx), %ecx
+        cmp $MAX_SHIFT_COUNT, %ecx
+        jbe lshift1
+        movl $0, WSIZE(%ebx)
+        NEXT
+lshift1:
+        shll %cl, WSIZE(%ebx)
+        NEXT
+
+L_rshift:
+        LDSP
+        DROP
+        STSP
+        movl (%ebx), %ecx
+        cmp $MAX_SHIFT_COUNT, %ecx
+        jbe rshift1
+        movl $0, WSIZE(%ebx)
+        NEXT
+rshift1:
+        shrl %cl, WSIZE(%ebx)
+        NEXT
+
+
 # For precision delays, use US or MS instead of USLEEP
 # Use USLEEP when task can be put to sleep and reawakened by OS
 #
@@ -544,10 +647,10 @@ L_usleep:
 	INC_DTSP
 	LDSP
 	movl (%ebx), %eax
-	pushl %eax
+	push %eax
 	call usleep
-	popl %eax
-	xor %eax, %eax
+	pop  %eax
+	xor  %eax, %eax
 	ret
 
 L_ms:
@@ -559,31 +662,31 @@ L_ms:
 	ret
 
 L_fill:
+        LDSP
 	SWAP
 	movl $WSIZE, %eax
-	addl %eax, GlobalSp
+	add  %eax, %ebx
 	INC_DTSP
-	LDSP
-	movl (%ebx), %ebx
-	pushl %ebx
-	addl %eax, GlobalSp
+	movl (%ebx), %ecx
+	push %ecx
+	add  %eax, %ebx
 	INC_DTSP
-	LDSP
-	movl (%ebx), %ebx
-	pushl %ebx
-	addl %eax, GlobalSp
+	movl (%ebx), %ecx
+	push %ecx
+	add  %eax, %ebx
 	INC_DTSP
+        STSP
 	movl GlobalTp, %ebx
 	movb (%ebx), %al
 	cmpb $OP_ADDR, %al
 	jz fill2
-	popl %ebx
-	popl %ebx
+	pop %ebx
+	pop %ebx
 	movl $E_NOT_ADDR, %eax
 	jmp fillexit
 fill2:	LDSP
-	movl (%ebx), %ebx
-	pushl %ebx
+	movl (%ebx), %eax
+	push %eax
 	call memset
 	addl $12, %esp
 	xor %eax, %eax
@@ -610,35 +713,33 @@ L_blank:
 
 L_move:
         LDSP
-        INC_DSP
-        INC_DTSP
-        movl (%ebx), %eax
-        pushl %eax
-	INC_DSP
-	INC_DTSP
+        DROP
+        movl (%ebx), %eax  # count
+        push %eax
+	DROP
         movl GlobalTp, %edx
-        movb 1(%edx), %al
+        movb 1(%edx), %al   # verify source is type addr
         cmpb $OP_ADDR, %al
         jz move2
-        STSP
         addl $WSIZE, %esp
         movl $E_NOT_ADDR, %eax
         jmp E_not_addr        
 move2:
-        movl WSIZE(%ebx), %eax
-        pushl %eax
-        movb (%edx), %al
-        cmpb $OP_ADDR, %al
+        movl WSIZE(%ebx), %eax  # src addr
+        push %eax
+        movb (%edx), %al  
+        cmpb $OP_ADDR, %al  # verify dest is type addr
         jz move3
         addl $2*WSIZE, %esp
         movl $E_NOT_ADDR, %eax
         jmp E_not_addr
 move3:
-	movl (%ebx), %eax
-	pushl %eax
+	movl (%ebx), %eax  # dest addr
+	push %eax
 	call memmove
 	addl $3*WSIZE, %esp
         DROP
+        STSP
 	xor %eax, %eax
 	NEXT
 
@@ -740,6 +841,7 @@ cmovefromloop:
 L_slashstring:
 	LDSP
 	DROP
+        STSP
 	movl (%ebx), %ecx
 	INC_DSP
 	subl %ecx, (%ebx)
@@ -750,14 +852,19 @@ L_slashstring:
 L_call:
 	LDSP
 	DROP
+        STSP
 	jmpl *(%ebx)
 	ret
 
 L_push_r:
+        LDSP
 	PUSH_R
+        STSP
         NEXT
 L_pop_r:
+        LDSP
 	POP_R
+        STSP
 	NEXT
 
 L_twopush_r:
@@ -873,7 +980,7 @@ L_definition:
 	movl $WSIZE, %eax
 	incl %ebx
 	movl (%ebx), %ecx # address to execute
-	addl $3, %ebx
+	addl $WSIZE-1, %ebx
 	movl %ebx, %edx
 	movl GlobalRp, %ebx
 	movl %edx, (%ebx)
@@ -1087,30 +1194,24 @@ L_count:
 
 L_ival:
 	LDSP
-        movl %ebp, %ecx
-        incl %ecx
-        movl (%ecx), %eax
-	addl $WSIZE-1, %ecx
-	movl %ecx, %ebp
-	movl %eax, (%ebx)
+        inc %ebp
+        movl (%ebp), %ecx
+        addl $WSIZE-1, %ebp
+	movl %ecx, (%ebx)
 	DEC_DSP
 	STSP
 	STD_IVAL
-	xorl %eax, %eax
 	NEXT
 
 L_addr:
 	LDSP
-	movl %ebp, %ecx
-	incl %ecx
-	movl (%ecx), %eax
-	addl $WSIZE-1, %ecx
-	movl %ecx, %ebp
-	movl %eax, (%ebx)
+        inc %ebp
+        movl (%ebp), %ecx
+        addl $WSIZE-1, %ebp
+	movl %ecx, (%ebx)
 	DEC_DSP
 	STSP
 	STD_ADDR
-	xorl %eax, %eax
 	NEXT
 
 L_ptr:
@@ -1152,11 +1253,15 @@ L_fval:
 	NEXT
 
 L_and:
+        LDSP
 	_AND
+        STSP
 	NEXT
 
 L_or:
+        LDSP
 	_OR
+        STSP
 	NEXT
 
 L_not:
@@ -1165,83 +1270,115 @@ L_not:
         NEXT
 
 L_xor:
+        LDSP
 	_XOR
+        STSP
 	NEXT
 
 L_boolean_query:
+        LDSP
 	BOOLEAN_QUERY
+        STSP
         NEXT
 
 L_bool_not:
+        LDSP
         DUP
         BOOLEAN_QUERY
         CHECK_BOOLEAN
         _NOT
+        STSP
 	NEXT
 
 L_bool_and:
+        LDSP
         TWO_BOOLEANS
         CHECK_BOOLEAN
         _AND
+        STSP
         NEXT
 
 L_bool_or:
+        LDSP
         TWO_BOOLEANS
         CHECK_BOOLEAN
         _OR
+        STSP
         NEXT
 
 L_bool_xor:
+        LDSP
         TWO_BOOLEANS
         CHECK_BOOLEAN
         _XOR
+        STSP
         NEXT
 
 L_eq:
+        LDSP
 	REL_DYADIC sete
+        STSP
 	NEXT
 
 L_ne:
+        LDSP
 	REL_DYADIC setne
+        STSP
 	NEXT
 
 L_ult:
+        LDSP
 	REL_DYADIC setb
+        STSP
 	NEXT
 
 L_ugt:
-	REL_DYADIC seta 
+        LDSP
+	REL_DYADIC seta
+        STSP
 	NEXT
 
 L_lt:
+        LDSP
 	REL_DYADIC setl
+        STSP
 	NEXT
 
 L_gt:
+        LDSP
 	REL_DYADIC setg
+        STSP
 	NEXT
 
 L_le:
+        LDSP
 	REL_DYADIC setle
+        STSP
 	NEXT
 
 L_ge:
+        LDSP
 	REL_DYADIC setge
+        STSP
 	NEXT
 
 L_zeroeq:
+        LDSP
 	REL_ZERO setz
 	NEXT
 
 L_zerone:
+        LDSP
 	REL_ZERO setnz
 	NEXT
 
 L_zerolt:
+        LDSP
 	REL_ZERO setl
 	NEXT
 
 L_zerogt:
+        LDSP
 	REL_ZERO setg
 	NEXT
 
@@ -1316,7 +1453,9 @@ L_dzeroeq:
 	NEXT
 
 L_dzerolt:
+        LDSP
 	REL_ZERO setl
+        INC_DSP
 	movl (%ebx), %eax
 	movl %eax, WSIZE(%ebx)
 	STSP
@@ -1324,8 +1463,10 @@ L_dzerolt:
 	xor %eax, %eax
 	NEXT	
 
-L_dlt:	
+L_dlt:
+        LDSP	
 	DLT
+        STSP
 	NEXT
 
 L_dult:	# b = (d1.hi u< d2.hi) OR ((d1.hi = d2.hi) AND (d1.lo u< d2.lo)) 
@@ -1374,13 +1515,28 @@ L_querydup:
 L_querydupexit:
 	NEXT
 
+L_dup:
+        LDSP
+        DUP
+        STSP
+        NEXT 
+
+L_drop:
+        LDSP 
+        DROP
+        STSP
+        NEXT 
 
 L_swap:
+        LDSP
 	SWAP
+        STSP
         NEXT
 
 L_over:
+        LDSP
 	OVER
+        STSP
         NEXT
 
 L_rot:
@@ -1449,8 +1605,10 @@ L_nip:
         NEXT
 
 L_tuck:
+        LDSP
         SWAP
         OVER
+        STSP
         NEXT
 
 L_pick:
@@ -1543,29 +1701,41 @@ L_depth:
         ret
 
 L_2drop:
+        LDSP
 	FDROP
+        STSP
         NEXT
 
 L_f2drop:
+        LDSP
 	FDROP
 	FDROP
+        STSP
 	NEXT
 
 L_f2dup:
+        LDSP
         FOVER
 	FOVER
+        STSP
 	NEXT
 
 L_2dup:
-	FDUP
+        LDSP
+	TWO_DUP
+        STSP
         NEXT
 
 L_2swap:
-	FSWAP	
+        LDSP
+	FSWAP
+        STSP	
         NEXT
 
 L_2over:
+        LDSP
 	FOVER
+        STSP
         NEXT
 
 L_2rot:
@@ -1852,40 +2022,50 @@ min1:
 	xor %eax, %eax
         NEXT
 
+L_stod:
+        LDSP
+        STOD
+        STSP
+        NEXT
+
 L_dmax:
+        LDSP
 	FOVER
 	FOVER
 	DLT
 	INC_DTSP
-	LDSP
+#	LDSP
 	INC_DSP
 	movl (%ebx), %eax
-	STSP
+#       STSP
 	cmpl $0, %eax
 	jne dmin1
 	FDROP
-	xorl %eax, %eax
+        STSP
+	xor %eax, %eax
 	NEXT
 
 L_dmin:
+        LDSP
 	FOVER
 	FOVER
 	DLT
 	INC_DTSP
 	movl $WSIZE, %ecx
-	LDSP
-	addl %ecx, %ebx
+#	LDSP
+	add %ecx, %ebx
 	movl (%ebx), %eax
-	STSP
 	cmpl $0, %eax
 	je dmin1
 	FDROP
-	xorl %eax, %eax
+        STSP
+	xor %eax, %eax
 	NEXT
 dmin1:
 	FSWAP
 	FDROP
-	xorl %eax, %eax
+        STSP
+	xor %eax, %eax
 	NEXT
 
 #  L_dtwostar and L_dtwodiv are valid for two's-complement systems
@@ -1936,20 +2116,26 @@ L_add:
         xor %eax, %eax
         NEXT
 
+L_sub:
+        LDSP
+        DROP         # result will have type of first operand
+        movl (%ebx), %eax
+        subl %eax, WSIZE(%ebx)
+        xor  %eax, %eax
+        STSP
+        NEXT
+
 L_mul:
         LDSP
         movl $WSIZE, %ecx
-        addl %ecx, %ebx
+        add  %ecx, %ebx
         STSP
         movl (%ebx), %eax
-        addl %ecx, %ebx
+        add  %ecx, %ebx
         imull (%ebx)
         movl %eax, (%ebx)
-   .ifdef __FAST__
-        subl %ecx, %ebx
-   .endif
         INC_DTSP
-        xorl %eax, %eax
+        xor  %eax, %eax
         NEXT
 
 L_starplus:
@@ -1963,9 +2149,6 @@ L_starplus:
         imull (%ebx)
         add %ecx, %eax
         mov %eax, (%ebx)
-  .ifdef __FAST__
-        DEC_DSP
-  .endif
         INC2_DTSP
         xor %eax, %eax
         NEXT
@@ -2051,9 +2234,10 @@ L_starslashmod:
 	STARSLASH
 	movl %edx, (%ebx)
 	DEC_DSP
-	STSP
+#	STSP
 	DEC_DTSP
 	SWAP
+        STSP
 	ret
 
 L_plusstore:
@@ -2097,8 +2281,7 @@ dabs_go:
 
 L_dnegate:
         LDSP
-	DNEGATE
-        STSP	
+	DNEGATE	
 	ret
 
 L_dplus:
@@ -2233,6 +2416,7 @@ L_mstar:
 	NEXT
 
 L_mplus:
+        LDSP
 	STOD
 	DPLUS
         STSP
@@ -2682,36 +2866,48 @@ L_ftod:
 	NEXT
 
 L_fne:
+        LDSP
 	FREL_DYADIC xorb $64 setnz
+        STSP
 	NEXT
 L_feq:
+        LDSP
 	FREL_DYADIC andb $64 setnz
+        STSP
 	NEXT
 L_flt:
+        LDSP
 	FREL_DYADIC andb $65 setz
+        STSP
 	NEXT
 L_fgt:
+        LDSP
 	FREL_DYADIC andb $1 setnz
+        STSP
 	NEXT	
 L_fle:
+        LDSP
 	FREL_DYADIC xorb $1 setnz
+        STSP
 	NEXT
 L_fge:
+        LDSP
 	FREL_DYADIC andb $65 setnz
+        STSP
 	NEXT
 L_fzeroeq:
 	LDSP
 	movl $WSIZE, %eax
-	addl %eax, %ebx
+	add  %eax, %ebx
 	movl (%ebx), %ecx
 	STSP
-	addl %eax, %ebx
+	add  %eax, %ebx
 	movl (%ebx), %eax
 	shll $1, %eax
-	orl %ecx, %eax
+	or   %ecx, %eax
 	movl $0, %eax
 	setz %al
-	negl %eax
+	neg  %eax
 	movl %eax, (%ebx)
 frelzero:
 	movl GlobalTp, %ebx
@@ -2719,7 +2915,7 @@ frelzero:
 	movl %ebx, GlobalTp
 	incl %ebx
 	movb $OP_IVAL, (%ebx)
-	xorl %eax, %eax
+	xor  %eax, %eax
 	NEXT
 L_fzerolt:
 	LDSP
