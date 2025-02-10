@@ -68,9 +68,9 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long CPP_type, CPP_udot, CPP_variable, CPP_words # 116 -- 119
            .long CPP_does, L_2val, L_2fetch, C_search   # 120 -- 123
            .long L_or, C_compare, L_not, L_move    # 124 -- 127
-           .long L_fsin, L_fcos, C_ftan, C_fasin   # 128 -- 131
-           .long C_facos, C_fatan, C_fexp, C_fln   # 132 -- 135
-           .long C_flog, L_fatan2, L_ftrunc, L_ftrunctos    # 136 -- 139
+           .long L_fsin, L_fcos, L_ftan, L_fasin   # 128 -- 131
+           .long L_facos, L_fatan, L_fexp, L_fln   # 132 -- 135
+           .long L_flog, L_fatan2, L_ftrunc, L_ftrunctos    # 136 -- 139
            .long C_fmin, C_fmax, L_floor, L_fround # 140 -- 143
            .long L_dlt, L_dzeroeq, L_deq, L_twopush_r  # 144 -- 147
            .long L_twopop_r, L_tworfetch, L_stod, L_stof # 148 -- 151
@@ -106,9 +106,9 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long L_cputest, L_dsstar, CPP_compilecomma, CPP_compilename   # 268--271
 	   .long CPP_postpone, CPP_nondeferred, CPP_forget, C_forth_signal # 272--275
 	   .long C_raise, C_setitimer, C_getitimer, C_us2fetch  # 276--279
-	   .long C_tofloat, L_fsincos, C_facosh, C_fasinh # 280--283
-	   .long C_fatanh, C_fcosh, C_fsinh, C_ftanh   # 284--287
-	   .long C_falog, L_dzerolt, L_dmax, L_dmin    # 288--291
+	   .long C_tofloat, L_fsincos, L_facosh, L_fasinh # 280--283
+	   .long L_fatanh, L_fcosh, L_fsinh, L_ftanh   # 284--287
+	   .long L_falog, L_dzerolt, L_dmax, L_dmin    # 288--291
 	   .long L_dtwostar, L_dtwodiv, CPP_uddot, L_within  # 292--295
 	   .long CPP_twoliteral, C_tonumber, C_numberquery, CPP_sliteral  # 296--299
            .long CPP_fliteral, CPP_twovariable, CPP_twoconstant, CPP_synonym  # 300--303
@@ -127,7 +127,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_nop, L_nop, L_nop, CPP_myname            # 352--355
            .long L_nop, L_nop, C_used, L_vmthrow            # 356--359
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
-	   .long L_nop, L_nop, C_fexpm1, C_flnp1	    # 364--367
+	   .long L_nop, L_nop, L_fexpm1, L_flnp1	    # 364--367
 	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup   # 368--371
            .long L_nop, L_nop, L_nop, L_nop           # 372--375
            .long L_nop, L_nop, L_nop, L_nop           # 376--379
@@ -434,6 +434,22 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
         xor %eax, %eax
 .endm
 
+// Regs: eax, ebx
+// In: ebx = DSP
+// Out: eax = 0, ebx = DSP
+.macro DOUBLE_FUNC func
+	INC_DSP
+	movl WSIZE(%ebx), %eax
+	push %eax
+	movl (%ebx), %eax
+	push %eax
+	call \func
+	addl $8, %esp
+	fstpl (%ebx)
+	DEC_DSP
+	xor %eax, %eax
+.endm
+
 // Error jumps
 E_not_addr:
         movl $E_NOT_ADDR, %eax
@@ -672,18 +688,7 @@ L_fcos:
   .ifndef __FAST__
 	LDSP
   .endif
-	INC_DSP
-	movl WSIZE(%ebx), %eax
-	pushl %ebx
-	pushl %eax
-	movl (%ebx), %eax
-	pushl %eax
-	call cos
-	addl $8, %esp
-	popl %ebx
-	fstpl (%ebx)
-	DEC_DSP
-	xorl %eax, %eax
+        DOUBLE_FUNC cos
 	NEXT
 
 // For native x86 FPU fcos instruction, use FSINCOS
@@ -699,18 +704,7 @@ L_fsin:
   .ifndef __FAST__
 	LDSP
   .endif
-	INC_DSP
-	movl WSIZE(%ebx), %eax
-	pushl %ebx
-	pushl %eax
-	movl (%ebx), %eax
-	pushl %eax
-	call sin
-	addl $8, %esp
-	popl %ebx
-	fstpl (%ebx)
-	DEC_DSP
-	xorl %eax, %eax
+        DOUBLE_FUNC sin
 	NEXT
 
 // For native x86 FPU fsin instruction, use FSINCOS
@@ -722,22 +716,123 @@ L_fsin:
 //	fstpl WSIZE(%ebx)
 //	NEXT
 
+L_ftan:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC tan
+        NEXT
+
+L_facos:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC acos
+        NEXT
+
+L_fasin:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC asin
+        NEXT
+
+L_fatan:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC atan
+        NEXT
+
+L_fsinh:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC sinh
+        NEXT
+
+L_fcosh:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC cosh
+        NEXT
+
+L_ftanh:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC tanh
+        NEXT
+
+L_fasinh:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC asinh
+        NEXT
+
+L_facosh:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC acosh
+        NEXT
+
+L_fatanh:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC atanh
+        NEXT
+
+L_fexp:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC exp
+        NEXT
+
+L_fexpm1:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC expm1
+        NEXT
+
+L_fln:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC log
+        NEXT
+
+L_flnp1:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC log1p
+        NEXT
+
+L_flog:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC log10
+        NEXT
+
+L_falog:
+  .ifndef __FAST__
+        LDSP
+  .endif
+        DOUBLE_FUNC exp10
+        NEXT
+
 L_floor:
   .ifndef __FAST__
 	LDSP
   .endif
-	INC_DSP
-	movl WSIZE(%ebx), %eax
-	pushl %ebx
-	pushl %eax
-	movl (%ebx), %eax
-	pushl %eax
-	call floor
-	addl $8, %esp
-	popl %ebx
-	fstpl (%ebx)
-	DEC_DSP
-	xorl %eax, %eax		
+        DOUBLE_FUNC floor
 	NEXT
 
 L_fround:

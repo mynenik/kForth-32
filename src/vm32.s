@@ -2204,9 +2204,7 @@ L_starslashmod:
         LDSP
 	STARSLASH
 	movl %edx, (%ebx)
-	DEC_DSP
-#	STSP
-	DEC_DTSP
+	DROP
 	SWAP
         STSP
 	ret

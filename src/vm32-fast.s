@@ -455,12 +455,12 @@ rshift1:
 L_usleep:
 	movl $WSIZE, %eax
 	add  %eax, %ebx
-	push %ebx
+#	push %ebx
 	movl (%ebx), %eax
 	push %eax
 	call usleep
 	pop  %eax
-	pop  %ebx
+#	pop  %ebx
 	STSP
 	xor  %eax, %eax
 	ret
@@ -1561,28 +1561,30 @@ L_plusstore:
 
 L_dabs:
 	LDSP
-	movl %ebx, %edx
+	mov  %ebx, %edx
 	INC_DSP
 	movl (%ebx), %ecx
-	movl %ecx, %eax
+	mov  %ecx, %eax
 	cmpl $0, %eax
 	jl dabs_go
-	movl %edx, GlobalSp
-	xorl %eax, %eax
+	mov  %edx, %ebx
+        STSP
+	xor  %eax, %eax
 	ret
 dabs_go:
 	INC_DSP
 	movl (%ebx), %eax
 	clc
 	subl $1, %eax
-	notl %eax
+	not  %eax
 	movl %eax, (%ebx)
-	movl %ecx, %eax
+	mov  %ecx, %eax
 	sbbl $0, %eax
-	notl %eax
+	not  %eax
 	movl %eax, -WSIZE(%ebx)
-	movl %edx, GlobalSp
-	xorl %eax, %eax
+	mov  %edx, %ebx
+        STSP
+	xor  %eax, %eax
 	ret
 
 L_dnegate:
@@ -1620,28 +1622,28 @@ L_umstar:
 L_dsstar:
 	# multiply signed double and signed to give triple length product
 	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	movl (%ebx), %edx
 	cmpl $0, %edx
 	setl %al
-	addl %ecx, %ebx
+	add  %ecx, %ebx
 	movl (%ebx), %edx
 	cmpl $0, %edx
 	setl %ah
 	xorb %ah, %al      # sign of result
 	andl $1, %eax
-	pushl %eax
+	push %eax
 	LDSP
 	_ABS
 	INC_DSP
-	STSP
+        STSP
 	call L_dabs
-	LDSP
+#	LDSP
 	DEC_DSP
 	STSP
 	call L_udmstar
 	LDSP
-	popl %eax
+	pop  %eax
 	cmpl $0, %eax
 	jne dsstar1
 	NEXT
@@ -1977,7 +1979,7 @@ L_mstarslash:
         INC_DSP
 	xorl (%ebx), %eax
 	shrl $31, %eax
-	pushl %eax	# keep sign of result -- negative is nonzero
+	push %eax	# keep sign of result -- negative is nonzero
 	LDSP
 	INC_DSP
 	_ABS
@@ -1993,10 +1995,10 @@ L_mstarslash:
 	STSP
 	call L_utmslash
 	LDSP
-	popl %eax
+	pop  %eax
 	cmpl $0, %eax
-	jnz mstarslash_neg
-	xor %eax, %eax
+	jnz  mstarslash_neg
+	xor  %eax, %eax
 	ret
 mstarslash_neg:
 	DNEGATE
