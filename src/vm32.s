@@ -2204,7 +2204,7 @@ L_starslashmod:
         LDSP
 	STARSLASH
 	movl %edx, (%ebx)
-	DROP
+	DEC_DSP
 	SWAP
         STSP
 	ret
@@ -2227,12 +2227,14 @@ L_plusstore:
 
 L_dabs:
 	LDSP
+        mov %ebx, %edx
 	INC_DSP
 	movl (%ebx), %ecx  # high dword
-	movl %ecx, %eax
+	mov  %ecx, %eax
 	cmpl $0, %eax
 	jl dabs_go
-	xor %eax, %eax
+        mov  %edx, %ebx
+	xor  %eax, %eax
 	ret
 dabs_go:
         INC_DSP
@@ -2245,6 +2247,7 @@ dabs_go:
 	sbbl $0, %eax
 	notl %eax
 	movl %eax, -WSIZE(%ebx)
+        mov %edx, %ebx
 	xor %eax, %eax
 	ret
 
@@ -2300,7 +2303,7 @@ L_dsstar:
 	STSP
 	INC_DTSP
 	call L_dabs
-	LDSP
+#       LDSP
 	DEC_DSP
 	STSP
 	DEC_DTSP
@@ -2664,7 +2667,7 @@ L_mstarslash:
 	STSP               
 	INC_DTSP
 	call L_dabs
-	LDSP
+#	LDSP
 	DEC_DSP            # TOS = +n2
 	STSP
 	DEC_DTSP

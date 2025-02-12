@@ -455,12 +455,10 @@ rshift1:
 L_usleep:
 	movl $WSIZE, %eax
 	add  %eax, %ebx
-#	push %ebx
 	movl (%ebx), %eax
 	push %eax
 	call usleep
 	pop  %eax
-#	pop  %ebx
 	STSP
 	xor  %eax, %eax
 	ret

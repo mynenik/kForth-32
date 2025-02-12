@@ -390,9 +390,9 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
         xor %eax, %eax
 .endm
 
-// Regs: eax, ebx
+// Regs: eax, ebx, edx
 // In: ebx = DSP
-// Out: eax = 0, ebx = DSP
+// Out: eax = 0, ebx = DSP, edx = remainder
 .macro STARSLASH
         cmpl $0, WSIZE(%ebx)
         jz E_div_zero
