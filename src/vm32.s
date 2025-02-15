@@ -616,15 +616,14 @@ rshift1:
 # Use USLEEP when task can be put to sleep and reawakened by OS
 #
 L_usleep:
-	addl $WSIZE, GlobalSp
-	INC_DTSP
 	LDSP
+        DROP
 	movl (%ebx), %eax
 	push %eax
 	call usleep
-	pop  %eax
+	addl $WSIZE, %esp
 	xor  %eax, %eax
-	ret
+	NEXT
 
 L_ms:
 	LDSP
@@ -632,7 +631,8 @@ L_ms:
 	imull $1000, %eax
 	movl %eax, WSIZE(%ebx)
 	call C_usec
-	ret
+        INC_DSP
+	NEXT
 
 L_fill:
         LDSP
@@ -688,7 +688,6 @@ L_move:
         cmpb $OP_ADDR, %al
         jz move2
         addl $WSIZE, %esp
-        movl $E_NOT_ADDR, %eax
         jmp E_not_addr        
 move2:
         movl WSIZE(%ebx), %eax  # src addr
@@ -697,7 +696,6 @@ move2:
         cmpb $OP_ADDR, %al  # verify dest is type addr
         jz move3
         addl $2*WSIZE, %esp
-        movl $E_NOT_ADDR, %eax
         jmp E_not_addr
 move3:
 	movl (%ebx), %eax  # dest addr
@@ -716,40 +714,45 @@ L_cmove:
 	movl (%ebx), %ecx		# nbytes in ecx
 	cmpl $0, %ecx
 	jnz  cmove1
-	addl $2*WSIZE, %ebx
+	INC2_DSP
 	STSP
 	addl $3, GlobalTp
-	xorl %eax, %eax
+	xor %eax, %eax
 	NEXT		
 cmove1:	INC_DTSP
-	addl %eax, %ebx
+	add  %eax, %ebx
 	movl (%ebx), %edx		# dest addr in edx
-	STSP
+        add  %eax, %ebx
+        push %ebx
 	INC_DTSP
 	movl GlobalTp, %ebx
 	movb (%ebx), %al
 	cmpb $OP_ADDR, %al
 	jz cmove2
-	movl $E_NOT_ADDR, %eax
-	ret
-cmove2:	LDSP
-	movl $WSIZE, %eax
-	addl %eax, %ebx
+        pop %ebx
+        STSP
+        INC_DTSP
+        jmp E_not_addr
+cmove2: pop  %ebx
 	movl (%ebx), %eax		# src addr in eax
-	STSP
 	INC_DTSP
+        push %ebx
 	movl GlobalTp, %ebx
 	movb (%ebx), %bl
 	cmpb $OP_ADDR, %bl
 	jz cmove3
-	movl $E_NOT_ADDR, %eax
-	ret
+        pop %ebx
+        STSP
+        jmp E_not_addr
 cmove3:	movl %eax, %ebx			# src addr in ebx
-cmoveloop: movb (%ebx), %al
+cmoveloop: 
+        movb (%ebx), %al
 	movb %al, (%edx)
 	incl %ebx
 	incl %edx
 	loop cmoveloop
+        pop  %ebx
+        STSP
 	xor %eax, %eax				
 	NEXT				
 
@@ -765,8 +768,7 @@ L_cmovefrom:
 	movb (%ebx), %al
 	cmpb $OP_ADDR, %al
 	jz cmovefrom2
-	movl $E_NOT_ADDR, %eax						
-	ret
+        jmp E_not_addr
 cmovefrom2:
 	LDSP
 	movl (%ebx), %ebx
@@ -781,8 +783,7 @@ cmovefrom2:
 	movb (%ebx), %al
 	cmpb $OP_ADDR, %al
 	jz cmovefrom3
-	movl $E_NOT_ADDR, %eax
-	ret
+        jmp E_not_addr
 cmovefrom3:
 	LDSP
 	movl (%ebx), %ebx
@@ -1008,10 +1009,7 @@ L_rpfetch:
 	movl %eax, (%ebx)
 	DEC_DSP
 	STSP
-	movl GlobalTp, %ebx
-	movb $OP_ADDR, (%ebx)
-	decl %ebx
-	movl %ebx, GlobalTp
+        STD_ADDR
 	xor %eax, %eax
 	NEXT
 
@@ -1022,10 +1020,7 @@ L_spfetch:
 	movl %eax, (%ebx)
 	DEC_DSP
 	STSP
-	movl GlobalTp, %ebx
-	movb $OP_ADDR, (%ebx)
-	decl %ebx
-	movl %ebx, GlobalTp
+        STD_ADDR
 	xor %eax, %eax 
 	NEXT
 
@@ -1040,8 +1035,7 @@ L_i:
         movl 3*WSIZE(%ebx), %eax
         LDSP
         movl %eax, (%ebx)
-	movl $WSIZE, %eax
-        subl %eax, %ebx 
+        subl $WSIZE, %ebx 
 	STSP
         xor %eax, %eax
         NEXT
@@ -1057,8 +1051,7 @@ L_j:
         movl 6*WSIZE(%ebx), %eax
         LDSP
         movl %eax, (%ebx)
-	movl $WSIZE, %eax
-        subl %eax, %ebx
+        subl $WSIZE, %ebx
 	STSP
         xor %eax, %eax
         NEXT
@@ -1082,12 +1075,12 @@ L_rtloop:
         jz L_rtunloop
         movl %eax, (%ebx)	# set loop counter to next value
 	movl %edx, %ebp		# set instruction ptr to start of loop
-        xorl %eax, %eax
+        xor %eax, %eax
         NEXT
 
 L_rtunloop:
 	UNLOOP
-	xorl %eax, %eax
+	xor %eax, %eax
         NEXT
 
 L_rtplusloop:
@@ -2004,11 +1997,8 @@ L_dmax:
 	FOVER
 	FOVER
 	DLT
-	INC_DTSP
-#	LDSP
-	INC_DSP
+	DROP
 	movl (%ebx), %eax
-#       STSP
 	cmpl $0, %eax
 	jne dmin1
 	FDROP
@@ -2021,10 +2011,7 @@ L_dmin:
 	FOVER
 	FOVER
 	DLT
-	INC_DTSP
-	movl $WSIZE, %ecx
-#	LDSP
-	add %ecx, %ebx
+	DROP
 	movl (%ebx), %eax
 	cmpl $0, %eax
 	je dmin1

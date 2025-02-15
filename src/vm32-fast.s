@@ -458,18 +458,17 @@ L_usleep:
 	movl (%ebx), %eax
 	push %eax
 	call usleep
-	pop  %eax
-	STSP
+	addl $WSIZE, %esp
 	xor  %eax, %eax
-	ret
+	NEXT
 
 L_ms:
 	movl WSIZE(%ebx), %eax
 	imull $1000, %eax
 	movl %eax, WSIZE(%ebx)
-	STSP
 	call C_usec
-	ret
+        INC_DSP
+	NEXT
 
 L_fill:
         DROP
@@ -485,7 +484,6 @@ L_fill:
 	addl $3*WSIZE, %esp
         STSP
 	xor  %eax, %eax
-fillexit:	
 	ret
 
 L_erase:
@@ -522,21 +520,20 @@ L_cmove:
 	cmpl $0, %ecx
 	jnz  cmove1
 	INC2_DSP
-	xorl %eax, %eax
+	xor %eax, %eax
 	NEXT		
 cmove1:	addl %eax, %ebx
 	movl (%ebx), %edx		# dest addr in edx
-	movl $WSIZE, %eax
 	addl %eax, %ebx
-	movl (%ebx), %eax		# src addr in eax
-	STSP
-	movl %eax, %ebx			# src addr in ebx
-cmoveloop: movb (%ebx), %al
+        push %ebx
+	movl (%ebx), %ebx		# src addr in ebx
+cmoveloop: 
+        movb (%ebx), %al
 	movb %al, (%edx)
-	incl %ebx
-	incl %edx
+	inc  %ebx
+	inc  %edx
 	loop cmoveloop
-	LDSP
+	pop %ebx
 	xor %eax, %eax				
 	NEXT
 
@@ -1379,31 +1376,30 @@ L_dmax:
 	FOVER
 	FOVER
 	DLT
-	INC_DSP
+	DROP
 	movl (%ebx), %eax
 	cmpl $0, %eax
 	jne dmin1
 	FDROP
-	xorl %eax, %eax
+	xor %eax, %eax
 	NEXT
 
 L_dmin:
 	FOVER
 	FOVER
 	DLT
-	movl $WSIZE, %ecx
-	addl %ecx, %ebx
+	DROP
 	movl (%ebx), %eax
 	cmpl $0, %eax
 	je dmin1
 	FDROP
-	xorl %eax, %eax
+	xor %eax, %eax
 	NEXT
 
 dmin1:
 	FSWAP
 	FDROP
-	xorl %eax, %eax
+	xor %eax, %eax
 	NEXT
 
 #  L_dtwostar and L_dtwodiv are valid for two's-complement systems 
