@@ -153,6 +153,7 @@ double powA(double x, double y) /* return x ^ y (exponentiation) */
     return ldexp(xy, ey);
 } 
 
+/* now in vmxx-common.s
 int C_fpow ()
 {
 	pf = (double*)(GlobalSp + 1);
@@ -163,6 +164,7 @@ int C_fpow ()
 	INC2_DTSP
 	return 0;
 }				
+*/
 
 int C_fmin ()
 {

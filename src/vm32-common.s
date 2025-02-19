@@ -82,7 +82,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long L_swfetch, L_wstore, L_dffetch, L_dfstore  # 172 -- 175
            .long L_sffetch, L_sfstore, L_spfetch, L_plusstore # 176 -- 179
            .long L_fadd, L_fsub, L_fmul, L_fdiv    # 180 -- 183
-           .long L_fabs, L_fneg, C_fpow, L_fsqrt   # 184 -- 187
+           .long L_fabs, L_fneg, L_fpow, L_fsqrt   # 184 -- 187
            .long CPP_spstore, CPP_rpstore, L_feq, L_fne  # 188 -- 191
            .long L_flt, L_fgt, L_fle, L_fge        # 192 -- 195
            .long L_fzeroeq, L_fzerolt, L_fzerogt, L_nop # 196 -- 199
@@ -834,6 +834,32 @@ L_floor:
   .endif
         DOUBLE_FUNC floor
 	NEXT
+
+L_fpow:
+  .ifndef __FAST__
+        LDSP
+  .endif
+       subl $16, %esp
+       DROP
+       movl 8(%ebx), %eax
+       movl %eax, (%esp)
+       movl 12(%ebx), %eax
+       movl %eax, 4(%esp)
+       movl (%ebx), %eax
+       movl %eax, 8(%esp)
+       movl 4(%ebx), %eax
+       movl %eax, 12(%esp)
+       call powA
+       INC2_DSP
+       fstpl (%ebx)
+       DEC_DSP
+  .ifndef __FAST__
+       STSP
+       INC_DTSP
+  .endif
+       addl $16, %esp
+       xor %eax, %eax
+       NEXT       
 
 L_fround:
   .ifndef __FAST__
