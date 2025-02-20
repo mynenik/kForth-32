@@ -33,6 +33,7 @@
 \  2012-01-06  added IBWAIT, WAIT-IO-COMPLETE, and IBLINES; remove fixed
 \                1 ms delays in high level i/o words with WAIT-IO-COMPLETE  km
 \  2012-02-23  added stub for IBTRG, for later implementation  km
+\  2021-07-14  use 0< in OPEN  km
 
 Module: gpib
 Begin-Module
@@ -291,10 +292,10 @@ create in_buf       16384 allot
 create out_buf      16384 allot
 
 : open ( -- ior | open the gpib device driver )
-    driver a@ 2 ∋ Forth open dup fd ! 0 < ;
+    driver a@ 2 ∋ Forth open dup fd ! 0< ;
 
-: close ( -- | close the device driver )
-    fd @ ∋ Forth close drop ;
+: close ( -- ior | close the device driver )
+    fd @ ∋ Forth close ;
 
 : ibboard_info ( -- error | return board info in )
     fd @ C_IBBOARD_INFO gpinfo ioctl ;
@@ -371,8 +372,8 @@ create out_buf      16384 allot
 
 : wait-io-complete ( -- )  CMPL ibwait drop ;
 
-: clear_device ( n -- | send SDC to device at primary address n )
-    CMD_SDC swap CMD_LAD or  CMD_TAD 3 ibcmd drop ;
+: clear_device ( n -- error | send SDC to device at primary address n )
+    CMD_SDC swap CMD_LAD or  CMD_TAD 3 ibcmd ;
 
 : send_command ( ^str n  -- | send a string to device at primary address n )
     CMD_LAD or  CMD_TAD 2 ibcmd drop    \ set talker and listener
