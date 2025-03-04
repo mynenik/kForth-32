@@ -392,7 +392,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 
 // Regs: eax, ebx, edx
 // In: ebx = DSP
-// Out: eax = 0, ebx = DSP, edx = remainder
+// Out: eax = 0, ebx = DSP, edx = remainder, TOS = quotient
 .macro STARSLASH
         cmpl $0, WSIZE(%ebx)
         jz E_div_zero
@@ -409,29 +409,29 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 // In: ebx = DSP
 // Out: eax = 0, ebx = DSP
 .macro TNEG
-        pushl %ebx
+        push %ebx
         movl $WSIZE, %eax
-        addl %eax, %ebx
-        movl (%ebx), %edx
-        addl %eax, %ebx
-        movl (%ebx), %ecx
-        addl %eax, %ebx
-        movl (%ebx), %eax
-        notl %eax
-        notl %ecx
-        notl %edx
+        add  %eax, %ebx
+        mov  (%ebx), %edx
+        add  %eax, %ebx
+        mov  (%ebx), %ecx
+        add  %eax, %ebx
+        mov  (%ebx), %eax
+        not  %eax
+        not  %ecx
+        not  %edx
         clc
         addl $1, %eax
         adcl $0, %ecx
         adcl $0, %edx
-        movl %eax, (%ebx)
+        mov  %eax, (%ebx)
         movl $WSIZE, %eax
-        subl %eax, %ebx
-        movl %ecx, (%ebx)
-        subl %eax, %ebx
-        movl %edx, (%ebx)
-        popl %ebx
-        xor %eax, %eax
+        sub  %eax, %ebx
+        mov  %ecx, (%ebx)
+        sub  %eax, %ebx
+        mov  %edx, (%ebx)
+        pop  %ebx
+        xor  %eax, %eax
 .endm
 
 // Regs: eax, ebx
@@ -482,7 +482,7 @@ L_initfpu:
 	movl NDPcw, %ecx
 	andb $240, %ch         # mask the high byte
         orb  $2,  %ch          # set double precision, round near
-        movl %ecx, (%ebx)
+        mov  %ecx, (%ebx)
 	fldcw (%ebx)
 	ret
 
@@ -512,18 +512,18 @@ L_jnz:				# not implemented
 	ret
 
 L_jmp:
-        movl %ebp, %ecx
-        incl %ecx
+        mov  %ebp, %ecx
+        inc  %ecx
         movl (%ecx), %eax       # get the relative jump count
-        addl %eax, %ecx
+        add  %eax, %ecx
         subl $2, %ecx
-        movl %ecx, %ebp		# set instruction ptr
-	xorl %eax, %eax
+        mov  %ecx, %ebp		# set instruction ptr
+	xor  %eax, %eax
         NEXT
 
 L_calladdr:
-	incl %ebp
-	movl %ebp, %ecx # address to execute (intrinsic Forth word or other)
+	inc  %ebp
+	mov  %ebp, %ecx # address to execute (intrinsic Forth word or other)
 	addl $WSIZE-1, %ebp
 	movl %ebp, GlobalIp
         jmpl *(%ecx)
@@ -842,7 +842,7 @@ L_fpow:
        subl $16, %esp
        DROP
        movl 8(%ebx), %eax
-       movl %eax, (%esp)
+       mov  %eax, (%esp)
        movl 12(%ebx), %eax
        movl %eax, 4(%esp)
        movl (%ebx), %eax
@@ -881,7 +881,7 @@ L_ftrunc:
 	fnstcw NDPcw            # save NDP control word
         movl NDPcw, %ecx
 	movb $12, %ch
-	movl %ecx, (%ebx)
+	mov  %ecx, (%ebx)
 	fldcw (%ebx)
 	frndint
         fldcw NDPcw             # restore NDP control word
