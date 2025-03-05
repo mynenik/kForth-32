@@ -2717,15 +2717,14 @@ L_smslashrem:
 
 L_stof:
 	LDSP
-        INC_DSP
-        fildl (%ebx)
-        DEC_DSP
+        movl $WSIZE, %eax
+        mov  %ebx, %ecx
+        add  %eax, %ecx
+        fildl (%ecx)
         fstpl (%ebx)
-	DEC_DSP
+	sub  %eax, %ebx
         STSP
         movl GlobalTp, %edx
-        movb $OP_IVAL, (%edx)
-        dec  %edx
         movb $OP_IVAL, (%edx)
         dec  %edx
 	movl %edx, GlobalTp
