@@ -453,8 +453,7 @@ vm:
         push  %ebx
 	pushl GlobalIp
 	pushl vmEntryRp
-        mov   %esp, %ebp
-        movl  20(%ebp), %ebp     # load the Forth instruction pointer
+        movl  20(%esp), %ebp     # load the Forth instruction pointer
         movl  %ebp, GlobalIp
 	movl  GlobalRp, %eax
 	movl  %eax, vmEntryRp
@@ -501,15 +500,6 @@ ret1:
 retexit:
         ret
 
-# L_tobody:
-#	LDSP
-#	INC_DSP
-#	movl (%ebx), %ecx	# code address
-#	incl %ecx		# the data address is offset by one
-#	movl (%ecx), %ecx
-#	movl %ecx, (%ebx)
-#	ret
-#
 L_jz:
         LDSP
         DROP

@@ -316,8 +316,7 @@ vm:
         push  %ebx
 	pushl GlobalIp
 	pushl vmEntryRp
-        mov  %esp, %ebp
-        movl 20(%ebp), %ebp     # load the Forth instruction pointer
+        movl 20(%esp), %ebp     # load the Forth instruction pointer
         movl %ebp, GlobalIp
 	movl GlobalRp, %eax
 	movl %eax, vmEntryRp
@@ -377,16 +376,6 @@ jz1:    mov  %ebp, %ecx
         add  %eax, %ebp
         xor  %eax, %eax
         NEXT
-
-# L_tobody:
-#	INC_DSP
-#	mov  (%ebx), %ecx	# code address
-#	inc  %ecx		# the data address is offset by one
-#	mov  (%ecx), %ecx
-#	mov  %ecx, (%ebx)
-#	DEC_DSP
-#	STSP
-#	ret
 
 L_vmthrow:      # throw VM error (used as default exception handler)
         INC_DSP
