@@ -849,7 +849,8 @@ L_fpow:
        movl %eax, 8(%esp)
        movl 4(%ebx), %eax
        movl %eax, 12(%esp)
-       call powA
+#       call powA
+       call pow
        INC2_DSP
        fstpl (%ebx)
        DEC_DSP
