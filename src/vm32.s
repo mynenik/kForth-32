@@ -613,6 +613,7 @@ L_usleep:
 	call usleep
 	addl $WSIZE, %esp
 	xor  %eax, %eax
+	STSP
 	NEXT
 
 L_ms:
