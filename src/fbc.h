@@ -2,7 +2,7 @@
 //
 //  Forth Byte Codes (FBC) for kForth
 //
-//  Copyright (c) 1996--2024 Krishna Myneni,
+//  Copyright (c) 1996--2026 Krishna Myneni,
 //    <krishna.myneni@ccreweb.org>
 //
 //  This software is provided under the terms of the GNU
@@ -341,7 +341,7 @@
 #define OP_SYSTEM               326
 #define OP_CHDIR                327
 #define OP_TIMEANDDATE          328
-
+#define OP_INTERPRET            329
 #define OP_WORDLIST             330
 #define OP_FORTHWORDLIST        331
 #define OP_GETCURRENT           332
@@ -351,7 +351,7 @@
 #define OP_SEARCHWORDLIST       336
 #define OP_DEFINITIONS	        337
 #define OP_VOCABULARY           338
-
+#define OP_COMPILE_NAME_BC      339
 #define OP_ONLY                 340                 
 #define OP_ALSO                 341
 #define OP_ORDER                342
@@ -442,6 +442,24 @@
 #define OP_FSTARPLUS            428
 
 #define OP_FSL_MAT_ADDR         430   // row ordered indexing
+#define OP_REC_NAME             431
+#define OP_REC_NUMBER           432
+#define OP_REC_FLOAT            433
+#define OP_REC_LOCAL            434
+#define OP_REC_NONE             435
+#define OP_REC_FORTH            436
+#define OP_TRANSLATE_NAME       437
+#define OP_TRANSLATE_CELL       438
+#define OP_TRANSLATE_DCELL      439
+#define OP_TRANSLATE_FLOAT      440
+#define OP_TRANSLATE_LOCAL      441
+#define OP_TRANSLATE_NONE       442
+#define OP_REC_SEQUENCE         443
+#define OP_RECS                 444
+#define OP_GET_RECS             445
+#define OP_SET_RECS             446
+#define OP_TRANSLATE            447
+#define OP_NAME2EXECUTE         448
 
 // Windows specific opcodes
 #define OP_VALLOC               450

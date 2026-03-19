@@ -2,7 +2,7 @@
 //
 // The intrinsic Forth word list for kForth
 //
-// Copyright (c) 2008--2024 Krishna Myneni,
+// Copyright (c) 2008--2026 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org> 
 //
 // This software is provided under the terms of the GNU
@@ -29,12 +29,13 @@ WordTemplate ForthWords[] =
     { "WORDLIST",  OP_WORDLIST,     NONDEFERRED },
     { "GET-CURRENT", OP_GETCURRENT, 0 },
     { "SET-CURRENT", OP_SETCURRENT, NONDEFERRED },
-    { "GET-ORDER",   OP_GETORDER,      0 },
+    { "GET-ORDER",   OP_GETORDER,   0 },
     { "SEARCH-WORDLIST", OP_SEARCHWORDLIST, 0 },
     { "TRAVERSE-WORDLIST", OP_TRAVERSE_WORDLIST, 0 },
     { "NAME>STRING", OP_NAME2STRING,          0 },
     { "NAME>INTERPRET", OP_NAME2INTERPRET,    0 },
     { "NAME>COMPILE", OP_NAME2COMPILE,        0 },
+    { "NAME>EXECUTE", OP_NAME2EXECUTE,        0 },
     { "MY-NAME",   OP_MYNAME,                 0 },
     { "ALSO",      OP_ALSO,         NONDEFERRED },
     { "ONLY",      OP_ONLY,         NONDEFERRED },
@@ -53,10 +54,21 @@ WordTemplate ForthWords[] =
     { "[UNDEFINED]", OP_UNDEFINED,  IMMEDIATE | NONDEFERRED },
     { "COMPILE,",  OP_COMPILECOMMA, NONDEFERRED },
     { "COMPILE-NAME", OP_COMPILENAME, NONDEFERRED },
+    { "COMPILE-NAME-BC", OP_COMPILE_NAME_BC,  0 },
     { "POSTPONE",  OP_POSTPONE,     IMMEDIATE },
     { "[",         OP_LBRACKET,     IMMEDIATE },
     { "]",         OP_RBRACKET,     NONDEFERRED },
     { "STATE",     OP_STATE,        0 },
+    { "REC-NAME",        OP_REC_NAME,        0 },
+    { "REC-NUMBER",      OP_REC_NUMBER,      0 },
+    { "REC-FLOAT",       OP_REC_FLOAT,       0 },
+    { "REC-NONE",        OP_REC_NONE,        0 },
+    { "TRANSLATE-NAME",  OP_TRANSLATE_NAME,  0 },
+    { "TRANSLATE-CELL",  OP_TRANSLATE_CELL,  0 },
+    { "TRANSLATE-DCELL", OP_TRANSLATE_DCELL, 0 },
+    { "TRANSLATE-FLOAT", OP_TRANSLATE_FLOAT, 0 },
+    { "TRANSLATE-NONE",  OP_TRANSLATE_NONE,  0 },
+    { "INTERPRET",       OP_INTERPRET,    NONDEFERRED },
     { "CREATE",    OP_CREATE,       NONDEFERRED },
     { "DOES>",     OP_DOES,         0 },
     { ">BODY",     OP_TOBODY,       0 },

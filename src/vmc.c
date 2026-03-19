@@ -3,7 +3,7 @@ vmc.c
 
   C portion of the kForth Virtual Machine
 
-  Copyright (c) 1998--2025 Krishna Myneni, 
+  Copyright (c) 1998--2026 Krishna Myneni, 
   <krishna.myneni@ccreweb.org>
 
   This software is provided under the terms of the GNU
@@ -47,6 +47,10 @@ extern byte* GlobalIp;
 extern long int* GlobalRp;
 extern long int* BottomOfStack;
 extern long int* BottomOfReturnStack;
+#ifndef __NO_FPSTACK__
+extern void* GlobalFp;
+extern long int FpSize;
+#endif
 #ifndef __FAST__
 extern byte* GlobalTp;
 extern byte* GlobalRtp;
@@ -76,6 +80,7 @@ int L_quit();
 int L_abort();
 int vm(byte*);
 
+int IsFloat(char*, double*);
 struct timeval ForthStartTime;
 struct termios tios0;
 struct mallinfo ForthStartMem;
@@ -162,38 +167,41 @@ double powA(double x, double y) /* return x ^ y (exponentiation) */
     return ldexp(xy, ey);
 } 
 
-/* now in vmxx-common.s
-int C_fpow ()
-{
-	pf = (double*)(GlobalSp + 1);
-	f = *pf;
-	++pf;
-	*pf = powA (*pf, f);
-	GlobalSp += 2;
-	INC2_DTSP
-	return 0;
-}				
-*/
-
 int C_fmin ()
 {
+#ifndef __NO_FPSTACK__
+	pf = (double*)((byte*) GlobalFp + FpSize);
+#else
 	pf = (double*)(GlobalSp + 1);
+#endif
 	f = *pf;
 	++pf;
 	if (f < *pf) *pf = f;
+#ifndef __NO_FPSTACK__
+	INC_FSP
+#else
 	GlobalSp += 2;
 	INC2_DTSP
+#endif
 	return 0;
 }
 
 int C_fmax ()
 {
+#ifndef __NO_FPSTACK__
+        pf = (double*)((byte*) GlobalFp + FpSize);
+#else
 	pf = (double*)(GlobalSp + 1);
+#endif
 	f = *pf;
 	++pf;
 	if (f > *pf) *pf = f;
+#ifndef __NO_FPSTACK__
+        INC_FSP
+#else
 	GlobalSp += 2;
 	INC2_DTSP
+#endif
 	return 0;
 }
 
@@ -293,10 +301,12 @@ int C_fsync ()
   PUSH_IVAL( fsync(fd) )
   return 0;
 }
- 
+
+// IOCTL ( fd request addr -- err )
+// System device control function
+// Non-standard
 int C_ioctl ()
 {
-  /* stack: ( fd request addr -- err | device control function ) */
   int fd, request;
   char* argp;
 
@@ -562,9 +572,10 @@ return False.
     char s[256];
     char *pStr = &s[0];
     char *pEnd;
-    int f = FALSE;
+    int b = FALSE;
 
     strcpy(s, token);
+    strupr(s);
 
     if (strchr(pStr, 'E'))
     {
@@ -586,11 +597,11 @@ return False.
               if (*pStr == 'E') *pStr = '\0';
             }
             *p = strtod(s, &pEnd);
-             if (*pEnd == 0) f = TRUE;
+             if (*pEnd == 0) b = TRUE;
 	}
     }
 
-    return f;
+    return b;
 }
 /*----------------------------------------------------------*/
 
@@ -600,35 +611,6 @@ int isBaseDigit (int c)
 
    return ( (isdigit(u) && ((u - 48) < Base)) || 
 	    (isalpha(u) && (Base > 10) && ((u - 55) < Base)) );
-}
-/*---------------------------------------------------------*/
-
-int IsInt (char* token, long int* p)
-{
-/* Check the string token to see if it is an integer number;
-   if so set the value of *p and return True, otherwise return False. */
-
-  int b = FALSE;
-  unsigned long u = 0;
-  char *pStr = token, *endp;
-
-  if ((*pStr == '-') || isBaseDigit(*pStr))
-    {
-      ++pStr;
-      while (isBaseDigit(*pStr))	    
-	{
-	  ++pStr;
-	}
-      if (*pStr == 0)
-        {
-	  u = strtoul(token, &endp, Base);
-	  b = TRUE;
-        }
-
-    }
-
-  *p = u;
-  return b;
 }
 /*---------------------------------------------------------*/
 
@@ -948,11 +930,16 @@ int C_tofloat ()
     
 
   if (b) {
+#ifndef __NO_FPSTACK__
+      *((double*)(GlobalFp)) = f;
+      DEC_FSP
+#else
       DEC_DSP
       *((double*)(GlobalSp)) = f;
       DEC_DSP
       STD_IVAL
       STD_IVAL
+#endif
   }
   PUSH_IVAL(b)
   return 0;
@@ -1143,29 +1130,11 @@ void set_start_time ()
   gettimeofday (&ForthStartTime, NULL);
 }
 
-void set_start_mem ()
-{
-  /* initialize starting memory usage */
-  ForthStartMem = mallinfo();
-}
-
-int C_used ()
-{
-  /* stack: ( -- u | return bytes used since start of Forth ) */
-  unsigned long u0, u1;
-  struct mallinfo mi = mallinfo();
-  u0 = ForthStartMem.arena + ForthStartMem.hblkhd;
-  u1 = mi.arena + mi.hblkhd;
-  TOS = (u1 - u0);
-  DEC_DSP
-  STD_IVAL
-  return 0;
-}
-
+// MS@ ( -- umsec )
+// Return milliseconds elapsed since start of Forth
+// Non-standard word
 int C_msfetch ()
 {
-  /* stack: ( -- msec | return msec elapsed since start of Forth ) */
-  
   struct timeval tv;
   gettimeofday (&tv, NULL);
   TOS = (tv.tv_sec - ForthStartTime.tv_sec)*1000 + 
@@ -1175,10 +1144,11 @@ int C_msfetch ()
   return 0;
 }
 
+// US2@ ( -- ud )
+// Return microseconds elapsed since start of Forth
+// Non-standard word
 int C_us2fetch ()
 {
-  /* stack: ( -- ud | return microseconds elapsed since start of Forth ) */
-  
   struct timeval tv;
   gettimeofday (&tv, NULL);
   unsigned long long int usec;
@@ -1198,6 +1168,24 @@ int C_us2fetch ()
   return 0;
 }
 
+void set_start_mem ()
+{
+  /* initialize starting memory usage */
+  ForthStartMem = mallinfo();
+}
+
+int C_used ()
+{
+  /* stack: ( -- u | return bytes used since start of Forth ) */
+  unsigned long u0, u1;
+  struct mallinfo mi = mallinfo();
+  u0 = ForthStartMem.arena + ForthStartMem.hblkhd;
+  u1 = mi.arena + mi.hblkhd;
+  TOS = (u1 - u0);
+  DEC_DSP
+  STD_IVAL
+  return 0;
+}
 /*------------------------------------------------------*/
 
 int C_search ()

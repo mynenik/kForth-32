@@ -1,6 +1,6 @@
 // ForthCompiler.h
 //
-// Copyright (c) 1998--2024 Krishna Myneni,
+// Copyright (c) 1998--2026 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -18,9 +18,7 @@
 #define PRECEDENCE_NONE         0
 #define PRECEDENCE_IMMEDIATE    1
 #define PRECEDENCE_NON_DEFERRED 2
-#define EXECUTE_NONE            0
-#define EXECUTE_UP_TO           1
-#define EXECUTE_CURRENT_ONLY    2
+
 #define TRUE -1
 #define FALSE 0
 
@@ -67,10 +65,19 @@ public:
 
 WordListEntry* IsForthWord (char*);
 int  ForthCompiler (vector<byte>*, long int*);
-int  ExecutionMethod (int);
-// void CompileWord (WordListEntry*);
+int  GetExecutionSemantics (WordListEntry*);
+int  InitNameTranslations();
+int  InitTranslationTable();
 void OutputForthByteCode (vector<byte>*);
 void SetForthInputStream (istream&);
 void SetForthOutputStream (ostream&);
+extern "C" {
+int CPP_interpret();
+int CPP_name_to_execute();
+int CPP_rec_name();
+int CPP_translate_none();
+int CPP_translate_cell();
+int CPP_translate_float();
+}
 
 #endif

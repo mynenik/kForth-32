@@ -3,7 +3,7 @@
 // Useful macros for kForth C and C++ source files, following
 // the convention established by DNW in vm-osxppc.s
 //
-// Copyright (c) 2009--2021, Krishna Myneni
+// Copyright (c) 2009--2026, Krishna Myneni
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -28,7 +28,9 @@
 #define CHK_ADDR  if (*GlobalTp != OP_ADDR) return E_V_NOT_ADDR;
 #define STD_IVAL  *GlobalTp-- = OP_IVAL;
 #define STD_ADDR  *GlobalTp-- = OP_ADDR;
-#define DROP      ++GlobalSp; ++GlobalTp;
+#define DUP       TOS = (*(GlobalSp+1)); (*GlobalTp = *(GlobalTp+1)); DEC_DSP DEC_DTSP
+#define DROP      INC_DSP INC_DTSP
+#define UNDROP    DEC_DSP DEC_DTSP
 
 #else
 
@@ -39,9 +41,13 @@
 #define CHK_ADDR 
 #define STD_IVAL
 #define STD_ADDR
-#define DROP       ++GlobalSp;
+#define DUP        TOS=(*(GlobalSp+1)); DEC_DSP
+#define DROP       INC_DSP
+#define UNDROP     DEC_DSP
 
 #endif
 
 #define PUSH_IVAL(x) TOS = (x); DEC_DSP  STD_IVAL
 #define PUSH_ADDR(x) TOS = (x); DEC_DSP  STD_ADDR
+#define PUSH_CSTRING(x) PUSH_ADDR((long int)x) PUSH_IVAL(strlen(x))
+

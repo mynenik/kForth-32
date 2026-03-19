@@ -3,7 +3,7 @@
 // The C++ portion of the kForth Virtual Machine to 
 // execute Forth byte code.
 //
-// Copyright (c) 1996--2024 Krishna Myneni,
+// Copyright (c) 1996--2026 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -58,7 +58,6 @@ extern stack<WordListEntry*> PendingDefStack;
 extern stack<vector<byte>*> PendingOps;
 extern WordListEntry* pNewWord;
 extern vector<byte>* pCurrentOps;
-
 extern size_t NUMBER_OF_INTRINSIC_WORDS;
 extern size_t NUMBER_OF_ROOT_WORDS;
 
@@ -71,13 +70,12 @@ extern "C" {
   void  restore_term(void);
   char* strupr (char*);
   char* ExtractName(char*, char*);
-  int   IsFloat(char*, double*);
-  int   IsInt(char*, int*);
   int   isBaseDigit(int);
   int   C_bracketsharp(void);
   int   C_sharps(void);
   int   C_sharpbracket(void);
   int   C_word(void);
+  int   C_parsename(void);
 
   // vm functions provided by vm.s/vm-fast.s
 
@@ -251,20 +249,21 @@ WordList *pCompilationWL = &Voc_Forth;   // the current compilation wordlist
 
 // Tables
 vector<char*> StringTable;               // table for persistent strings
+byte** translation_xts [3];              // for securely returning translation
+                                         //   xts of a recognizer
 
 // stacks; these are global to this module
 
 long int ForthStack[STACK_SIZE];                  // the stack
 long int ForthReturnStack[RETURN_STACK_SIZE];     // the return stack
+
 #ifndef __FAST__
 byte ForthTypeStack[STACK_SIZE];             // the value type stack
 byte ForthReturnTypeStack[RETURN_STACK_SIZE];// the return value type stack
 #endif
 
-
 bool FileOutput = FALSE;
 vector<byte> tempOps;          // temporary opcode vector for [ and ]
-
 //---------------------------------------------------------------
 
 void WordList::RemoveLastWord ()
@@ -412,6 +411,20 @@ int NullSystemVars ()
 }
 //--------------------------------------------------------------- 
 
+#ifndef __NO_FPSTACK__
+int InitFpStack ()
+{
+// Allocate the Floating Point stack and set the relevant
+// stack pointers.
+
+    unsigned u = FP_STACK_SIZE*FpSize;
+    void* p = (void*) new byte [u];  // == fixme ==> null ptr check
+    BottomOfFpStack = (void*)( (byte*) p + u - FpSize );
+    GlobalFp = BottomOfFpStack;
+    return 0;
+}
+#endif
+
 int OpenForth ()
 {
 // Initialize the Forth system, and return the total number of words
@@ -432,6 +445,7 @@ int OpenForth ()
     pCompilationWL = &Voc_Forth;
 
     // Initialize the global stack pointers
+    // Floating point stack pointers initialized by InitFpStack()
     BottomOfStack = ForthStack + STACK_SIZE - 1;
     BottomOfReturnStack = ForthReturnStack + RETURN_STACK_SIZE - 1;
     GlobalSp = BottomOfStack;
@@ -446,6 +460,7 @@ int OpenForth ()
    // Other initialization
     vmEntryRp = BottomOfReturnStack;
     InitSystemVars();
+    InitTranslationTable();
 #ifndef __NO_FPSTACK__
     InitFpStack();
 #endif
@@ -665,14 +680,20 @@ if (debug)  {
   }
   else if (GlobalRp > BottomOfReturnStack)
   {
-      ecode = E_V_RET_STK_CORRUPT;
+      ecode = E_V_RET_STK_UNDERFLOW;
   }
   else
       ;
 
   // On stack underflow, update the global stack pointers.
 
-  if ((ecode == E_V_STK_UNDERFLOW) || (ecode == E_V_RET_STK_CORRUPT))
+  if ((ecode == E_V_STK_UNDERFLOW) ||
+      (ecode == E_V_RET_STK_UNDERFLOW) || 
+      (ecode == E_V_RET_STK_CORRUPT)
+#ifndef __NO_FPSTACK__
+      || (ecode == E_V_FP_STK_UNDERFLOW)
+#endif
+     )
   {
       L_abort();
   }
@@ -972,8 +993,8 @@ int CPP_name_to_interpret()
 {
     DROP
     CHK_ADDR
-    WordListEntry* pWord = (WordListEntry*) TOS;
-    void** xt = (void**) ((byte*) pWord + offsetof(struct WordListEntry, Cfa));
+    WordListEntry* nt = (WordListEntry*) TOS;
+    void** xt = (void**) ((byte*) nt + offsetof(struct WordListEntry, Cfa));
     PUSH_ADDR( (long int) xt )
     return 0;
 }
@@ -1142,16 +1163,14 @@ int CPP_semicolon()
          PendingOps.pop();
       }
       else {
-         pCurrentOps->erase(pCurrentOps->begin(), pCurrentOps->end());
+         pCurrentOps->clear();
       }
       State = FALSE;
     }
-  else
-    {
+    else {
       ecode = E_V_END_OF_DEF;
     }
-
-  return ecode;
+    return ecode;
 }
 
 // COMPILE, ( xt -- )
@@ -1167,7 +1186,11 @@ int CPP_compilecomma ()
     return 0;  
 }
 
-int CPP_compile_to_current ()
+// COMPILE-NAME-BC ( nt -- )
+// Append the byte code to perform execution semantics
+// of nt to the current byte code vector.
+// This word is kForth-specific.
+int CPP_compile_name_bc ()
 {
     DROP
     CHK_ADDR
@@ -1218,7 +1241,7 @@ int CPP_compilename ()
 {
     vector<byte>* pSaveOps = pCurrentOps;
     if ( (State == 0) && PendingDefStack.size() ) pCurrentOps = PendingOps.top();
-    CPP_compile_to_current();
+    CPP_compile_name_bc();
     pCurrentOps = pSaveOps;
     return 0;
 }
@@ -1230,7 +1253,7 @@ int CPP_compilename ()
 int CPP_postpone ()
 {
     char token[128];
-
+    int ecode = 0;
     pTIB = ExtractName (pTIB, token);
     strupr(token);
     WordListEntry* pWord = SearchOrder.LocateWord(token);
@@ -1250,7 +1273,10 @@ int CPP_postpone ()
 	  pNewWord->Precedence |= PRECEDENCE_NON_DEFERRED;
       }
     }
-    return 0;  
+    else
+      ecode = E_V_UNDEFINED_WORD;
+
+    return ecode;  
 }
 
 
@@ -1414,10 +1440,6 @@ int CPP_udotr ()
   nfield = TOS;
   DROP
 
-  // km 2023-12-14
-  // The following commented line is not consistent with the Forth standard.
-  // if (nfield <= 0) return 0;  // don't print anything if field width <= 0
-
   unsigned long int u, utemp, uscale;
   u = TOS;
   ndig = 1;
@@ -1576,15 +1598,35 @@ int CPP_ddotr ()
 // Forth-94 Floating Point Extensions Wordset 12.6.2.1427
 int CPP_fdot ()
 {
+#ifndef __NO_FPSTACK__
+  INC_FSP
+  if (GlobalFp > BottomOfFpStack)
+    return E_V_FP_STK_UNDERFLOW;
+#else
   DROP
   DROP
   if (GlobalSp > BottomOfStack)
     return E_V_STK_UNDERFLOW;
+#endif
   else
     {
+#ifndef __NO_FPSTACK__
+      switch( FpSize ) {
+        case 4:
+          *pOutStream << *((float*) GlobalFp) << ' ';
+          break;
+        case 8:
+          *pOutStream << *((double*) GlobalFp) << ' ';
+          break;
+        case 16:
+          *pOutStream << "qfloat" << ' ';
+          break;
+      }
+#else
       DEC_DSP
       *pOutStream << *((double*) GlobalSp) << ' ';
       INC_DSP
+#endif
       (*pOutStream).flush();
     }
   return 0;
@@ -1595,18 +1637,29 @@ int CPP_fdot ()
 // Forth-94 Floating Point Extensions Wordset 12.6.2.1613
 int CPP_fsdot ()
 {
+#ifndef __NO_FPSTACK__
+  INC_FSP
+  if (GlobalFp > BottomOfFpStack)
+    return E_V_FP_STK_UNDERFLOW;
+#else
   DROP
   DROP
   if (GlobalSp > BottomOfStack)
     return E_V_STK_UNDERFLOW;
+#endif
   else
     {
-      DEC_DSP
       ios_base::fmtflags origFlags = cout.flags();
       int origPrec = cout.precision();
+#ifndef __NO_FPSTACK__
+      *pOutStream << setprecision(Precision-1) << scientific <<
+                *((double*) GlobalFp) << ' ';
+#else
+      DEC_DSP
       *pOutStream << setprecision(Precision-1) << scientific << 
 		*((double*) GlobalSp) << ' ';
       INC_DSP
+#endif
       (*pOutStream).flush();
       cout.flags(origFlags);
       cout.precision(origPrec);
@@ -1666,6 +1719,53 @@ int CPP_dots ()
 
   return 0;
 }
+
+#ifndef __NO_FPSTACK__
+// F.S ( F: i*r -- i*r )
+int CPP_fdots ()
+{
+   if (GlobalFp > BottomOfFpStack) return E_V_FP_STK_UNDERFLOW;
+   L_fdepth();
+   DROP
+   long int fdepth = TOS;
+
+   if (fdepth > 0 ) {
+     float f;
+     double d;
+     byte* bptr = ((byte*) GlobalFp + FpSize);
+     ios_base::fmtflags origFlags = cout.flags();
+     int origPrec = cout.precision();
+
+     for (int i = 0; i < fdepth; i++) {
+       *pOutStream << "\n\t\t";
+       switch( FpSize ) {
+         case 4:
+           f = *((float*) bptr);
+           *pOutStream << setprecision(Precision-1) <<
+                   scientific << f;
+           break;
+         case 8:
+           d = *((double*) bptr);
+           *pOutStream << setprecision(Precision-1) <<
+              scientific << d;
+           break;
+         case 16:
+           *pOutStream << "qfloat";
+           break;
+       }
+       (*pOutStream).flush();
+       bptr += FpSize;
+     }
+     cout.flags(origFlags);
+     cout.precision(origPrec);
+   }
+   else {
+     *pOutStream << "fs: <empty>";
+   }
+   *pOutStream << endl;
+   return 0;
+}
+#endif
 
 // ' (tick) ( "name" -- xt )
 // Find "name" and return its execution token. If not found, throw exception.
@@ -2176,9 +2276,14 @@ int CPP_fconstant ()
   WordListEntry* pWord = *(pCompilationWL->end() - 1);
   pWord->WordCode = OP_FVAL;
   pWord->Pfa = new double[1];
+#ifndef __NO_FPSTACK__
+  INC_FSP
+  *((double*) (pWord->Pfa)) = *((double*) GlobalFp);
+#else
   DROP
   *((double*) (pWord->Pfa)) = *((double*)GlobalSp);
   DROP
+#endif
   byte *bp = new byte[WSIZE+3];
   pWord->Cfa = bp;
   bp[0] = OP_ADDR;
@@ -2381,11 +2486,24 @@ int CPP_sliteral ()
 }
 //-------------------------------------------------------------------
 
+#ifndef __NO_FPSTACK__
 int CPP_fliteral ()
 {
   // stack: ( F: r -- | place fp in compiled opcodes )
+
+  INC_FSP
+  pCurrentOps->push_back(OP_FVAL);
+  double d = *((double*) GlobalFp);
+  OpsPushDouble(d);
+  return 0;
+}
+#else
+int CPP_fliteral ()
+{
+  // stack: ( r -- | place fp in compiled opcodes )
   return( CPP_twoliteral ());
 }
+#endif
 //-------------------------------------------------------------------
 
 int CPP_cquote ()
@@ -2949,74 +3067,71 @@ int CPP_evaluate ()
 }
 
 // INCLUDED  ( c-addr u -- )
-//
+// Interpret the Forth statements in the file specified by
+// c-addr u
 // Forth 2012 
 int CPP_included()
 {
-  // include the filename given on the stack as a counted string
-  char filename[256];
-  DROP
-  long int nc = TOS;
-  DROP
-  char *cp = (char*) TOS;
+    char filename[256];
+    DROP
+    long int nc = TOS;
+    DROP
+    char *cp = (char*) TOS;
 
-  if ((nc < 0) || (nc > 255)) return E_V_OPEN_FILE;
+    if ((nc < 0) || (nc > 255)) return E_V_OPEN_FILE;
 
-  memcpy (filename, cp, nc);
-  filename[nc] = 0;
-  if (!strchr(filename, '.')) strcat(filename, ".4th");
+    memcpy (filename, cp, nc);
+    filename[nc] = 0;
+    if (!strchr(filename, '.')) strcat(filename, ".4th");
 
-  ifstream f(filename);
-  if (!f)
-    {
-      if (getenv(dir_env_var))
-	{
-	  char temp[256]; 
-	  strcpy(temp, getenv(dir_env_var));
-	  strcat(temp, "/");
-	  strcat(temp, filename);
-	  strcpy(filename, temp);
-	  f.clear();                // Clear the previous error.
-	  f.open(filename);
-	  if (f) 
-	    {
-	      *pOutStream << endl << filename << endl;
-	    }
+    ifstream f(filename);
+    if (!f) {
+      if (getenv(dir_env_var)) {
+	char temp[256]; 
+	strcpy(temp, getenv(dir_env_var));
+	strcat(temp, "/");
+	strcat(temp, filename);
+	strcpy(filename, temp);
+	f.clear();                // Clear the previous error.
+	f.open(filename);
+	if (f) {
+	  *pOutStream << endl << filename << endl;
 	}
+      }
     }
 
-  if (f.fail()) 
-    {
+    if (f.fail()) {
       *pOutStream << endl << filename << endl;
       return (E_V_OPEN_FILE);
     }
 
-  vector<byte> ops, *pOldOps;
-  int ecode;
+    vector<byte> ops, *pOldOps;
+    int ecode;
 	
-  istream* pTempIn = pInStream;  // save input stream ptr
-  SetForthInputStream(f);  // set the new input stream
-  long int oldlc = linecount; linecount = 0;
-  pOldOps = pCurrentOps;
-  ecode = ForthCompiler (&ops, &linecount);
-  f.close();
-  pInStream = pTempIn;  // restore the input stream
-  pCurrentOps = pOldOps; 
-  if (ecode) 
-    {
+    istream* pTempIn = pInStream;  // save input stream ptr
+    SetForthInputStream(f);  // set the new input stream
+    long int oldlc = linecount; linecount = 0;
+    pOldOps = pCurrentOps;
+    ecode = ForthCompiler (&ops, &linecount);
+    f.close();
+    pInStream = pTempIn;  // restore the input stream
+    pCurrentOps = pOldOps; 
+    if (ecode) {
       *pOutStream << filename << "  " ;
-      return (ecode);
     }
-  linecount = oldlc;
+    else {
+      linecount = oldlc;
 
-  // Execute the code immediately
-		      
-  long int *sp;
-  byte *tp;
-  ecode = ForthVM (&ops, &sp, &tp);
-  ops.clear();
-
-  return ecode;
+      // Execute remaining deferred code
+      // The following should not be needed.
+      // It is taken care of by INTERPRET
+      //	      
+      // long int *sp;
+      // byte *tp;
+      // ecode = ForthVM (&ops, &sp, &tp);
+      // ops.clear();
+    }
+    return ecode;
 }
 
 // INCLUDE ( "name" -- )
@@ -3111,6 +3226,45 @@ int CPP_rpstore()
     GlobalRtp = ForthReturnTypeStack + n;
 #endif
     return 0;
+}
+
+#ifndef __NO_FPSTACK__
+// FP! (fpstore) ( a -- )
+// Set the floating point stack point to address a; throw
+// exception if 'a' is outside of the stack space
+// Non-standard word
+int CPP_fpstore()
+{
+    DROP
+    CHK_ADDR
+    unsigned u = FP_STACK_SIZE*FpSize;
+    void* p = (void*) TOS;
+    p = (void*)((byte*) p - FpSize);
+    if (p > BottomOfFpStack) return E_V_FP_STK_UNDERFLOW;
+    if (p < ((byte*)BottomOfFpStack - u)) return E_V_FP_STK_OVERFLOW;
+    GlobalFp = p;  // == fixme ==> ensure FpSize alignment
+    return 0;
+}
+#endif
+
+// EXECUTE ( xt -- )
+//
+int CPP_execute()
+{
+    vector<byte> SingleOp;
+    unsigned long int xt;
+    long int *sp;
+    byte *p_xt, *tp;
+
+    DROP
+    xt = (unsigned long int) TOS;
+    p_xt = (byte*) &xt;
+    SingleOp.push_back(OP_ADDR);
+    for (int j = 0; j < WSIZE; j++) SingleOp.push_back(*(p_xt + j));
+    SingleOp.push_back(OP_EXECUTE);
+    SingleOp.push_back(OP_RET);
+    int ec = ForthVM (&SingleOp, &sp, &tp);
+    return ec;
 }
 
 void dump_return_stack()  // for debugging purposes

@@ -2,7 +2,7 @@
 //
 // The assembler portion of kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2025 Krishna Myneni,
+// Copyright (c) 1998--2026 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
@@ -1074,6 +1074,7 @@ L_rtunloop:
         NEXT
 
 L_rtplusloop:
+	push %edi
 	push %ebp
 	movl GlobalRtp, %ebx
         inc  %ebx
@@ -1083,48 +1084,65 @@ L_rtplusloop:
 	movl $WSIZE, %eax
 	LDSP
 	add  %eax, %ebx
-	movl (%ebx), %ebp	# get loop increment 
+	movl (%ebx), %ebp # ebp = loop increment 
 	STSP
 	INC_DTSP		
         movl GlobalRp, %ebx
-	add  %eax, %ebx		# get ip and save in edx
-	movl (%ebx), %edx
 	add  %eax, %ebx
-	movl (%ebx), %ecx	# get terminal count in ecx
+	movl (%ebx), %edx # edx = return ip
 	add  %eax, %ebx
-	movl (%ebx), %eax	# get current loop index
-	add  %ebp, %eax         # new loop index
+	movl (%ebx), %ecx # ecx = terminal count
+	add  %eax, %ebx
+	movl (%ebx), %eax
+	mov  %eax, %edi   # edi = current loop index
+	add  %ebp, %eax   # eax = new loop index
 	cmpl $0, %ebp           
-	jl plusloop1            # loop inc < 0?
-
-     # positive loop increment
-	cmp  %ecx, %eax
-	jl plusloop2            # is new loop index < ecx?
-	add  %ebp, %ecx
-	cmp  %ecx, %eax
-	jge plusloop2            # is new index >= ecx + inc?
+	jl plusloop_neg   # loop inc < 0?
+	je plusloop_cont
+        # positive loop increment
+	cmp  %edi, %ecx
+	ja plusloop0a
+	# TC is below or equal to I
+	cmp  %edi, %eax
+	ja plusloop_cont  # while I+STEP above I
+	# I+STEP has wrapped
+	cmp %ecx, %eax
+	jb  plusloop_cont # while I+STEP below TC
+	jmp plusloop_exit
+plusloop0a:
+	# I is below TC
+	cmp %edi, %eax
+	jb plusloop_exit
+	cmp %ecx, %eax
+	jb plusloop_cont  # while I+STEP below TC
+plusloop_exit:
 	pop  %ebp
+	pop  %edi
 	xor  %eax, %eax
 	UNLOOP
 	NEXT
-
-plusloop1:       # negative loop increment
-	dec  %ecx
-	cmp  %ecx, %eax
-	jg plusloop2           # is new loop index > ecx-1?
-	add  %ebp, %ecx
-	cmp  %ecx, %eax
-	jle plusloop2           # is new index <= ecx + inc - 1?
-	pop  %ebp
-	xor  %eax, %eax
-	UNLOOP
-	NEXT
-
-plusloop2:
-	pop  %ebp
-	mov  %eax, (%ebx)
-	mov  %edx, %ebp
-	xor  %eax, %eax
+plusloop_neg:       # negative loop increment
+	cmp  %edi, %ecx
+	ja plusloop0b
+	# I is above TC
+	cmp  %edi, %eax
+	ja plusloop_exit
+	cmp %ecx, %eax
+	jae plusloop_cont # while I+STEP above or equal to TC
+	jmp plusloop_exit
+plusloop0b:
+	# TC is above I
+	cmp %edi, %eax
+	jb plusloop_cont  # while I+STEP below TC
+	# I+STEP has wrapped
+	cmp %ecx, %eax
+	jb plusloop_exit  # terminate if I+STEP below TC
+plusloop_cont:
+	pop %ebp
+	pop %edi
+	mov %eax, (%ebx)
+	mov %edx, %ebp
+	xor %eax, %eax
 	NEXT
 
 L_count:

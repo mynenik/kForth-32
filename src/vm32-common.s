@@ -2,7 +2,7 @@
 //
 // Common declarations and data for kForth 32-bit Virtual Machine
 //
-// Copyright (c) 1998--2025 Krishna Myneni,
+// Copyright (c) 1998--2026 Krishna Myneni,
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
@@ -118,33 +118,37 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
 	   .long L_nop, L_nop, L_nop, L_nop            # 316--319
            .long C_dlopen, C_dlerror, C_dlsym, C_dlclose # 320--323
 	   .long C_usec, CPP_alias, C_system, C_chdir    # 324--327
-           .long C_timeanddate, L_nop, CPP_wordlist, CPP_forthwordlist       # 328--331
+           .long C_timeanddate, CPP_interpret, CPP_wordlist, CPP_forthwordlist # 328--331
            .long CPP_getcurrent, CPP_setcurrent, CPP_getorder, CPP_setorder  # 332--335
-           .long CPP_searchwordlist, CPP_definitions, CPP_vocabulary, L_nop  # 336--339
+           .long CPP_searchwordlist, CPP_definitions, CPP_vocabulary, CPP_compile_name_bc  # 336--339
            .long CPP_only, CPP_also, CPP_order, CPP_previous                 # 340--343
            .long CPP_forth, CPP_assembler, CPP_traverse_wordlist, CPP_name_to_string # 344--347
            .long CPP_name_to_interpret, CPP_name_to_compile, CPP_defined, CPP_undefined # 348--351
-           .long L_nop, L_nop, L_nop, CPP_myname            # 352--355
-           .long L_nop, L_nop, C_used, L_vmthrow            # 356--359
+           .long L_nop, L_nop, L_nop, CPP_myname             # 352--355
+           .long L_nop, L_nop, C_used, L_vmthrow             # 356--359
            .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
-	   .long L_nop, L_nop, L_fexpm1, L_flnp1	    # 364--367
-	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup   # 368--371
-           .long L_nop, L_nop, L_nop, L_nop           # 372--375
-           .long L_nop, L_nop, L_nop, L_nop           # 376--379
-           .long L_nop, L_nop, L_nop, L_nop           # 380--383
-           .long L_nop, L_nop, L_nop, L_nop           # 384--387
-           .long L_nop, L_nop, L_nop, L_nop           # 388--391
-           .long L_nop, L_nop, L_nop, L_nop           # 392--395
+	   .long L_nop, L_nop, L_fexpm1, L_flnp1	     # 364--367
+	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup    # 368--371
+           .long L_nop, L_nop, L_nop, L_nop                  # 372--375
+           .long L_nop, L_nop, L_nop, L_nop                  # 376--379
+           .long L_nop, L_nop, L_nop, L_nop                  # 380--383
+           .long L_nop, L_nop, L_nop, L_nop                  # 384--387
+           .long L_nop, L_nop, L_nop, L_nop                  # 388--391
+           .long L_nop, L_nop, L_nop, L_nop                  # 392--395
            .long CPP_find_name_in, CPP_find_name, L_nop, L_nop  # 396--399
            .long L_bool_not, L_bool_and, L_bool_or, L_bool_xor  # 400--403   
            .long L_boolean_query, L_uwfetch, L_ulfetch, L_slfetch  # 404--407
-           .long L_lstore, L_nop, L_nop, L_nop        # 408--411
-           .long L_nop, L_nop, L_nop, L_nop           # 412--415
-           .long L_nop, L_udivmod, L_uddivmod, L_nop  # 416--419
-           .long L_nop, L_nop, L_nop, L_nop           # 420--423
-           .long L_fplusstore, L_pi, L_fsquare, L_starplus # 424--427
-	   .long L_nop, L_nop, L_fsl_mat_addr, L_nop  # 428--431
-
+           .long L_lstore, L_nop, L_nop, L_nop               # 408--411
+           .long L_nop, L_nop, L_nop, L_nop                  # 412--415
+           .long L_nop, L_udivmod, L_uddivmod, L_nop         # 416--419
+           .long L_nop, L_nop, L_nop, L_nop                  # 420--423
+           .long L_fplusstore, L_pi, L_fsquare, L_starplus   # 424--427
+	   .long L_nop, L_nop, L_fsl_mat_addr, CPP_rec_name  # 428--431
+	   .long CPP_rec_number, CPP_rec_float, L_nop, CPP_rec_none # 432--435
+	   .long L_nop, CPP_translate_name, CPP_translate_cell, CPP_translate_dcell # 436--439
+	   .long CPP_translate_float, L_nop, CPP_translate_none, L_nop # 440--443
+	   .long L_nop, L_nop, L_nop, L_nop                  # 444--447
+	   .long CPP_name_to_execute, L_nop, L_nop, L_nop    # 448--451
 .text
 	.align WSIZE
 .global JumpTable
