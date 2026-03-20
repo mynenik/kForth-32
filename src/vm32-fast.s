@@ -751,13 +751,13 @@ L_rtplusloop:
 	STSP
         movl GlobalRp, %ebx
 	add  %eax, %ebx	
-	movl (%ebx), %edx # edx = return ip
+	movl (%ebx), %edx # edx = ip to start of loop
 	add  %eax, %ebx
 	movl (%ebx), %ecx # ecx = terminal count
 	add  %eax, %ebx
 	movl (%ebx), %eax
 	mov  %eax, %edi   # edi = current loop index
-	add  %ebp, %eax   # eax = new loop index
+	add  %ebp, %eax   # eax = next loop index
 	cmpl $0, %ebp           
 	jl plusloop_neg   # loop inc < 0?
 	je plusloop_cont
