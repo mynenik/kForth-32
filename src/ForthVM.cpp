@@ -980,9 +980,7 @@ int CPP_name_to_string()
     CHK_ADDR
     WordListEntry* pWord = (WordListEntry*) TOS;  // get nt from stack
     char* cp = (char*) pWord->WordName;
-    PUSH_ADDR( (long int) cp )
-    size_t len = strlen(cp);
-    PUSH_IVAL( (long int) len )
+    PUSH_CSTRING( cp );
     return 0;	
 }
 
@@ -1593,9 +1591,9 @@ int CPP_ddotr ()
   return 0;
 }
 
-// F.  ( r -- )
+// F.  ( r -- ) | ( F: r -- )
 // Print floating point number from the stack.
-// Forth-94 Floating Point Extensions Wordset 12.6.2.1427
+// Forth-94/2012 Floating Point Extensions Wordset 12.6.2.1427
 int CPP_fdot ()
 {
 #ifndef __NO_FPSTACK__
@@ -1632,9 +1630,9 @@ int CPP_fdot ()
   return 0;
 }
 
-// FS.  ( r -- )
+// FS.  ( r -- ) | ( F: r -- )
 // Print floating point number in scientific notation.
-// Forth-94 Floating Point Extensions Wordset 12.6.2.1613
+// Forth-94/2012 Floating Point Extensions Wordset 12.6.2.1613
 int CPP_fsdot ()
 {
 #ifndef __NO_FPSTACK__
@@ -3144,8 +3142,7 @@ int CPP_include()
     pTIB = ExtractName (pTIB, WordToken);
     strcpy (s, pTIB);  // save remaining part of input line in TIB
 
-    PUSH_ADDR((long int) ((char*) WordToken))
-    PUSH_IVAL(strlen(WordToken))
+    PUSH_CSTRING( ((char*) WordToken) )
     ecode = CPP_included();
     if (ecode) return(ecode);
 
@@ -3160,8 +3157,7 @@ int CPP_include()
 // Forth 2012
 int CPP_source()
 {
-    PUSH_ADDR((long int) TIB)
-    PUSH_IVAL(strlen(TIB))
+    PUSH_CSTRING( TIB )
     return 0;
 }
 

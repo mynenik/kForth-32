@@ -691,6 +691,7 @@ int C_parsename ()
   }  
   PUSH_ADDR((long int) cp)
   PUSH_IVAL(count)
+  if (*pTIB && strchr(delim, *pTIB)) ++pTIB;
   return 0;
 }
 
