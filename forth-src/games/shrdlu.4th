@@ -18,21 +18,12 @@
 .( Put block1 on top of block2, even if both blocks are obscured by other ) CR 
 .( blocks. ) CR
 
-
+: chars ;
 \ ----- ANS Forth compatibility section -------
 (
 : ?allot HERE SWAP ALLOT ;
 )
 \ ---------------------------------------------
-
-\ ------------- kForth defs -------------------
-\ comment this section out if not using kForth
-
-: CHARS ;
-: WITHIN  \ n m1 m2 -- flag | is m1 <= n < m2 
-	over - >r - r> u< ;
-
-\ ------------- end of kForth defs ------------
 
 \ Pseudo-random number generation
 variable last-rn

@@ -79,7 +79,6 @@ extern "C" {
 
   // Provided by vmc.c
   char* strupr (char*);
-  char* ExtractName(char*, char*);
   int   isBaseDigit(char);
   int   IsFloat(char*, double*);
   int   C_parsename();
@@ -399,8 +398,14 @@ int CPP_name_to_execute()
         xt = (long int) p_sem_execute_name; // execute xt for name
         break;
       case NONDEFERRED:
-        xt = (long int) p_sem_compile_nd; // compile a nondeferred word;
-        break;                            // make new def nondeferred
+	// compile a nondeferred word
+	if (pNewWord) {
+          xt = (long int) p_sem_compile_nd; // new def inherits nondeferred
+	}
+	else {
+	  xt = (long int) p_sem_compile_name; // :NONAME has no inheritance
+	}
+	break;
     }
     PUSH_ADDR( xt )
 
