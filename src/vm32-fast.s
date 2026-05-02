@@ -234,7 +234,7 @@
 	add  %ecx, %ebx
 	fcompl (%ebx)
 	fnstsw %ax
-	andb $65, %ah
+	andb $69, %ah
 	\logic \arg, %ah
 	movl $0, %eax
 	\set %al
@@ -2117,7 +2117,7 @@ L_fne:
 	NEXT
 
 L_feq:
-	FREL_DYADIC andb $64 setnz
+	FREL_DYADIC xorb $64 setz
 	NEXT
 
 L_flt:
@@ -2125,15 +2125,36 @@ L_flt:
 	NEXT
 
 L_fgt:
-	FREL_DYADIC andb $1 setnz
+	FREL_DYADIC xorb $1 setz
 	NEXT
 
 L_fle:
-	FREL_DYADIC xorb $1 setnz
+	FREL_DYADIC andb $5 setz
 	NEXT
 
 L_fge:
-	FREL_DYADIC andb $65 setnz
+	movl $WSIZE, %ecx
+	add  %ecx, %ebx
+	fldl (%ebx)
+	add  %ecx, %ebx
+	add  %ecx, %ebx
+	fcompl (%ebx)
+	fnstsw %ax
+	andb $69, %ah
+	jz fge_false
+	cmpb $69, %ah
+	jz fge_false
+	xor %eax, %eax
+	movb $1, %al
+	jmp fge_cont
+fge_false:
+	xor %eax, %eax
+fge_cont:
+	neg  %eax
+	add  %ecx, %ebx
+	mov  %eax, (%ebx)
+	sub  %ecx, %ebx
+	xor  %eax, %eax
 	NEXT
 
 L_fzeroeq:

@@ -322,11 +322,11 @@
 	add  %ecx, %ebx
 	fcompl (%ebx)
 	fnstsw %ax
-	andb $65, %ah
+	andb $69, %ah	
 	\logic \arg, %ah
 	movl $0, %eax
 	\set %al
-	neg  %eax
+	negl %eax
 	add  %ecx, %ebx
 	mov  %eax, (%ebx)
         sub  %ecx, %ebx
@@ -2811,31 +2811,62 @@ L_fne:
 	FREL_DYADIC xorb $64 setnz
         STSP
 	NEXT
+
 L_feq:
         LDSP
-	FREL_DYADIC andb $64 setnz
+	FREL_DYADIC xorb $64 setz
         STSP
 	NEXT
+
 L_flt:
         LDSP
 	FREL_DYADIC andb $65 setz
         STSP
 	NEXT
+
 L_fgt:
         LDSP
-	FREL_DYADIC andb $1 setnz
+	FREL_DYADIC xorb $1 setz
         STSP
 	NEXT	
+
 L_fle:
         LDSP
-	FREL_DYADIC xorb $1 setnz
-        STSP
+	FREL_DYADIC andb $5 setz
+	STSP
 	NEXT
+
 L_fge:
         LDSP
-	FREL_DYADIC andb $65 setnz
-        STSP
+        movl $WSIZE, %ecx
+	add %ecx, %ebx
+	fldl (%ebx)
+	add %ecx, %ebx
+	add %ecx, %ebx
+	fcompl (%ebx)
+	fnstsw %ax
+	andb $69, %ah
+	jz fge_false
+	cmpb $69, %ah
+	jz fge_false
+	xor %eax, %eax
+	movb $1, %al
+	jmp fge_cont
+fge_false:
+	xor %eax, %eax
+fge_cont:
+	neg %eax
+	add %ecx, %ebx
+	mov %eax, (%ebx)
+	sub %ecx, %ebx
+	STSP
+	movl GlobalTp, %eax
+	addl $3, %eax
+	movl %eax, GlobalTp
+	movb $OP_IVAL, 1(%eax)
+	xor %eax, %eax
 	NEXT
+
 L_fzeroeq:
 	LDSP
 	movl $WSIZE, %eax
