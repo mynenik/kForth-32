@@ -25,7 +25,7 @@
 # Invoke "make debug" if you want to create an executable
 # that contains debugging information for the GNU debugger (gdb).
 
-VERSION = 2.8.1
+VERSION = 2.8.4
 DEF_DIR_VAR=KFORTH_DIR
 BUILD_DATE=`date +%F`
 DEBUG = 
@@ -44,8 +44,8 @@ CPPFLAGS = -c -m32 -Wall
 CFLAGS = -c -m32 -Wall
 FAST = -D__FAST__
 NOFPSTACK = -D__NO_FPSTACK__
-OBJS = kforth.o ForthVM.o ForthCompiler.o vm32.o vmc.o
-FOBJS = kforth-fast.o ForthVM-fast.o ForthCompiler-fast.o vm32-fast.o vmc-fast.o
+OBJS = kforth.o ForthVM.o ForthCompiler.o vm32.o vmc.o dtoa.o
+FOBJS = kforth-fast.o ForthVM-fast.o ForthCompiler-fast.o vm32-fast.o vmc-fast.o dtoa.o
 # LIBS = -lreadline -lncurses -ldl -lm
 LIBS = -lreadline -ldl -lm
 
@@ -104,6 +104,8 @@ vm32.o: vm32.s vm32-common.s
 vm32-fast.o: vm32-fast.s vm32-common.s
 	as --32 -o vm32-fast.o vm32-fast.s
 
+dtoa.o: dtoa.c
+	${CC} ${CFLAGS} ${DEBUG} -DIEEE_8087 dtoa.c
 
 
 # end of makefile

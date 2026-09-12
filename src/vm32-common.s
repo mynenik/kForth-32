@@ -126,7 +126,7 @@ JumpTable: .long L_false, L_true, L_cells, L_cellplus # 0 -- 3
            .long CPP_name_to_interpret, CPP_name_to_compile, CPP_defined, CPP_undefined # 348--351
            .long L_nop, L_nop, L_nop, CPP_myname             # 352--355
            .long L_nop, L_nop, C_used, L_vmthrow             # 356--359
-           .long L_precision, L_setprecision, L_nop, CPP_fsdot   # 360--363
+           .long L_precision, L_setprecision, C_represent, CPP_fsdot   # 360--363
 	   .long L_nop, L_nop, L_fexpm1, L_flnp1	     # 364--367
 	   .long CPP_uddotr, CPP_ddotr, L_f2drop, L_f2dup    # 368--371
            .long L_nop, L_nop, L_nop, L_nop                  # 372--375
@@ -913,6 +913,7 @@ L_backslash:
 	.comm WordBuf,256,1
 	.comm NumberCount,4,4
 	.comm NumberBuf,256,1
+	.comm fsBuf,1024,1
         .comm MemUsed,4,4
 
 	
