@@ -7,7 +7,7 @@
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
-// Affero General Public License, (AGPL), v3.0 or later.
+// General Public License, (GPL), v3.0 or later.
 
 const char* dir_env_var=DIR_ENV_VAR;
 
@@ -1675,7 +1675,7 @@ int CPP_fsdot ()
   char *sig;  // buffer for significand
   int  sig_len;
   unsigned long int d_lo, d_hi;
-  long int b2, sign, decpt;
+  long int b2, sign, dec_exp;
   d_lo = *((unsigned long int *) &d);
   d_hi = *(((unsigned long int *) &d) + 1);
   sig_len = Precision + 1;
@@ -1690,7 +1690,7 @@ int CPP_fsdot ()
   DROP
   sign = TOS;
   DROP
-  decpt = TOS;
+  dec_exp = TOS;
 
   sig_len = strlen(sig);
 
@@ -1698,7 +1698,7 @@ int CPP_fsdot ()
   char *p_sig = sig;
 
   if (b2 == 0) {
-    if (decpt == 9999) {
+    if (dec_exp == 9999) {
       // NAN or INF ?
       *p_fs++ = sign ? '-' : '+' ;  // +/-inf or +/-nan
       long int exp2b = ((d_hi >> 0x14) & 0x7ff);
@@ -1709,27 +1709,28 @@ int CPP_fsdot ()
       p_fs += 3;
     }
     else {
-      *pOutStream << "Floating Point Conversion Error!" << endl;
-      return 0;
+      p_fs = fsBuf;
+      strcpy(p_fs, "** FPCONV ERROR");
+      p_fs += 15;
     }
   }
   else {
 // *pOutStream << "significand = " << sig << " decpt = " << decpt << " sign = " << sign << endl;     
     char s_exp[5];  // buffer for ascii decimal exponent
-    long int s_exp_len, dec_exp, dec_places;
+    long int s_exp_len, dec_fs_exp, dec_places;
     if (sign) *p_fs++ = '-';
     *p_fs++ = *p_sig++; *p_fs++ = '.';
     dec_places = sig_len - 1;  // #digits after decimal point
     strncpy(p_fs, p_sig, dec_places);
     p_fs += dec_places;
     *p_fs++ = 'e';
-    dec_exp = decpt - 1;  // decimal exponent; may be < 0
-    *p_fs++ = (dec_exp < 0) ? '-' : '+' ;
-    dec_exp = abs(dec_exp);
-    if (dec_exp < 1000)
-      sprintf(s_exp, "%02d", dec_exp);
+    dec_fs_exp = dec_exp - 1;
+    *p_fs++ = (dec_fs_exp < 0) ? '-' : '+' ;
+    dec_fs_exp = abs(dec_fs_exp);
+    if (dec_fs_exp < 100)
+      sprintf(s_exp, "%02d", dec_fs_exp);
     else
-      sprintf(s_exp, "%d", dec_exp);
+      sprintf(s_exp, "%d", dec_fs_exp);
     s_exp_len = strlen(s_exp);
     strncpy(p_fs, s_exp, s_exp_len);
     p_fs += s_exp_len;

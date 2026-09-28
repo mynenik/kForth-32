@@ -79,7 +79,6 @@ T{ -20 31 -10 gd7 -> 31 21 11 1 -9 -19 6 }T
 T{ -20 29 -10 gd7 -> 29 19 9 -1 -11 5 }T
 
 \ ----------------------------------------------------------------------------
-\ COMMENT Skipping tests: DO +LOOP with large and small increments
 TESTING DO +LOOP with large and small increments
 
 \ Contributed by Andrew Haley
