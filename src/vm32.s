@@ -6,7 +6,7 @@
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU 
-// Affero General Public License (AGPL), v3.0 or later.
+// General Public License (GPL), v3.0 or later.
 //
 // Usage from C++
 //
@@ -548,6 +548,10 @@ L_setprecision:
         DROP
         STSP
         movl (%ebx), %ecx
+        cmp $0, %ecx
+        jz E_invalid_arg
+        cmp $768, %ecx
+        ja E_invalid_arg
         movl %ecx, Precision
         NEXT
 

@@ -6,7 +6,7 @@
 //   <krishna.myneni@ccreweb.org>
 //
 // This software is provided under the terms of the GNU
-// Affero General Public License (AGPL), v3.0 or later.
+// General Public License (GPL), v3.0 or later.
 //
 
 .equ WSIZE,	4
@@ -23,6 +23,7 @@
 
 .equ E_DIV_ZERO,	  -10
 .equ E_ARG_TYPE_MISMATCH, -12
+.equ E_INVALID_ARG,       -24
 .equ E_QUIT,              -56
 .equ E_NOT_ADDR,	  -256
 .equ E_RET_STK_CORRUPT,	  -258
@@ -474,6 +475,10 @@ E_div_overflow:
 E_arg_type_mismatch:
 	movl $E_ARG_TYPE_MISMATCH, %eax
 	ret
+
+E_invalid_arg:
+        mov $E_INVALID_ARG, %eax
+        ret
 
 L_cputest:
 	ret
